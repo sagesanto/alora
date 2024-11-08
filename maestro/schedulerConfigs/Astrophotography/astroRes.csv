@@ -1,0 +1,139 @@
+CandidateName,CandidateType,Magnitude,RA,Dec,CVal1,CVal2,Filter,Processed,Submitted,dRA,dDec,TransitTime
+NGC 147,Astrophotography,9.5,8.3005,48.508739,12.59,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-02 15:40:00
+NGC 185,Astrophotography,9.199999809265137,9.74141667751,48.33750996518,11.48,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 15:40:00
+NGC 891,Astrophotography,9.930000305175781,35.637112,42.348319,12.3,HII Galaxy,"g, r, i",0,0,0,0,2024-06-02 17:30:00
+IC 10,Astrophotography,9.5,5.10625,59.28806,8.0,Galaxy,"g, r, i",0,0,0,0,2024-06-02 15:30:00
+Dra dSph,Astrophotography,10.600000381469727,260.059728,57.921219,15.8,Galaxy,"g, r, i",0,0,0,0,2024-06-03 08:20:00
+M102,Astrophotography,9.890000343322754,226.623171,55.763308,6.31,Seyfert Galaxy,"g, r, i",0,0,0,0,2024-06-03 06:10:00
+NGC 5585,Astrophotography,11.215999603271484,214.95085,56.72905,5.13,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 05:20:00
+NGC 3642,Astrophotography,14.039999961853027,170.57458768232,59.07452101151,5.01,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 02:30:00
+NGC 3079,Astrophotography,10.859999656677246,150.49116244333,55.67984715509,7.76,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 01:10:00
+NGC 2841,Astrophotography,9.220000267028809,140.51115779654,50.97659363413,8.13,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 00:30:00
+NGC 3718,Astrophotography,10.609999656677246,173.14523824612,53.0679222839,5.13,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 02:40:00
+NGC 5195,Astrophotography,9.550000190734863,202.498292,47.266128,5.89,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 04:30:00
+M51,Astrophotography,8.359999656677246,202.469575,47.195258,10.0,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:30:00
+NGC 4157,Astrophotography,11.350000381469727,182.768187,50.484681,6.76,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:10:00
+NGC 3198,Astrophotography,10.329999923706055,154.979125,45.549689,7.41,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-03 01:20:00
+M106,Astrophotography,8.40999984741211,184.740083,47.303719,17.78,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+NGC 1232,Astrophotography,9.869999885559082,47.439642,-20.5793,6.61,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-02 18:10:00
+NGC 1300,Astrophotography,10.420000076293945,49.92102592497,-19.41116321262,6.17,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 18:20:00
+NGC 1360,Astrophotography,11.15999984741211,53.31102855331,-25.87166045775,6.4,Planetary Nebula,"g, r, i",0,0,0,0,2024-06-02 18:40:00
+NGC 1744,Astrophotography,11.40999984741211,74.99057651795,-26.02217795549,6.03,Low Surface Brightness Galaxy,"g, r, i",0,0,0,0,2024-06-02 20:00:00
+M79,Astrophotography,8.15999984741211,81.04413,-24.52425,8.7,Globular Cluster,"g, r, i",0,0,0,0,2024-06-02 20:30:00
+M38,Astrophotography,6.400000095367432,82.167,35.824,19.6,Open Cluster,"g, r, i",0,0,0,0,2024-06-02 20:30:00
+NGC 1964,Astrophotography,10.8100004196167,83.340288,-21.945473,5.5,Seyfert 1 Galaxy,"g, r, i",0,0,0,0,2024-06-02 20:40:00
+M37,Astrophotography,5.599999904632568,88.074,32.545,19.3,Open Cluster,"g, r, i",0,0,0,0,2024-06-02 21:00:00
+NGC 2587,Astrophotography,9.199999809265137,125.861,-29.503,13.9,Open Cluster,"g, r, i",0,0,0,0,2024-06-02 23:30:00
+NGC 2613,Astrophotography,10.420000076293945,128.345171,-22.973669,7.59,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 23:40:00
+NGC 2627,Astrophotography,8.399999618530273,129.309,-29.952,10.4,Open Cluster,"g, r, i",0,0,0,0,2024-06-02 23:40:00
+NGC 2683,Astrophotography,9.789999961853027,133.17211034566,33.42183268931,8.71,Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 00:00:00
+NGC 613,Astrophotography,12.710000038146973,23.575979,-29.418489,5.5,Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-02 16:40:00
+M30,Astrophotography,7.099999904632568,325.09217,-23.17986,11.0,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 12:40:00
+NGC 908,Astrophotography,10.180000305175781,35.769038,-21.23385,6.17,Seyfert 1 Galaxy,"g, r, i",0,0,0,0,2024-06-02 17:30:00
+NGC 7184,Astrophotography,11.199999809265137,330.66595283018,-20.81270005756,6.31,Active Galaxy Nucleus Candidate,"g, r, i",0,0,0,0,2024-06-03 13:10:00
+NGC 24,Astrophotography,11.579999923706055,2.485592,-24.963131,5.75,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-02 15:10:00
+NGC 45,Astrophotography,10.729999542236328,3.51669672029,-23.18198129078,7.24,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 15:20:00
+NGC 7293,Astrophotography,13.52400016784668,337.41060585298,-20.83715201178,13.4,Planetary Nebula,"g, r, i",0,0,0,0,2024-06-03 13:30:00
+Wolf-Lundmark-Melotte,Astrophotography,11.100000381469727,0.4913,-15.4639,11.5,Galaxy,"g, r, i",0,0,0,0,2024-06-02 15:10:00
+Cetus Dwarf Galaxy,Astrophotography,13.199999809265137,6.545,-11.0539,5.01,Galaxy,"g, r, i",0,0,0,0,2024-06-02 15:30:00
+MCG-01-03-065,Astrophotography,12.170000076293945,15.391613,-7.588542,5.9,Low Surface Brightness Galaxy,"g, r, i",0,0,0,0,2024-06-02 16:10:00
+M2,Astrophotography,6.25,323.36258,-0.82325,12.9,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 12:40:00
+M77,Astrophotography,8.869999885559082,40.66962152892,-0.01329435839,6.92,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 17:50:00
+IC 1613,Astrophotography,10.010000228881836,16.2016962,2.1194959,16.2,Galaxy towards a Cluster of Galaxies,"g, r, i",0,0,0,0,2024-06-02 16:10:00
+NGC 1055,Astrophotography,10.59000015258789,40.438471,0.443181,6.17,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-02 17:50:00
+NGC 474,Astrophotography,11.510000228881836,20.02786271688,3.41551721475,7.94,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-02 16:30:00
+NGC 660,Astrophotography,11.15999984741211,25.759792,13.645681,6.31,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-02 16:50:00
+M74,Astrophotography,9.460000038146973,24.17393801526,15.78364097564,9.33,Galaxy,"g, r, i",0,0,0,0,2024-06-02 16:40:00
+NGC 772,Astrophotography,10.3100004196167,29.83148214541,19.00763213256,6.03,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-02 17:00:00
+NGC 672,Astrophotography,11.09000015258789,26.97698532147,27.43278353048,6.17,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-02 16:50:00
+IC 1727,Astrophotography,11.979999542236328,26.874542,27.33335,6.31,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-02 16:50:00
+NGC 383 Group,Astrophotography,14.100000381469727,16.8654,32.3997,15.833333,Group of Galaxies,"g, r, i",0,0,0,0,2024-06-02 16:10:00
+NGC 784,Astrophotography,12.069999694824219,30.32055,28.837258,5.13,Low Surface Brightness Galaxy,"g, r, i",0,0,0,0,2024-06-02 17:10:00
+NGC 7331,Astrophotography,9.479999542236328,339.26687751587,34.41577779903,10.47,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 13:40:00
+NGC 404,Astrophotography,11.729999542236328,17.36259,35.71813,6.0,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-02 16:10:00
+M110,Astrophotography,8.069999694824219,10.09190514583,41.68541867226,18.62,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-02 15:50:00
+NGC 925,Astrophotography,10.119999885559082,36.820471,33.578881,10.47,HII Galaxy,"g, r, i",0,0,0,0,2024-06-02 17:30:00
+NGC 2784,Astrophotography,10.15999984741211,138.081237,-24.1726,6.17,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-03 00:20:00
+NGC 2905,Astrophotography,9.069999694824219,143.042129,21.500831,11.48,HII Galaxy,"g, r, i",0,0,0,0,2024-06-03 00:40:00
+NGC 3109,Astrophotography,10.039999961853027,150.778654,-26.159572,18.2,Active Galaxy Nucleus Candidate,"g, r, i",0,0,0,0,2024-06-03 01:10:00
+Z 64-73,Astrophotography,10.0,152.11717,12.3065,11.4667,Galaxy,"g, r, i",0,0,0,0,2024-06-03 01:10:00
+Sex A,Astrophotography,11.930000305175781,152.7521,-4.6917,5.9,HII Galaxy,"g, r, i",0,0,0,0,2024-06-03 01:10:00
+NGC 3319,Astrophotography,11.069999694824219,159.789721,41.686872,5.25,Seyfert Galaxy,"g, r, i",0,0,0,0,2024-06-03 01:40:00
+NGC 3344,Astrophotography,9.859999656677246,160.879792,24.922219,6.76,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-03 01:50:00
+M96,Astrophotography,9.25,161.6906,11.819939,7.24,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 01:50:00
+M105,Astrophotography,9.760000228881836,161.956667,12.581631,5.13,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 01:50:00
+M95,Astrophotography,9.729999542236328,160.99054728575,11.70369477537,7.08,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 01:50:00
+NGC 3486,Astrophotography,10.529999732971191,165.099775,28.974819,6.31,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 02:00:00
+Z 126-111,Astrophotography,12.0,168.36721,22.15281,6.1333,Galaxy,"g, r, i",0,0,0,0,2024-06-03 02:20:00
+NGC 3521,Astrophotography,9.020000457763672,166.45236707974,-0.03590141015,10.0,Galaxy,"g, r, i",0,0,0,0,2024-06-03 02:10:00
+M66,Astrophotography,8.920000076293945,170.0626,12.9915,8.51,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 02:20:00
+NGC 3628,Astrophotography,9.479999542236328,170.070908,13.589489,12.88,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 02:20:00
+HCG 57,Astrophotography,15.399999618530273,174.4604,21.985,5.5,Compact Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 02:40:00
+HCG 58,Astrophotography,13.680000305175781,175.5392,10.275,8.82,Compact Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 02:50:00
+NGC 3923,Astrophotography,9.800000190734863,177.757429,-28.806211,6.76,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 02:50:00
+NGC 4051,Astrophotography,12.920000076293945,180.7900422238799,44.53130072258,5.25,Seyfert 1 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:10:00
+NGC 4151,Astrophotography,11.479999542236328,182.6357332557799,39.40585097987,6.17,Seyfert 1 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:10:00
+NGC 4228,Astrophotography,9.930000305175781,183.913225,36.326889,8.32,Starburst Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+NGC 4274,Astrophotography,10.40999984741211,184.9608044626899,29.61478848299,5.25,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+NGC 4302,Astrophotography,11.609999656677246,185.426987,14.597761,5.25,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M98,Astrophotography,10.140000343322754,183.45121278624,14.900542632,9.55,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+M99,Astrophotography,9.869999885559082,184.706771,14.416489,5.13,HII Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+NGC 4216,Astrophotography,10.010000228881836,183.97685,13.1494,7.94,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:20:00
+M61,Astrophotography,9.649999618530273,185.4788677428699,4.47377704644,6.17,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4449,Astrophotography,9.640000343322754,187.046325,44.093558,5.25,Emission-line galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4490,Astrophotography,9.789999961853027,187.6437,41.6405,6.76,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4395,Astrophotography,10.109999656677246,186.4535971291199,33.54686115782,11.48,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4450,Astrophotography,10.079999923706055,187.12329610584,17.08499336445,5.62,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M100,Astrophotography,9.350000381469727,185.7288749973299,15.8223045161,7.59,Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M88,Astrophotography,13.180000305175781,187.99646877602,14.42031915884,7.76,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M86,Astrophotography,8.899999618530273,186.549225,12.945969,10.47,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4438,Astrophotography,10.170000076293945,186.9402939556399,13.00880780455,8.91,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4388,Astrophotography,11.020000457763672,186.445083,12.662069,5.5,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M84,Astrophotography,10.489999771118164,186.26559721,12.88698314,6.46,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M87,Astrophotography,8.630000114440918,187.70593076725,12.39112324608,9.12,Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+M49,Astrophotography,12.170000076293945,187.4449,8.0004,10.96,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:30:00
+NGC 4631,Astrophotography,9.1899995803833,190.533371,32.541511,13.49,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:50:00
+NGC 4559,Astrophotography,10.010000228881836,188.99016786249,27.9599609106,10.23,HII Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+NGC 4565,Astrophotography,12.430000305175781,189.086683,25.987392,13.8,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M91,Astrophotography,13.569999694824219,188.8601861505499,14.49632231493,5.37,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M58,Astrophotography,9.65999984741211,189.4314,11.8183,5.62,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M90,Astrophotography,9.539999961853027,189.20750409995,13.1629232814,9.77,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M89,Astrophotography,9.75,188.91586388929,12.55634190714,6.92,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+NGC 4636,Astrophotography,11.84000015258789,190.7076388667,2.68776442473,7.76,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:50:00
+NGC 4536,Astrophotography,10.550000190734863,188.6128,2.1883,7.41,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M104,Astrophotography,8.0,189.99763274592,-11.62305449444,8.51,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M68,Astrophotography,7.960000038146973,189.86658,-26.74406,12.0,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 03:40:00
+M94,Astrophotography,8.239999771118164,192.72114082143,41.12025024573,11.48,Seyfert Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:50:00
+NGC 4725,Astrophotography,12.4399995803833,192.61071515333,25.50075919183,9.77,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 03:50:00
+NGC 4753,Astrophotography,9.949999809265137,193.092133,-1.199689,6.03,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 04:00:00
+M64,Astrophotography,8.520000457763672,194.182067,21.682658,9.77,Seyfert Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:00:00
+NGC 4939,Astrophotography,13.800000190734863,196.05970021872,-10.33952790409,5.01,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:10:00
+M63,Astrophotography,8.59000015258789,198.9553091224699,42.02936891003,13.18,LINER-type Active Galaxy Nucleus,"g, r, i",0,0,0,0,2024-06-03 04:20:00
+NGC 5005,Astrophotography,13.670000076293945,197.734633,37.058942,5.5,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 04:10:00
+NGC 5033,Astrophotography,12.029999732971191,198.364729,36.59365,9.55,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:20:00
+M53,Astrophotography,7.789999961853027,198.23021,18.16817,12.6,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 04:20:00
+NGC 5170,Astrophotography,10.789999961853027,202.45319366858,-17.96649188798,8.13,Galaxy in Pair of Galaxies,"g, r, i",0,0,0,0,2024-06-03 04:30:00
+NGC 5068,Astrophotography,10.010000228881836,199.728363,-21.0391,7.24,Active Galaxy Nucleus Candidate,"g, r, i",0,0,0,0,2024-06-03 04:20:00
+NGC 5084,Astrophotography,12.210000038146973,200.070513,-21.827578,12.02,Seyfert 2 Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:20:00
+NGC 5101,Astrophotography,10.470000267028809,200.442675,-27.430519,5.62,Seyfert 1 Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:30:00
+PN A66 36,Astrophotography,11.569999694824219,205.17227309607,-19.88203467884,6.117,Planetary Nebula,"g, r, i",0,0,0,0,2024-06-03 04:40:00
+M83,Astrophotography,7.519999980926514,204.25383,-29.86576111,13.8,Starburst Galaxy,"g, r, i",0,0,0,0,2024-06-03 04:40:00
+M3,Astrophotography,6.389999866485596,205.54842,28.37728,16.2,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 04:50:00
+HCG 68,Astrophotography,12.399999618530273,208.4204,40.3186,9.2,Compact Group of Galaxies,"g, r, i",0,0,0,0,2024-06-03 05:00:00
+M19,Astrophotography,5.570000171661377,255.65704,-26.26794,9.6,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:10:00
+NGC 6355,Astrophotography,11.050000190734863,260.99437,-26.35342,5.4,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:30:00
+NGC 6401,Astrophotography,10.710000038146973,264.65387,-23.90875,9.0,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:40:00
+NGC 6544,Astrophotography,9.899999618530273,271.83575,-24.99733,12.0,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 09:10:00
+M9,Astrophotography,8.420000076293945,259.79908,-18.51625,8.7,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:20:00
+NGC 6603,Astrophotography,11.100000381469727,274.616,-18.409,6.0,Open Cluster,"g, r, i",0,0,0,0,2024-06-03 09:20:00
+M72,Astrophotography,8.960000038146973,313.36542,-12.53731,5.9,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 12:00:00
+NGC 6822,Astrophotography,8.100000381469727,296.234163,-14.797581,13.8,Galaxy,"g, r, i",0,0,0,0,2024-06-03 10:50:00
+M26,Astrophotography,8.869999885559082,281.317,-9.386,7.1,Open Cluster,"g, r, i",0,0,0,0,2024-06-03 09:50:00
+NGC 6705,Astrophotography,5.800000190734863,282.766,-6.272,8.9,Open Cluster,"g, r, i",0,0,0,0,2024-06-03 09:50:00
+M10,Astrophotography,4.980000019073486,254.28771,-4.10031,15.1,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:00:00
+M14,Astrophotography,5.730000019073486,264.40063,-3.24592,13.5,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:40:00
+M12,Astrophotography,6.070000171661377,251.80908,-1.94853,14.5,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 07:50:00
+M5,Astrophotography,5.949999809265137,229.63842,2.08103,17.4,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 06:20:00
+M92,Astrophotography,6.519999980926514,259.28079,43.13594,11.2,Globular Cluster,"g, r, i",0,0,0,0,2024-06-03 08:20:00
+M29,Astrophotography,6.599999904632568,305.943,38.487,12.7,Open Cluster,"g, r, i",0,0,0,0,2024-06-03 11:30:00
+NGC 1407,Astrophotography,9.670000076293945,55.0496,-18.580378,5.62,Galaxy towards a Group of Galaxies,"g, r, i",0,0,0,0,2024-06-02 18:40:00

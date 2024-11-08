@@ -1,0 +1,8 @@
+../.idea
+geckodriver.log
+OffsetMaps**/**
+**/example/
+**/photometrics/
+**/testingOutputs/**
+*.log
+*.cpython*
