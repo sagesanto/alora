@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 from string import Template
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
-# from photometrics.sql_database import SQLDatabase
 
 try:
     from scheduleLib import genUtils

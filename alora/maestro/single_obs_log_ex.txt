@@ -1,0 +1,63 @@
+2024-01-12 22:38:58 INFO     Target name: Sar2733_1
+2024-01-12 22:38:58 INFO     Taking a recenting image of [10.00] sec
+2024-01-12 22:38:58 INFO     Telescope Position : (104.382803, 48.555010) deg
+2024-01-12 22:38:58 INFO     Sky background : 19.72 mag/arcsec^2
+2024-01-12 22:38:58 INFO     Telescope focus : 48611.90
+2024-01-12 22:38:58 INFO     Optical filter name : CLEAR
+2024-01-12 22:38:58 INFO     PT100 sensor temperature =  1.855 celsius @  2024-01-13T06:38:56.217874
+
+2024-01-12 22:38:58 INFO     Set acquisition parameters
+2024-01-12 22:38:58 INFO     Send acquisition command to SynTrack
+2024-01-12 22:38:58 INFO     Acquiring dataset ['8_1705127938_0_0']
+2024-01-12 22:38:58 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127938_0'
+2024-01-12 22:39:11 INFO     Event Received: Dataset with ID '8_1705127938_0_0' has been archived.
+2024-01-12 22:39:11 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127938_0'
+2024-01-12 22:39:11 INFO     Dataset ['8_1705127938_0_0'] acquired!
+2024-01-12 22:39:11 INFO     Telescope RawX and RawY : (-10.227129, 48.843830)
+2024-01-12 22:39:11 INFO     Dataset 8_1705127938_0_0 archived
+2024-01-12 22:39:11 INFO     Writing dataset metadata to ascii file
+2024-01-12 22:39:11 INFO     Convert binary dataset to FITS image
+2024-01-12 22:39:11 INFO     Running astrometry on recentering image: [./recenter_image_20240112_223858.fits] 
+2024-01-12 22:39:11 INFO     Check if astrometry.net is installed
+2024-01-12 22:39:11 INFO     Running astrometry.net on the FITS image ./recenter_image_20240112_223858.fits
+2024-01-12 22:39:39 INFO     Astrometry.net Return code: 0
+2024-01-12 22:39:39 INFO     Astrometry.net Error Msg: b''
+2024-01-12 22:39:39 INFO     astrometry.net solved the field!
+2024-01-12 22:39:39 INFO     Telescope Celestial Position (RA/Dec): [104.359928, 48.502633] deg
+2024-01-12 22:39:39 INFO     Computing offset:
+2024-01-12 22:39:39 INFO     Telescope Encoder Position: [104.382923, 48.555097] deg
+2024-01-12 22:39:39 INFO     Telescope Offset: [0.022995, 0.052464] deg
+2024-01-12 22:39:39 INFO     Applying offsets of [1.379685, 3.147811] arcmin
+2024-01-12 22:39:40 INFO     Telescope Position : (104.408622, 48.613828) deg
+2024-01-12 22:39:40 INFO     Sky background : 19.73 mag/arcsec^2
+2024-01-12 22:39:40 INFO     Telescope focus : 48611.90
+2024-01-12 22:39:40 INFO     Optical filter name : CLEAR
+2024-01-12 22:39:40 INFO     PT100 sensor temperature =  1.855 celsius @  2024-01-13T06:38:56.217874
+
+2024-01-12 22:39:40 INFO     Set acquisition parameters
+2024-01-12 22:39:40 INFO     Send acquisition command to SynTrack
+2024-01-12 22:39:40 INFO     Acquiring dataset ['8_1705127980_0_0']
+2024-01-12 22:39:40 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127980_0'
+2024-01-12 22:39:43 INFO     Event Received: Dataset with ID '8_1705127980_0_0' has been archived.
+2024-01-12 22:39:43 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127980_0'
+2024-01-12 22:39:43 INFO     Dataset ['8_1705127980_0_0'] acquired!
+2024-01-12 22:39:43 INFO     Telescope RawX and RawY : (-10.114820, 48.896192)
+2024-01-12 22:39:43 INFO     Dataset 8_1705127980_0_0 archived
+2024-01-12 22:39:43 INFO     Writing dataset metadata to ascii file
+2024-01-12 22:39:43 INFO     Telescope Position : (104.405985, 48.607699) deg
+2024-01-12 22:39:43 INFO     Sky background : 19.73 mag/arcsec^2
+2024-01-12 22:39:43 INFO     Telescope focus : 48611.90
+2024-01-12 22:39:43 INFO     Optical filter name : CLEAR
+2024-01-12 22:39:43 INFO     PT100 sensor temperature =  1.855 celsius @  2024-01-13T06:38:56.217874
+
+2024-01-12 22:39:43 INFO     Set acquisition parameters
+2024-01-12 22:39:43 INFO     Send acquisition command to SynTrack
+2024-01-12 22:39:43 INFO     Acquiring dataset ['8_1705127983_0_0']
+2024-01-12 22:39:43 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127983_0'
+2024-01-12 22:49:47 INFO     Event Received: Acquisition has finished for dataset with ID: '8_1705127983_0'
+2024-01-12 22:49:47 INFO     Dataset ['8_1705127983_0_0'] acquired!
+2024-01-12 22:49:47 INFO     Telescope RawX and RawY : (-7.593810, 48.891798)
+2024-01-12 22:49:53 INFO     Event Received: Dataset with ID '8_1705127983_0_0' has been archived.
+2024-01-12 22:49:53 INFO     Dataset 8_1705127983_0_0 archived
+2024-01-12 22:49:53 INFO     Writing dataset metadata to ascii file
+2024-01-12 22:49:53 INFO     Exposed for 600.0 seconds.
