@@ -25,6 +25,7 @@ class Dome:
         wait_time = Dome.TIMINGS_S['close'] + 10 
         print(f"Waiting {wait_time} seconds for dome to close")
         time.sleep(wait_time)
+        print("Done!")
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
 
     def open(self):

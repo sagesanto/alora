@@ -13,28 +13,36 @@ import astropy.units as u
 import matplotlib.pyplot as plt, numpy as np
 import logging
 
-BBOX_BUFFER_DEG = 20/60 # 20 arcmin
+BBOX_BUFFER_DEG = 0
 
-HORIZON_BOX = {  # {tuple(decWindow):tuple(minAlt,maxAlt)}
-    (-35, -34): (-35, 42.6104),
-    (-34, -32): (-35, 45.9539),
-    (-32, -30): (-35, 48.9586),
-    (-30, -28): (-35, 51.6945),
-    (-28, -26): (-35, 54.2121),
-    (-26, -24): (-35, 56.5487),
-    (-24, -22): (-35, 58.7332),
-    (-22, 0): (-35, 60),
-    (0, 46): (-52.5, 60),
-    (46, 56): (-37.5, 60),
-    (56, 65): (-30, 60)
+HORIZON_BOX = {  # {tuple(decWindow):tuple(minHA,maxHA)}
+    (-50, -45): (-30, 0),
+    (-45, -40): (-30, 15),
+    (-40, -30): (-45, 30),
+    (-30, -20): (-45, 45),
+    (-20, -10): (-60, 45),
+    (-10, 5): (-60,60),
+    (5,10): (-60,75),
+    (10, 25): (-75,75),
+    (25, 30): (-75, 90),
+    (30, 35): (-75, 105),
+    (35, 50): (-90, 105),
+    (50, 55): (-90, 120),
+    (55, 60): (-105, 120),
+    (60, 65): (-105, 135),
+    (65,70): (-120, 135),
+    (70,75): (-135, 150),
 }
 
-#christ this is ugly
-HORIZON_BOX_2 = HORIZON_BOX.copy()
-for k,v in HORIZON_BOX.items():
-    v1 = (v[0]/abs(v[0]) * (abs(v[0])-BBOX_BUFFER_DEG), v[1]/abs(v[1]) * (abs(v[1])-BBOX_BUFFER_DEG))
-    HORIZON_BOX_2[k] = v1
-HORIZON_BOX = HORIZON_BOX_2
+def sign(num):
+    return 0 if num == 0 else num/abs(num)
+
+# #christ this is ugly
+# HORIZON_BOX_2 = HORIZON_BOX.copy()
+# for k,v in HORIZON_BOX.items():
+#     v1 = (sign(v[0]) * (abs(v[0])-BBOX_BUFFER_DEG), sign(v[0]) * (abs(v[1])-BBOX_BUFFER_DEG))
+#     HORIZON_BOX_2[k] = v1
+# HORIZON_BOX = HORIZON_BOX_2
 
 # flip the sign of the HA (second tuple) and their order in HORIZON_BOX to represent flipping the telescope
 FLIP_BOX = {k:(-v[1],-v[0]) for k,v in HORIZON_BOX.items()}
@@ -191,8 +199,10 @@ class TMO:
             mask[i] = self.observation_viable(dt,row[ra_column],row[dec_column],current_sidereal_time=current_sidereal_time,ignore_night=ignore_night)
         return mask
 
-    def plot_onsky(self, dt=current_dt_utc(),candidates=None,current_sidereal_time=None, fig=None, ax=None):
+    def plot_onsky(self, dt=None,candidates=None,current_sidereal_time=None, fig=None, ax=None):
         """ Take a list of candidates, create 2 plots of their observability at dt, and return the figures, axes and artists (to allow animation)"""
+        if dt is None:
+            dt = current_dt_utc()
         sunrise, sunset = self.get_sunrise_sunset(dt)
         current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else get_current_sidereal_time(self.locationInfo)
         sidereal = dateToSidereal(dt, current_sidereal_time)
