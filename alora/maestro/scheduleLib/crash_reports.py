@@ -9,7 +9,7 @@ config = config['DEFAULT']
 
 BASE_CRASH_DIR = config['BASE_CRASH_DIR'] 
 
-from .genUtils import write_out
+from alora.maestro.scheduleLib.genUtils import write_out
 
 def write_crash_report(report_dir,e,tb=None):
     report_dir = os.path.join(BASE_CRASH_DIR, report_dir)

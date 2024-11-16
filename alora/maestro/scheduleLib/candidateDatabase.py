@@ -15,6 +15,9 @@ from string import Template
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 
+MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
+MAESTRO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
+
 try:
     from scheduleLib import genUtils
     from scheduleLib.sql_database import SQLDatabase
@@ -37,9 +40,49 @@ def generateID(candidateName, candidateType, author):
     hashed = str(hash(candidateName + candidateType + author))
     return int(hashed)
 
+def construct_datetime(tstring, valtype, tz:str):
+    if not tstring or tstring == " ":
+        return None
+    return genUtils.stringToTime(tstring).replace(tzinfo=pytz.timezone(tz))
 
+def construct_quantity(value, valtype, unit: str):
+    if isinstance(value, u.Quantity):
+        return value.astype(unit)
+    if value:
+        return u.Quantity(value, unit=unit)
+    return None
+
+def serialize_datetime(dt, valtype, tz):
+    if not dt:
+        return ""
+    try:
+        dt = dt.astimezone(pytz.timezone(tz))
+    except:
+        dt = pytz.timezone(tz).localize(dt)
+    return genUtils.timeToString(dt)
+
+def serialize_quantity(quantity,valtype,unit):
+    if not quantity:
+        return ""
+    return quantity.to_value(unit)
+
+gen_construction_dict = {
+    "datetime": construct_datetime,
+    "quantity": construct_quantity
+}
+
+gen_serialization_dict = {
+    "datetime": serialize_datetime,
+    "quantity": serialize_quantity
+}
+
+with open(os.path.join(MODULE_PATH, "candidate_schema.json"), "r") as f:
+    gen_construction_schema = json.load(f)
+
+_modules = None
+# _modules = genUtils.import_maestro_modules()
 # noinspection PyUnresolvedReferences
-class Candidate:
+class BaseCandidate:
     def __init__(self, CandidateName: str, CandidateType: str, **kwargs):
         """!
         Preferred construction method is via CandidateDatabase.queryToCandidates
@@ -47,18 +90,30 @@ class Candidate:
         stores information about where it is, when it can be observed, how it should be scheduled, etc. Candidates
         are intended to work in conjunction with user-defined configuration modules that interface with the database,
         scheduler, etc to give functionality.
-        RA Dec are, unforunately, provided as astropy Angles or DECIMAL HOURS
-        @param CandidateType: string. should exactly match the name of the module with which it should be associated
+        RA Dec are provided as astropy Angles or decimal degrees
+        @param CandidateType: string. should EXACTLY match the name of the module with which it should be associated
         @param kwargs: a whole litany of relevant information, some required for construction
         """
+        # print(f"in super constructor: {self.__dict__}")
+        
+        # fuck
+        # self.modules = genUtils.import_maestro_modules()
+        global _modules
+        if _modules is None:
+            _modules = genUtils.import_maestro_modules()
+
         self.CandidateName = CandidateName
         self.CandidateType = CandidateType
+
         for key, value in kwargs.items():
+            if key in self.__dict__.keys():
+                continue
             if key in validFields:
-                if key in ["RA","Dec"]:
-                    if not isinstance(value, Angle):
-                        value = Angle(float(value),unit="degree")
-                self.__dict__[key] = value
+                schema = gen_construction_schema.get(key)
+                if schema:
+                    self.__dict__[key] = gen_construction_dict[schema["valtype"]](value, **schema) 
+                else:
+                    self.__dict__[key] = value
             else:
                 raise ValueError(
                     "Bad argument: " + key + " is not a valid argument for candidate construction. Valid arguments are " + str(
@@ -68,8 +123,7 @@ class Candidate:
         return str(dict(self.__dict__))
 
     def __repr__(self):
-        return "Candidate " + self.asDict()[
-            "CandidateName"] + " (" + self.CandidateType + ")"  # can't print self.CandidateName directly for whatever reason
+        return f"Candidate {self.CandidateName} ({self.CandidateType})"
 
     def set_field(self, field, value):
         if field not in validFields:
@@ -79,14 +133,15 @@ class Candidate:
         self.__dict__[field] = value
 
 
-    def asDict(self):
-        d = self.__dict__.copy()
-        RA = d.get("RA",None)
-        dec = d.get("Dec", None)
-        if RA is not None:
-            d["RA"] = RA.degree
-        if dec is not None:
-            d["Dec"] = dec.degree
+    def asDict(self,start_dict=None):
+        # subclasses should implement their own asDict() and call this __super__ with their dict as the last thing they do
+        d = start_dict or {}
+        for key, val in self.__dict__.items():
+            if key not in d.keys():
+                if key in gen_serialization_dict:
+                    d[key] = gen_serialization_dict[key](val, **gen_construction_schema[key])
+                else:
+                    d[key] = val
         return d
 
     def genGenericScheduleLine(self, filterName: str, startDt: datetime, name: str, description: str, exposureTime=None,
@@ -233,6 +288,19 @@ class Candidate:
                 if dur >= timedelta(hours=duration):  # the window is longer than min allowed duration
                     return True, dur
             return False
+
+
+# this is a dumb way to do this
+class Candidate(BaseCandidate):
+    def __init__(self, CandidateName: str, CandidateType: str, **kwargs):
+        # do a switchboard-type thing 
+        if CandidateType not in _modules.keys():
+        # if CandidateType not in self.modules.keys():
+            raise ValueError(f"{CandidateType} is not a known candidate module. Did you spell it correctly?")
+        associated_module = _modules[CandidateType]
+        # associated_module = self.modules[CandidateType]
+
+        self = associated_module.CandidateClass(CandidateName, CandidateType, **kwargs)
 
 
 class CandidateDatabase(SQLDatabase):
