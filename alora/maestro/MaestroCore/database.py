@@ -1,7 +1,15 @@
 # Sage Santomenna 2023
 # When run, attempts to import and run the database updater of each TypeConfig
+
 import sys, os, math
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from os.path import abspath, dirname, join, pardir
+
+MODULE_PATH = abspath(join(dirname(__file__), pardir))
+
+def PATH_TO(fname:str): return join(MODULE_PATH,fname)
+
+
+sys.path.append(MODULE_PATH)
 from scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
 
 def main():
@@ -30,7 +38,7 @@ def main():
         write_out("Starting to update database.")
 
         # import all modules in schedulerConfigs
-        root_directory = "./schedulerConfigs"
+        root_directory = PATH_TO("schedulerConfigs")
         module_names = []
         for dir in ["schedulerConfigs."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
             module_names.append(dir)

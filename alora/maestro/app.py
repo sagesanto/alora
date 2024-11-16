@@ -1,8 +1,15 @@
 # Sage Santomenna 2023/2024
 
 import sys, os, traceback
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+from os.path import join, abspath, dirname
+
+sys.path.append(abspath(dirname(__file__)))
 from scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
+
+MAESTRO_DIR = abspath(dirname(__file__))
+def PATH_TO(fname:str): return join(MAESTRO_DIR,fname)
+
+def LOGO_PATH(fname:str): return PATH_TO(join("MaestroCore","logosAndIcons",fname))
 
 def exception_hook(exctype, value, tb):
     write_crash_report("MaestroApp", value, tb=tb)
@@ -10,7 +17,7 @@ def exception_hook(exctype, value, tb):
 
 sys.excepthook = exception_hook
 
-def main():
+def _main():
     import json
     import logging
     import pathlib
@@ -69,10 +76,10 @@ def main():
         2: 'hmsdms'
     }
 
-    STATUS_DONE  = "MaestroCore/logosAndIcons/status.png"
-    STATUS_BUSY  = "MaestroCore/logosAndIcons/status-away.png" # not a mistake
-    STATUS_ERROR = "MaestroCore/logosAndIcons/status-busy.png" # not a mistake
-    STATUS_IDLE  = "MaestroCore/logosAndIcons/status-offline.png"
+    STATUS_DONE  = LOGO_PATH("status.png")
+    STATUS_BUSY  = LOGO_PATH("status-away.png") # not a mistake
+    STATUS_ERROR = LOGO_PATH("status-busy.png") # not a mistake
+    STATUS_IDLE  = LOGO_PATH("status-offline.png")
 
     def test_error():
         raise ValueError("Test error")
@@ -80,7 +87,7 @@ def main():
     class Settings:
         def __init__(self, settingsFilePath):
             self.path = settingsFilePath
-            self.defaultPath = "./MaestroCore/defaultSettings.txt"
+            self.defaultPath = PATH_TO(join("MaestroCore","defaultSettings.txt"))
             self._settings = {}
             self._linkBacks = []  # (settingName, writeFunction) tuples
 
@@ -142,12 +149,12 @@ def main():
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
             super(MainWindow, self).__init__(parent)
-            self.setWindowIcon(QtGui.QIcon("MaestroCore/logosAndIcons/windowIcon.ico"))  # ----
+            self.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))  # ----
             self.setupUi(self)
 
             # self.blacklistLabel.setMinimumWidth(self.blacklistView.width())
 
-            with open("version.txt", "r") as f:
+            with open(PATH_TO("version.txt"), "r") as f:
                 self.version = f.readline()
 
             #icons
@@ -155,19 +162,19 @@ def main():
             self.set_candidates_icon(STATUS_IDLE)
             self.set_database_icon(STATUS_IDLE)
             self.set_ephemeris_icon(STATUS_IDLE)
-            self.set_processes_icon(QtGui.QIcon("MaestroCore/logosAndIcons/system-monitor"))
-            self.toggleRejectButton.setIcon(QtGui.QIcon("MaestroCore/logosAndIcons/cross"))
-            self.removeToggleButton.setIcon(QtGui.QIcon("MaestroCore/logosAndIcons/cross-circle-frame"))
-            self.addCandidateButton.setIcon(QtGui.QIcon("MaestroCore/logosAndIcons/plus-circle-frame"))
-            self.blacklistCandidatesButton.setIcon(QtGui.QIcon("MaestroCore/logosAndIcons/cross-white"))
-            self.whitelistCandidatesButton.setIcon(QtGui.QIcon("MaestroCore/logosAndIcons/tick-white"))
+            self.set_processes_icon(QtGui.QIcon(LOGO_PATH("system-monitor")))
+            self.toggleRejectButton.setIcon(QtGui.QIcon(LOGO_PATH("cross")))
+            self.removeToggleButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-circle-frame")))
+            self.addCandidateButton.setIcon(QtGui.QIcon(LOGO_PATH("plus-circle-frame")))
+            self.blacklistCandidatesButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-white")))
+            self.whitelistCandidatesButton.setIcon(QtGui.QIcon(LOGO_PATH("tick-white")))
 
             self.ephem_error_occurred = False
             self.sched_error_occurred = False
 
 
             # initialize custom things
-            self.settings = Settings("./MaestroCore/settings.txt")
+            self.settings = Settings(PATH_TO(join("MaestroCore","settings.txt")))
             self.processModel = ProcessModel(statusBar=self.statusBar())
             self.ephemListModel = FlexibleListModel()
             self.blacklistModel = FlexibleListModel()
@@ -412,7 +419,7 @@ def main():
             self.databaseProcess.succeeded.connect(lambda: self.set_candidates_icon(STATUS_DONE))
             # TODO: make this work     
             self.databaseProcess.errorSignal.connect(lambda: self.set_candidates_icon(STATUS_ERROR))
-            self.databaseProcess.start(PYTHON_PATH, ['./MaestroCore/database.py', json.dumps(self.settings.asDict())])
+            self.databaseProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','database.py')), json.dumps(self.settings.asDict())])
             self.set_candidates_icon(STATUS_BUSY)
 
 
@@ -476,7 +483,7 @@ def main():
 
             if debug:
                 self.scheduleProcess.msg.connect(lambda msg: print("Scheduler: ", msg))
-            self.scheduleProcess.start(PYTHON_PATH, ["./scheduler.py", json.dumps(self.settings.asDict()),
+            self.scheduleProcess.start(PYTHON_PATH, [PATH_TO("scheduler.py"), json.dumps(self.settings.asDict()),
                                                 str(blacklistedCandidateDesigs), str(whitelistedCandidateDesigs),
                                                 excludedTimeRanges])
             self.set_scheduler_icon(STATUS_BUSY)
@@ -802,7 +809,7 @@ def main():
                 candidate in candidatesToRequest}
             if debug:
                 logger.debug(targetDict)
-            self.ephemProcess.start(PYTHON_PATH, ['./MaestroCore/ephemerides.py', json.dumps(targetDict),
+            self.ephemProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','ephemerides.py')), json.dumps(targetDict),
                                             json.dumps(self.settings.asDict())])
             self.set_ephemeris_icon(STATUS_BUSY)
             # launch waiting window
@@ -849,7 +856,7 @@ def main():
             # self.dbOperatorProcess.triggered.connect(self.dbStatusChecker)
             self.dbOperatorProcess.ended.connect(self.getCandidates)
             self.dbOperatorProcess.start(PYTHON_PATH,
-                                        ['./MaestroCore/databaseOperations.py', json.dumps(self.settings.asDict())])
+                                        [PATH_TO(join('MaestroCore','databaseOperations.py')), json.dumps(self.settings.asDict())])
 
     app = QApplication([])
 
@@ -860,5 +867,8 @@ def main():
     # start event loop
     app.exec()
 
+def main():
+    run_with_crash_writing("MaestroApp", _main)
+
 if __name__ == "__main__":
-    run_with_crash_writing("MaestroApp", main)
+    main()

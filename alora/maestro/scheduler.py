@@ -9,8 +9,8 @@ def main():
     # from line_profiler_pycharm import profile
     # from pathlib import Path
 
-    # dirname = os.path.dirname(PyQt6.__file__)
-    # plugin_path = os.path.join(Path(__file__).parent, 'PyQt6', 'Qt6', 'plugins')
+    # dirname = dirname(PyQt6.__file__)
+    # plugin_path = join(Path(__file__).parent, 'PyQt6', 'Qt6', 'plugins')
     # os.environ['QT_PLUGIN_PATH'] = plugin_path
     # os.environ['QT_DEBUG_PLUGINS']="1"
     import copy
@@ -44,25 +44,28 @@ def main():
     from scheduleLib.candidateDatabase import Candidate
 
     # for packaging reasons, i promise
+
+    from os.path import pardir, join, abspath, dirname, isdir
+    MODULE_PATH = abspath(join(dirname(__file__)))
+    def PATH_TO(fname:str): return join(MODULE_PATH,fname)
+
     try:
-        sys.path.append(
-            os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+        sys.path.append(MODULE_PATH)
 
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
 
         genConfig = configparser.ConfigParser()
-        genConfig.read(os.path.join(os.path.dirname(__file__), "files", "configs", "config.txt"))
+        genConfig.read(join(dirname(__file__), "files", "configs", "config.txt"))
 
-        sys.path.remove(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
     except ImportError:
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
 
         genConfig = configparser.ConfigParser()
-        genConfig.read(os.path.join("files", "configs", "config.txt"))
+        genConfig.read(join("files", "configs", "config.txt"))
 
     genConfig = genConfig["DEFAULT"]
     utc = pytz.UTC
@@ -306,7 +309,7 @@ def main():
                 "%b %d, %Y, %H:%M"))
 
         # Show the plot
-        plt.savefig(os.sep.join([savepath, title + ".png"]))
+        plt.savefig(join(savepath, title + ".png"))
 
 
     class TMOScheduler(astroplan.scheduling.Scheduler):
@@ -677,9 +680,9 @@ def main():
 
         # import configurations from python files placed in the schedulerConfigs folder
         root = "schedulerConfigs"
-        root_directory = f"./{root}"
+        root_directory = PATH_TO("schedulerConfigs")
         module_names = []
-        for dir in [f"{root}."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
+        for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
             module_names.append(dir)
         for m in module_names:
             try:
@@ -854,7 +857,7 @@ def main():
         sunriseUTC, sunsetUTC = roundToTenMinutes(sunriseUTC), roundToTenMinutes(sunsetUTC)
         sunriseUTC -= timedelta(hours=1)  # to account for us closing the dome one hour before sunrise
         sunsetUTC = max(sunsetUTC, pytz.UTC.localize(datetime.utcnow()))
-        savepath = "./files/outputs/scheduleOut"
+        savepath = PATH_TO("/files/outputs/scheduleOut")
         candidateDbPath = genUtils.get_candidate_database_path()
         overwrite = False
     else:
@@ -882,12 +885,12 @@ def main():
     elif overwrite:  # safety precaution lol
         for out in ["schedule.txt", "schedule.csv", "schedule.png", "scorePlot.png", "visibilityAll.png"]:
             try:
-                os.remove(savepath + "/" + out)
+                os.remove(join(savepath, out))
             except:
                 pass
         try:
-            shutil.rmtree(savepath + "/ephems", ignore_errors=True)
-            os.mkdir(savepath + "/ephems")
+            shutil.rmtree(join(savepath,"ephems"), ignore_errors=True)
+            os.mkdir(join(savepath,"ephems"))
         except:
             pass
 
@@ -902,7 +905,7 @@ def main():
 
     ephemSpath = None
     if saveEphems:
-        ephemSpath = os.sep.join([savepath, "ephems" + os.sep])
+        ephemSpath = join(savepath, "ephems")
         try:
             os.mkdir(ephemSpath)
         except:
@@ -951,14 +954,14 @@ def main():
     if numRuns > 1:
         for sched, name in [(bestSchedFull, "BestFullness"),
                             (bestSchedBoth, "BestCombined"), (bestSchedRep, "BestRepeatSuccess")]:
-            visualizeSchedule(sched[0], os.sep.join([savepath, sched[3] + ".png"]),
-                            os.sep.join([savepath, sched[3] + ".csv"]), sunsetUTC, sunriseUTC,
+            visualizeSchedule(sched[0], join(savepath, f"{sched[3]}.png"),
+                            join(savepath, f"{sched[3]}.csv"), sunsetUTC, sunriseUTC,
                             addTitleText="{}% full, with {}% repeat obs success.".format(
                                 str(round(sched[2] * 100, 3)),
                                 str(sched[1] * 100)), save=True,
                             show=False)
             schedLines = scheduleToTextFile(sched[0], configDict, candidateDict, spath=ephemSpath)
-            with open(os.sep.join([savepath, f'{name}.txt']), "w") as f:
+            with open(join(savepath, f'{name}.txt'), "w") as f:
                 f.writelines(schedLines)
         usedDesigs = []
         for d in usedDesigsR:  # filter for unique candidate names after chopping off the _1/_2 etc. this used to be done with a set but that didn't preserve order
@@ -971,12 +974,12 @@ def main():
             try:
                 df = Candidate.candidatesToDf(candidatesInSchedule)
                 df = genUtils.prettyFormat(df)
-                df.to_csv("{}/observingLog.csv".format(savepath), index=False)
+                df.to_csv(join(savepath,"observingLog.csv"), index=False)
                 visualizeObservability(candidatesInSchedule, sunsetUTC, sunriseUTC, savepath, "visibilityAll")
             except Exception as e:
                 sys.stderr.write("Writing obs log failed with exception " + repr(e))
 
-        logDf.to_csv("LogOut.csv")
+        logDf.to_csv(join(savepath,"LogOut.csv"))
 
     print(repr(schedule) + ",", str(round(fullness * 100)) + "% full")
     usedDesigs = []
@@ -992,24 +995,24 @@ def main():
         try:
             df = Candidate.candidatesToDf(candidatesInSchedule)
             df = genUtils.prettyFormat(df)
-            df.to_csv("{}/observingLog.csv".format(savepath), index=False)
+            df.to_csv(join(savepath,"observingLog.csv"), index=False)
             visualizeObservability(candidatesInSchedule, sunsetUTC, sunriseUTC, savepath, "visibilityAll")
         except Exception as e:
             sys.stderr.write("Writing obs log failed with exception " + repr(e))
 
     # schedule png
-    visualizeSchedule(scheduleDf, os.sep.join([savepath, "schedule.png"]), os.sep.join([savepath, "schedule.csv"]),
+    visualizeSchedule(scheduleDf, join(savepath, "schedule.png"), join(savepath, "schedule.csv"),
                     sunsetUTC, sunriseUTC)
 
     logger.info("Status:Schedule visualized.")
 
     schedLines = scheduleToTextFile(scheduleDf, configDict, candidateDict, spath=ephemSpath)
-    sched_outpath = os.path.join(savepath, "schedule.txt")
+    sched_outpath = join(savepath, "schedule.txt")
     with open(sched_outpath, "w") as f:
         f.writelines(schedLines)
     print(f"Wrote schedule to {sched_outpath}")
     try:
-        checkerSched = scheduleLib.sCoreCondensed.readSchedule(os.sep.join([savepath, "schedule.txt"]))
+        checkerSched = scheduleLib.sCoreCondensed.readSchedule(join(savepath, "schedule.txt"))
         scheduleLib.sCoreCondensed.checkSchedule(checkerSched)
     except Exception as e:
         sys.stderr.write("Got error trying to check schedule: " + repr(e) + "\n")

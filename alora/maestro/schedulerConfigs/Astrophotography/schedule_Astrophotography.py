@@ -4,25 +4,26 @@ import os, sys
 import astropy.units as u
 import pandas as pd
 
+from os.path import pardir, join, abspath, dirname
+MODULE_PATH = abspath(join(dirname(__file__), pardir, pardir))
+def PATH_TO(fname:str): return join(MODULE_PATH,fname)
+
 try:
-    grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-    sys.path.append(
-        grandparentDir)
+    sys.path.append(MODULE_PATH)
     from scheduleLib.candidateDatabase import Candidate
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
 
-    sys.path.remove(grandparentDir)
     genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join(grandparentDir, "files", "configs", "config.txt"))
+    genConfig.read(join(MODULE_PATH, "files", "configs", "config.txt"))
     aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join(grandparentDir, "files", "configs", "aphot_config.txt"))
+    aConfig.read(join(MODULE_PATH, "files", "configs", "aphot_config.txt"))
 except ImportError:
     from scheduleLib.candidateDatabase import Candidate
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
     genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join("files", "configs", "config.txt"))
+    genConfig.read(join("files", "configs", "config.txt"))
     aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join("files", "configs", "aphot_config.txt"))
+    aConfig.read(join("files", "configs", "aphot_config.txt"))
 
 genConfig = genConfig["DEFAULT"]
 aConfig = aConfig["DEFAULT"]
@@ -49,7 +50,7 @@ class AstrophotographyConfig(TypeConfiguration):
         self.designations = None
 
     def selectCandidates(self, startTimeUTC: datetime, endTimeUTC: datetime, dbPath):
-        candidates = Candidate.dfToCandidates(pd.read_csv("schedulerConfigs/Astrophotography/observable.csv"))
+        candidates = Candidate.dfToCandidates(pd.read_csv(PATH_TO(join("schedulerConfigs","Astrophotography","observable.csv"))))
         for c in candidates:
             c.ExposureTime, c.NumExposures = findExposure(c.Magnitude, str=False)
         viable = [c for c in candidates if c.isObservableBetween(startTimeUTC, endTimeUTC, 1)]
