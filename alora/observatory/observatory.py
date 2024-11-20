@@ -6,11 +6,22 @@ class Observatory:
     def __init__(self):
         self.telescope = None
         self.dome = None
+        self.connect()
     
     def connect(self):
         self.telescope = Telescope()
         dotenv.load_dotenv()
         self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"))
+    
+    def open(self):
+        print("Parking telescope...")
+        park_succeeded, error_code = self.telescope.park()
+        if not park_succeeded:
+            raise ChildProcessError(f"Failed to park telescope. Error code: {error_code}")
+        assert self.telescope.parked
+        print("Telescope parked.")
+        print("Opening dome...")
+        # self.dome._open()
 
 o = Observatory()
 o.connect()

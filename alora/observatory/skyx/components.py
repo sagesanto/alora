@@ -30,7 +30,7 @@ class SkyXClient:
         self.send(script)
         r = self.parse_response()
         if r == "0":
-            raise ConnectionError(f"SkyX reports that it cannot connect to the telescope.")
+            raise ConnectionError(f"Connection to SkyX succeeded but SkyX reports that it cannot connect to the telescope")
         print(f"Connected to TheSkyX on port {self.port}.")
 
     def parse_response(self,rlen=1024):
@@ -78,7 +78,9 @@ class Telescope:
     @property
     def parked(self):
         self.conn.send(load_script("check_parked_status.js"))
-        
+        resp = self.conn.parse_response()
+        if resp == "Not connected":
+            raise ConnectionError("Connection to SkyX succeeded but SkyX reports that it cannot connect to the telescope")
 
     def check_last_slew_error(self):
         self.conn.send(load_script("check_last_slew_error.js"))

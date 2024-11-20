@@ -22,8 +22,10 @@ class Dome:
         print(s.find_all(attrs={"id":"state"})[0])
         print(s.find_all(attrs={"id":"state"})[0].contents[0])
         return s.find_all(attrs={"id":"state"})[0].contents[0]
-    
-    def close(self):
+
+    def _close(self):
+        # DANGER: DO NOT CALL DIRECTLY.
+        # Call through observatory object to avoid damaging telescope
         _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
         _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
         time.sleep(0.2)
@@ -35,7 +37,9 @@ class Dome:
         print("Done!")
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
 
-    def open(self):
+    def _open(self):
+        # DANGER: DO NOT CALL DIRECTLY.
+        # Call through observatory object to avoid damaging telescope
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
         time.sleep(0.2)
