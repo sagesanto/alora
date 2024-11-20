@@ -1,38 +1,3 @@
-# import socket
-# s = socket.socket()
-# s.connect(("localhost", 3040))
-# s.send(b"""/* Java Script */
-# /* Socket Start Packet */
-
-# var Out;
-# sky6RASCOMTele.Connect();
-
-# if (sky6RASCOMTele.IsConnected==0)/*Connect failed for some reason*/
-# {
-# 	Out = "Not connected"
-# }
-# else
-# {
-# 	sky6RASCOMTele.GetRaDec();
-# 	Out  = String(sky6RASCOMTele.dRa) +"| " String(sky6RASCOMTele.dDec);
-# }
-
-# /* Socket End Packet */""")
-# # filetosend = open("img.png", "rb")
-# # data = filetosend.read(1024)
-# # while data:
-# #     print("Sending...")
-# #     s.send(data)
-# #     data = filetosend.read(1024)
-# # filetosend.close()
-
-# # s.send(b"DONE")
-# print("Done Sending.")
-# print(s.recv(1024))
-# s.shutdown(2)
-# s.close()
-# #Done :)
-
 from os.path import join
 import socket
 import tomlkit
@@ -43,14 +8,14 @@ from alora.observatory.config import config_path
 from .config import js_script_path
 
 def load_script(script_name):
-    with open(join(js_script_path,script_name)) as f:
+    with open(join(js_script_path,script_name),"r") as f:
         return "\n".join(f.readlines())
 
 with open(config_path,"rb") as f:
     config = tomlkit.load(f)
 
 class SkyXClient:
-    HEADER = "\* Java Script *\ "
+    HEADER = "/* Java Script */\n"
     def __init__(self,port):
         self.port = port
         self.socket = socket.socket()
@@ -58,27 +23,11 @@ class SkyXClient:
         self.test_conn()
     
     def send(self,content):
-        print(content)
-        self.socket.send((SkyXClient.HEADER+"\n"+content).encode())
+        self.socket.send(bytes(SkyXClient.HEADER+content,encoding="UTF-8"))
 
     def test_conn(self):
         script = load_script("check_tel_conn.js")
         self.send(script)
-        # self.socket.send(b"""/* Java Script */
-        #     var Out;
-        #     sky6RASCOMTele.Connect();
-        #     Out = sky6RASCOMTele.IsConnected; 
-
-        #     if (sky6RASCOMTele.IsConnected==0)/*Connect failed for some reason*/
-        #     {
-        #         Out = "Not connected"
-        #     }
-        #     else
-        #     {
-        #         sky6RASCOMTele.GetRaDec();
-        #         Out  = String(sky6RASCOMTele.dRa) +" " + String(sky6RASCOMTele.dDec);
-        #     }
-        # """)
         r, error = self.parse_response()
         if error:
             raise ConnectionError(f"Connection to SkyX failed. Response was {r} | {error}")

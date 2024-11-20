@@ -11,3 +11,7 @@ class Observatory:
         self.telescope = Telescope()
         dotenv.load_dotenv()
         self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"))
+
+o = Observatory()
+o.connect()
+print(o.telescope.pos)
