@@ -67,9 +67,10 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp == "Could not connect to telescope":
             raise ConnectionError(f"Unable to park telescope. Response was {resp}")
-        if resp == "1":
+        if resp == "true":
             return True, 0
         else:
+            print(resp)
             error = self.check_last_slew_error()
             print(f"SkyX reports that parking failed with error code {error}")
             return False, error
