@@ -1,3 +1,3 @@
 var out;
-sky6RASCOMTele.Connect();
+sky6RASCOMTele.ConnectAndDoNotUnpark();
 out = sky6RASCOMTele.IsConnected;

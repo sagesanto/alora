@@ -15,3 +15,4 @@ class Observatory:
 o = Observatory()
 o.connect()
 print(o.telescope.pos)
+print(o.telescope.park())

@@ -67,14 +67,19 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp == "Could not connect to telescope":
             raise ConnectionError(f"Unable to park telescope. Response was {resp}")
-        if resp == "true":
+        if resp == "1":
             return True, 0
         else:
             print(resp)
             error = self.check_last_slew_error()
             print(f"SkyX reports that parking failed with error code {error}")
             return False, error
-    
+
+    @property
+    def parked(self):
+        self.conn.send(load_script("check_parked_status.js"))
+        
+
     def check_last_slew_error(self):
         self.conn.send(load_script("check_last_slew_error.js"))
         return self.conn.parse_response()
