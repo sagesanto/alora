@@ -39,8 +39,8 @@ import tomlkit
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 
-from . import js_script_path
 from alora.observatory.config import config_path
+from .config import js_script_path
 
 def load_script(script_name):
     with open(join(js_script_path,script_name)) as f:
