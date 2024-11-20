@@ -17,11 +17,18 @@ class Dome:
     
     def status(self):
         r = self.session.get(self.url_template+"/status")
-        print(BeautifulSoup(r.content))
+        s = BeautifulSoup(r.content)
+        print(s.find_all(attrs={"id":"state"}))
+        print(s.find_all(attrs={"id":"state"})[0])
+        print(s.find_all(attrs={"id":"state"})[0].contents[0])
+        return s.find_all(attrs={"id":"state"})[0].contents[0]
     
     def close(self):
-        r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
-        r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=ON")
+        _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
+        _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
+        time.sleep(0.2)
+        assert self.status() == "00" 
+        _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=ON")
         wait_time = Dome.TIMINGS_S['close'] + 10 
         print(f"Waiting {wait_time} seconds for dome to close")
         time.sleep(wait_time)
@@ -30,6 +37,9 @@ class Dome:
 
     def open(self):
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
+        r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
+        time.sleep(0.2)
+        assert self.status() == "00" 
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=ON")
         wait_time = Dome.TIMINGS_S['open'] + 10 
         print(f"Waiting {wait_time} seconds for dome to open")
