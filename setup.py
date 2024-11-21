@@ -24,8 +24,8 @@ setup(
     install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn'],
     entry_points={
         'console_scripts': [
-            'open = alora.observatory.dome.bin.open:main',
-            'close = alora.observatory.dome.bin.close:main',
+            'emergency_open = alora.observatory.dome.bin.emergency_open:main',
+            'emergency_close = alora.observatory.dome.bin.emergency_close:main',
             'maestro = alora.maestro.app:main'
         ]
     },
