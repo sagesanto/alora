@@ -17,10 +17,10 @@ class Dome:
     
     def status(self):
         r = self.session.get(self.url_template+"/status")
-        s = BeautifulSoup(r.content)
-        print(s.find_all(attrs={"id":"state"}))
-        print(s.find_all(attrs={"id":"state"})[0])
-        print(s.find_all(attrs={"id":"state"})[0].contents[0])
+        s = BeautifulSoup(r.content,features="html.parser")
+        # print(s.find_all(attrs={"id":"state"}))
+        # print(s.find_all(attrs={"id":"state"})[0])
+        # print(s.find_all(attrs={"id":"state"})[0].contents[0])
         return s.find_all(attrs={"id":"state"})[0].contents[0]
 
     def _close(self):

@@ -21,9 +21,26 @@ class Observatory:
         assert self.telescope.parked
         print("Telescope parked.")
         print("Opening dome...")
-        # self.dome._open()
+        self.dome._open()
+        print("Open!")
+
+    def close(self):
+        print("Parking telescope...")
+        park_succeeded, error_code = self.telescope.park()
+        if not park_succeeded:
+            raise ChildProcessError(f"Failed to park telescope. Error code: {error_code}")
+        assert self.telescope.parked
+        print("Telescope parked.")
+        print("Closing dome...")
+        self.dome._close()
+        print("Closed!")
 
 o = Observatory()
-o.connect()
-print(o.telescope.pos)
-print(o.telescope.park())
+print(f"Telescope is at {o.telescope.pos}")
+o.open()
+# o.close()
+
+print(f"Telescope is at {o.telescope.pos}")
+# o.connect()
+# print(o.telescope.pos)
+# print(o.telescope.park())
