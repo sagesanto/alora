@@ -34,13 +34,3 @@ class Observatory:
         print("Closing dome...")
         self.dome._close()
         print("Closed!")
-
-o = Observatory()
-print(f"Telescope is at {o.telescope.pos}")
-o.open()
-# o.close()
-
-print(f"Telescope is at {o.telescope.pos}")
-# o.connect()
-# print(o.telescope.pos)
-# print(o.telescope.park())

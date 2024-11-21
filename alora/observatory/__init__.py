@@ -1,5 +1,5 @@
 from alora.observatory.dome import Dome
-from .observatory import Observatory
+# from .observatory import Observatory
 try:
     from alora.observatory.skyx import Telescope
 except Exception as e:

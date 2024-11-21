@@ -26,7 +26,8 @@ setup(
         'console_scripts': [
             'emergency_open = alora.observatory.dome.bin.emergency_open:main',
             'emergency_close = alora.observatory.dome.bin.emergency_close:main',
-            'maestro = alora.maestro.app:main'
+            'maestro = alora.maestro.app:main',
+            'open = alora.observatory.bin.open:main'
         ]
     },
 )
