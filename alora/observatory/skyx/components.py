@@ -81,7 +81,8 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp == "Not connected":
             raise ConnectionError("Connection to SkyX succeeded but SkyX reports that it cannot connect to the telescope")
-
+        return resp == "true"
+    
     def check_last_slew_error(self):
         self.conn.send(load_script("check_last_slew_error.js"))
         return self.conn.parse_response()
