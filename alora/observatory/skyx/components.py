@@ -45,10 +45,9 @@ class SkyXClient:
         self.port = port
         self.socket = socket.socket()
         self.write_out = write_out
-        try:
-            self.connect()
-        except Exception as e:
-            self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable. Error: {e}")
+    
+    def set_write_out(self,write_out):
+        self.write_out = write_out
     
     def send(self,content):
         self.socket.sendall(bytes(SkyXClient.HEADER+content,encoding="UTF-8"))
@@ -86,9 +85,14 @@ conn = SkyXClient(config["SKYX_PORT"])
 
 class Telescope:
     def __init__(self, write_out=print):
-        self.conn = conn
-        self.check_pos_script = load_script("get_telescope_pos.js")
         self.write_out = write_out
+        self.conn = conn
+        conn.set_write_out(write_out)
+        try:
+            self.conn.connect()
+        except Exception as e:
+            self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable. Error: {e}")        
+        self.check_pos_script = load_script("get_telescope_pos.js")
         if self.conn.connected:
             self.test_mount_conn()
         else:
