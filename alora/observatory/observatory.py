@@ -3,34 +3,35 @@ import dotenv
 from . import Telescope, Dome
 
 class Observatory:
-    def __init__(self):
+    def __init__(self, write_out=print):
         self.telescope = None
+        self.write_out = write_out
         self.dome = None
         self.connect()
     
     def connect(self):
-        self.telescope = Telescope()
+        self.telescope = Telescope(write_out=self.write_out)
         dotenv.load_dotenv()
-        self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"))
+        self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"), write_out=self.write_out)
     
     def open(self):
-        print("Parking telescope...")
+        self.write_out("Parking telescope...")
         park_succeeded, error_code = self.telescope.park()
         if not park_succeeded:
             raise ChildProcessError(f"Failed to park telescope. Error code: {error_code}")
         assert self.telescope.parked
-        print("Telescope parked.")
-        print("Opening dome...")
+        self.write_out("Telescope parked.")
+        self.write_out("Opening dome...")
         self.dome._open()
-        print("Open!")
+        self.write_out("Open!")
 
     def close(self):
-        print("Parking telescope...")
+        self.write_out("Parking telescope...")
         park_succeeded, error_code = self.telescope.park()
         if not park_succeeded:
             raise ChildProcessError(f"Failed to park telescope. Error code: {error_code}")
         assert self.telescope.parked
-        print("Telescope parked.")
-        print("Closing dome...")
+        self.write_out("Telescope parked.")
+        self.write_out("Closing dome...")
         self.dome._close()
-        print("Closed!")
+        self.write_out("Closed!")

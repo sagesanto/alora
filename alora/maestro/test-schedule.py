@@ -1,12 +1,12 @@
 # Sage Santomenna 2023
 
 import os
-from schedule import *
-from scheduler_3 import prepareToSchedule, findCandidates
+from alora.maestro.schedule import *
+from alora.maestro.scheduler_3 import prepareToSchedule, findCandidates
 import pytz
 utc = pytz.UTC
-from scheduleLib.genUtils import stringToTime, timeToString
-from scheduler import visualizeSchedule
+from alora.maestro.scheduleLib.genUtils import stringToTime, timeToString
+from alora.maestro.scheduler import visualizeSchedule
 
 print(os.getcwd())
 DB_PATH = "files/testing/testing.db"
