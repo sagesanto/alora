@@ -20,8 +20,8 @@ setup(
     author='Sage Santomenna',
     author_email='sage.santomenna@gmail.com',
     packages=find_packages(include=['alora', 'alora.*']),
-    package_data={},
-    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn'],
+    package_data={"alora":["observatory/config.toml"]},
+    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'pywin32'],
     entry_points={
         'console_scripts': [
             'emergency_open = alora.observatory.dome.bin.emergency_open:main',
