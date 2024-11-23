@@ -9,7 +9,7 @@ var filter = {{filter}}
 var asynchronous = {{asynchronous}}
 var outdir = "{{outdir}}"
 var prefix = "{{prefix}}" // image prefix
-var expdelay = {{exp_delay}} // delay between exposures
+var exp_delay = {{exp_delay}} // delay between exposures
 
 cam.asynchronous = 0;
 try {

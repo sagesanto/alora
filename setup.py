@@ -30,7 +30,9 @@ setup(
             'open = alora.observatory.bin.open:main',
             'close = alora.observatory.bin.close:main',
             'slew_to = alora.observatory.bin.slew_to:main',
-            'take_images = alora.observatory.bin.take_images:main'
+            'take_images = alora.observatory.bin.take_images:main',
+            'home = alora.observatory.bin.home:main',
+            'park = alora.observatory.bin.park:main',
         ]
     },
 )

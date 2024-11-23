@@ -74,7 +74,7 @@ class SkyXClient:
         # safe to call even if already connected
         if is_socket_closed(self.socket, write_out=self.write_out):
                 self.socket.connect(("localhost", self.port))
-        self.write_out(f"Connected to TheSkyX on port {self.port}.")
+                self.write_out(f"Connected to TheSkyX on port {self.port}.")
 
     @property
     def connected(self):
@@ -125,9 +125,9 @@ class Telescope:
         if resp == "Not connected":
             raise ChildProcessError(f"Unable to get telescope position. Response was {resp}")
         ra, dec = resp.split(" ")
-        ra = float(ra)
+        ra = float(ra)   
         dec = float(dec)
-        return SkyCoord(ra=ra*u.deg,dec=dec*u.deg)
+        return SkyCoord(ra=15*ra*u.deg,dec=dec*u.deg)  # ra comes in in hours
     
     def pretty_pos(self, hms=False):
         if hms:
@@ -300,7 +300,7 @@ class Camera:
     
     def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im'):
         # synchronous version of start_dataset. works the same
-        return self.start_dataset(nframes, exptime, filter, outdir, name_prefix, exp_delay, asynchronous=False)
+        return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, asynchronous=False)
     
     @property
     def status(self):
