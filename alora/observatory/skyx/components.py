@@ -4,7 +4,7 @@ import tomlkit
 import astropy.units as u
 from astropy.units import Quantity
 from astropy.coordinates import SkyCoord, Angle
-from alora.observatory.config import config_path
+from alora.observatory.config import config
 from .config import js_script_path
 
 FILTER_WHEEL = {
@@ -31,9 +31,6 @@ def load_script(script_name,**kwargs):
                 raise ValueError(f"Script {script_name} does not contain variable {k}")
             s = s.replace("{{"+k+"}}",str(v))
     return s
-
-with open(config_path,"rb") as f:
-    config = tomlkit.load(f)
 
 def shhh(*args,**kwargs):
     pass
@@ -131,6 +128,11 @@ class Telescope:
         ra = float(ra)
         dec = float(dec)
         return SkyCoord(ra=ra*u.deg,dec=dec*u.deg)
+    
+    def pretty_pos(self, hms=False):
+        if hms:
+            return self.pos.to_string("hmsdms")
+        return self.pos.to_string("decimal")
     
     def test_mount_conn(self):
         if not self.conn.connected:
@@ -274,13 +276,13 @@ class Camera:
     def connected(self):
         return self.conn.connected and self.test_camera_conn()
 
-    def start_dataset(self, nframes, exptime, filter:str, outdir, name_prefix='im', asynchronous=True):
+    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', asynchronous=True):
         if filter not in FILTER_WHEEL:
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
         outdir = abspath(outdir)
         outdir = outdir.replace("\\","/")
-        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir,prefix=name_prefix,asynchronous=asynchronous)
+        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir, exp_delay=exp_delay, prefix=name_prefix,asynchronous=asynchronous)
 
         if not self.conn.connected:
             raise ConnectionError("Cannot take exposure: no connection to SkyX.")
@@ -296,9 +298,9 @@ class Camera:
             return True, 0  # success
         return None, 0  # async in progress
     
-    def take_dataset(self, nframes, exptime, filter:str, outdir, name_prefix='im'):
+    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im'):
         # synchronous version of start_dataset. works the same
-        return self.start_dataset(nframes, exptime, filter, outdir, name_prefix, asynchronous=False)
+        return self.start_dataset(nframes, exptime, filter, outdir, name_prefix, exp_delay, asynchronous=False)
     
     @property
     def status(self):

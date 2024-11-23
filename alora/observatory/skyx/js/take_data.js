@@ -9,6 +9,7 @@ var filter = {{filter}}
 var asynchronous = {{asynchronous}}
 var outdir = "{{outdir}}"
 var prefix = "{{prefix}}" // image prefix
+var expdelay = {{exp_delay}} // delay between exposures
 
 cam.asynchronous = 0;
 try {
@@ -35,20 +36,14 @@ if (filter != "None") {
 }
 cam.asynchronous = asynchronous;
 cam.ExposureTime = exptime;
-for (i=0; i<nframes; ++i)
-	{
-	try{
-		try {
-			cam.Connect();
-		} catch (e) {
-			out = "SkyX Camera Connection Error: " + e;
-			throw out;
-		}
-			cam.TakeImage();
-		} catch (e) {
-			out = "SkyX Camera Error during exposure: " + e;
-			throw 'c';
-		}
-	};
+cam.Delay = exp_delay;
+cam.Series = nframes;
+
+try{
+	cam.TakeImage();
+} catch (e) {
+	out = "SkyX Camera Error during exposure: " + e;
+	throw 'c';
+}
 
 out = cam.ExposureStatus + " success"

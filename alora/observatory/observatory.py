@@ -1,6 +1,7 @@
 import os
 import dotenv
 from . import Telescope, Dome, Camera
+from .data_archive import Observation    
 
 class Observatory:
     def __init__(self, write_out=print):
@@ -16,7 +17,7 @@ class Observatory:
         self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"), write_out=self.write_out)
         self.camera = Camera(write_out=self.write_out)
 
-    def open(self):
+    def open(self,do_home=True):
         self.write_out("Parking telescope...")
         park_succeeded, error_code = self.telescope.park()
         if not park_succeeded:
@@ -25,7 +26,11 @@ class Observatory:
         self.write_out("Telescope parked.")
         self.write_out("Opening dome...")
         self.dome._open()
-        self.write_out("Open!")
+        self.write_out("Opened dome.")
+        if do_home:
+            self.write_out("Homing telescope...")
+            self.telescope.home()
+            self.write_out("Homed telescope.")
 
     def close(self):
         self.write_out("Parking telescope...")
@@ -37,3 +42,5 @@ class Observatory:
         self.write_out("Closing dome...")
         self.dome._close()
         self.write_out("Closed!")
+
+    # def queue_observation():

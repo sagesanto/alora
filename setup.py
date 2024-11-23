@@ -21,13 +21,15 @@ setup(
     author_email='sage.santomenna@gmail.com',
     packages=find_packages(include=['alora', 'alora.*']),
     package_data={"alora":["observatory/config/config.toml","observatory/config/logging.json"]},
-    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'pywin32'],
+    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'pywin32', 'flask'],
     entry_points={
         'console_scripts': [
             'emergency_open = alora.observatory.dome.bin.emergency_open:main',
             'emergency_close = alora.observatory.dome.bin.emergency_close:main',
             'maestro = alora.maestro.app:main',
-            'open = alora.observatory.bin.open:main'
+            'open = alora.observatory.bin.open:main',
+            'slew_to = alora.observatory.bin.slew_to:main'
+            'take_images = alora.observatory.bin.take_images:main'
         ]
     },
 )
