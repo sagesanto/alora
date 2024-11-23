@@ -1,11 +1,24 @@
-from os.path import join
+from os.path import join, abspath
 import socket
 import tomlkit
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-
 from alora.observatory.config import config_path
 from .config import js_script_path
+
+FILTER_WHEEL = {
+    # L, B, G, R, N1, N2, N3
+    "L": 0,
+    "B": 1,
+    "G": 2,
+    "R": 3,
+    "N1": 4,
+    "N2": 5,
+    "N3": 6,
+}
+
+class SkyXException(Exception):
+    pass
 
 def load_script(script_name):
     with open(join(js_script_path,script_name),"r") as f:
@@ -158,4 +171,80 @@ class Telescope:
         if not self.conn.connected:
             raise ConnectionError("Cannot check last slew error: no connection to SkyX.")
         self.conn.send(load_script("check_last_slew_error.js"))
+        return self.conn.parse_response()
+    
+
+class Camera:
+    def __init__(self, write_out=print) -> None:
+        self.write_out = write_out
+        self.conn = conn
+        current_filter = None
+        conn.set_write_out(write_out)
+        try:
+            self.conn.connect()
+        except Exception as e:
+            self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable. Error: {e}")  
+        if self.conn.connected:
+            self.test_camera_conn()
+        else:
+            self.write_out("WARNING [ALORA]: Telescope object initialized but no connection to SkyX could be made")
+        self.cam_status_script = load_script("check_cam_status.js")
+
+
+    def test_camera_conn(self):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot check camera connection: no connection to SkyX.")
+        script = load_script("check_cam_conn.js")
+        self.conn.send(script)
+        r = self.conn.parse_response()
+        if r != "1":
+            self.write_out("WARNING [ALORA]: Connection to SkyX succeeded but SkyX reports that it cannot connect to the camera")
+            self.write_out(f"WARNING [ALORA]: SkyX response: {r}")
+            return False
+        return True
+    
+    @property
+    def connected(self):
+        return self.conn.connected and self.test_camera_conn()
+
+    def start_dataset(self, nframes, exptime, filter:str, outdir, prefix='im', asynchronous=True):
+        if filter not in FILTER_WHEEL:
+            raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
+        filter = FILTER_WHEEL[filter]
+        script = load_script("take_data.js")
+        
+        outdir = abspath(outdir)
+
+        outdir = outdir.replace("\\","/")
+
+        # set variables in script
+        script = script.replace("{{exptime}}",str(exptime))
+        script = script.replace("{{nframes}}",str(nframes))
+        script = script.replace("{{filter}}",str(filter))
+        script = script.replace("{{asynchronous}}","1" if asynchronous else "0")
+        script = script.replace("{{outdir}}",outdir)
+        script = script.replace("{{prefix}}",prefix)
+        
+        if not self.conn.connected:
+            raise ConnectionError("Cannot take exposure: no connection to SkyX.")
+        self.conn.send(script)
+        if not asynchronous:
+            r = self.conn.parse_response()
+            if not r.endswith("success"):
+                raise SkyXException(f"SkyX reports that the dataset failed: {r}")
+            if r != "Ready":
+                self.write_out("WARNING [ALORA]: Camera not idle after synchronous dataset!")
+                return True, r.replace(" success","")
+            return True, 0  # success
+        return None, 0  # async in progress
+    
+    def take_dataset(self, nframes, exptime, filter:str, outdir, prefix='im'):
+        # synchronous version of start_dataset. works the same
+        return self.start_dataset(nframes, exptime, filter, outdir, prefix, asynchronous=False)
+    
+    @property
+    def status(self):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot check camera status: no connection to SkyX.")
+        self.conn.send(load_script("check_cam_status.js"))
         return self.conn.parse_response()

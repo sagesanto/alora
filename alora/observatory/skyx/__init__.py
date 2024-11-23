@@ -1,1 +1,1 @@
-from .components import Telescope
+from .components import Telescope, Camera
