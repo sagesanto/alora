@@ -28,7 +28,8 @@ setup(
             'emergency_close = alora.observatory.dome.bin.emergency_close:main',
             'maestro = alora.maestro.app:main',
             'open = alora.observatory.bin.open:main',
-            'slew_to = alora.observatory.bin.slew_to:main'
+            'close = alora.observatory.bin.close:main',
+            'slew_to = alora.observatory.bin.slew_to:main',
             'take_images = alora.observatory.bin.take_images:main'
         ]
     },

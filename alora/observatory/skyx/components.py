@@ -221,7 +221,7 @@ class Telescope:
         script = load_script("start_custom_tracking.js",dRA=_dRA,dDec=_dDec)
         self.conn.send(script)
         resp = self.conn.parse_response()
-        if resp != "0":
+        if resp != "1":
             raise SkyXException(f"SkyX reports that setting track rates failed. Response was {resp}")
         return True
     
@@ -230,7 +230,7 @@ class Telescope:
             raise ConnectionError("Cannot track telescope: no connection to SkyX.")
         self.conn.send(load_script("start_sidereal_tracking.js"))
         resp = self.conn.parse_response()
-        if resp != "0":
+        if resp != "1":
             raise SkyXException(f"SkyX reports that starting sidereal tracking failed. Response was {resp}")
         return True
     
