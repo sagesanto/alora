@@ -20,9 +20,16 @@ FILTER_WHEEL = {
 class SkyXException(Exception):
     pass
 
-def load_script(script_name):
+def load_script(script_name,**kwargs):
     with open(join(js_script_path,script_name),"r") as f:
-        return "\n".join(f.readlines())
+        s = "\n".join(f.readlines())
+    if kwargs:
+        for k,v in kwargs.items():
+            if isinstance(v,bool): v = int(v)
+            if f"{{{k}}}" not in s:
+                raise ValueError(f"Script {script_name} does not contain variable {k}")
+            s = s.replace("{{"+k+"}}",str(v))
+    return s
 
 with open(config_path,"rb") as f:
     config = tomlkit.load(f)
@@ -207,23 +214,14 @@ class Camera:
     def connected(self):
         return self.conn.connected and self.test_camera_conn()
 
-    def start_dataset(self, nframes, exptime, filter:str, outdir, prefix='im', asynchronous=True):
+    def start_dataset(self, nframes, exptime, filter:str, outdir, name_prefix='im', asynchronous=True):
         if filter not in FILTER_WHEEL:
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
-        script = load_script("take_data.js")
-        
         outdir = abspath(outdir)
-
         outdir = outdir.replace("\\","/")
+        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir,prefix=name_prefix,asynchronous=asynchronous)
 
-        # set variables in script
-        script = script.replace("{{exptime}}",str(exptime))
-        script = script.replace("{{nframes}}",str(nframes))
-        script = script.replace("{{filter}}",str(filter))
-        script = script.replace("{{asynchronous}}","1" if asynchronous else "0")
-        script = script.replace("{{outdir}}",outdir)
-        script = script.replace("{{prefix}}",prefix)
         
         if not self.conn.connected:
             raise ConnectionError("Cannot take exposure: no connection to SkyX.")
@@ -239,9 +237,9 @@ class Camera:
             return True, 0  # success
         return None, 0  # async in progress
     
-    def take_dataset(self, nframes, exptime, filter:str, outdir, prefix='im'):
+    def take_dataset(self, nframes, exptime, filter:str, outdir, name_prefix='im'):
         # synchronous version of start_dataset. works the same
-        return self.start_dataset(nframes, exptime, filter, outdir, prefix, asynchronous=False)
+        return self.start_dataset(nframes, exptime, filter, outdir, name_prefix, asynchronous=False)
     
     @property
     def status(self):
