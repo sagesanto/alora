@@ -24,18 +24,22 @@ logger = configure_logger("watchdog",outfile_path=logpath)
 def write_out(*args,**kwargs):
     logger.info(" ".join([str(a) for a in args]))
 
-o = Observatory(write_out=write_out)
+def run_watchdog(address_to_monitor,port):
+    o = Observatory(write_out=write_out)
 
-dropped = 0
-write_out("Watching for internet dropouts...")
-while True:
-    r = ping("google.com",80)
-    if not r:
-        dropped += 1
-        write_out(f"Dropped a connection! Consecutive drops: {dropped}")
-    else:
-        dropped = 0
-    if dropped == 3:
-        write_out("CLOSING DUE TO DROPPED CONNECTION")
-        o.close()
-    time.sleep(1)
+    dropped = 0
+    write_out("Watching for internet dropouts...")
+    while True:
+        r = ping(address_to_monitor,port)
+        if not r:
+            dropped += 1
+            write_out(f"Dropped a connection! Consecutive drops: {dropped}")
+        else:
+            dropped = 0
+        if dropped == 3:
+            write_out("CLOSING DUE TO DROPPED CONNECTION")
+            o.close()
+        time.sleep(1)
+
+if __name__ == "__main__":
+    run_watchdog("google.com",80)
