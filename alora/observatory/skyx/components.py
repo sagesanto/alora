@@ -183,7 +183,7 @@ class Telescope:
     def slew(self, coord:SkyCoord, closed_loop=True):
         if not self.conn.connected:
             raise ConnectionError("Cannot slew telescope: no connection to SkyX.")
-        ra = coord.ra.deg
+        ra = coord.ra.hour
         dec = coord.dec.deg
         if closed_loop:
             script = load_script("slew_closed_loop.js",ra=ra,dec=dec)
@@ -195,6 +195,18 @@ class Telescope:
             raise SkyXException(f"SkyX reports that slew failed. Response was {resp}")
         return True
     
+    def home(self):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot home telescope: no connection to SkyX.")
+        self.conn.send(load_script("find_home.js"))
+        resp = self.conn.parse_response()
+        if resp == "0":
+            return True, 0
+        else:
+            self.write_out(f"SkyX reports that homing failed with error code {resp}")
+            return False, resp
+
+
 class Camera:
     def __init__(self, write_out=print) -> None:
         self.write_out = write_out

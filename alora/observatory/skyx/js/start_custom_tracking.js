@@ -10,7 +10,5 @@ if (!sky6RASCOMTele.IsConnected)
 
 sky6RASCOMTele.Asynchronous=false;
 
-sky6RASCOMTele.SlewToRaDec("{{ra}}", "{{dec}}", "");
-
-out = sky6RASCOMTele.LastSlewError;
-sky6RASCOMTele.SetTracking(1,1,0,0)  // start tracking at sidereal rate
+sky6RASCOMTele.SetTracking(1,0,{{dRA}},{{dDec}})  // start tracking at sidereal rate
+out = sky6RASCOMTele.IsTracking;

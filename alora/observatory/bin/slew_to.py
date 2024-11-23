@@ -4,6 +4,7 @@ def main():
     from alora.observatory.observatory import Observatory
     from astropy.coordinates import SkyCoord
     import astropy.units as u
+    
     o = Observatory()
     o.connect()
 

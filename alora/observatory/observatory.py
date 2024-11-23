@@ -4,8 +4,8 @@ from . import Telescope, Dome, Camera
 
 class Observatory:
     def __init__(self, write_out=print):
-        self.telescope = None
         self.write_out = write_out
+        self.telescope = None
         self.dome = None
         self.camera = None
         self.connect()
