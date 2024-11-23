@@ -27,15 +27,19 @@ def write_out(*args,**kwargs):
 def run_watchdog(address_to_monitor,port):
     o = Observatory(write_out=write_out)
 
+    DROP_LIMIT = 3
+
     dropped = 0
     write_out(f"Watching for internet dropouts ({address_to_monitor}:{port})...")
     while True:
         r = ping(address_to_monitor,port)
         if not r:
             dropped += 1
-            if dropped <= 3:
+            if dropped <= DROP_LIMIT:
                 write_out(f"Dropped a connection! Consecutive drops: {dropped}")
         else:
+            if dropped >= DROP_LIMIT:
+                write_out("Connection regained.")
             dropped = 0
         if dropped == 3:  # == instead of >= prevents us from repeatedly closing the dome
             write_out("CLOSING DUE TO DROPPED CONNECTION")
