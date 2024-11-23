@@ -188,13 +188,13 @@ class Camera:
             self.test_camera_conn()
         else:
             self.write_out("WARNING [ALORA]: Telescope object initialized but no connection to SkyX could be made")
-        self.cam_status_script = load_script("check_cam_status.js")
+        self.cam_status_script = load_script("check_camera_status.js")
 
 
     def test_camera_conn(self):
         if not self.conn.connected:
             raise ConnectionError("Cannot check camera connection: no connection to SkyX.")
-        script = load_script("check_cam_conn.js")
+        script = load_script("check_camera_conn.js")
         self.conn.send(script)
         r = self.conn.parse_response()
         if r != "1":
@@ -232,9 +232,10 @@ class Camera:
             r = self.conn.parse_response()
             if not r.endswith("success"):
                 raise SkyXException(f"SkyX reports that the dataset failed: {r}")
+            r = r.replace(" success","")
             if r != "Ready":
                 self.write_out("WARNING [ALORA]: Camera not idle after synchronous dataset!")
-                return True, r.replace(" success","")
+                return True, r
             return True, 0  # success
         return None, 0  # async in progress
     
@@ -246,5 +247,5 @@ class Camera:
     def status(self):
         if not self.conn.connected:
             raise ConnectionError("Cannot check camera status: no connection to SkyX.")
-        self.conn.send(load_script("check_cam_status.js"))
+        self.conn.send(self.cam_status_script)
         return self.conn.parse_response()

@@ -12,10 +12,11 @@ var prefix = "{{prefix}}" // image prefix
 
 cam.asynchronous = 0;
 try {
+	cam.Disconnect();
     cam.Connect();
 } catch (e) {
     out = "SkyX Camera Connection Error: " + e;
-    throw '';
+    throw 'a';
 }
 
 cam.AutoSavePath = outdir;
@@ -28,7 +29,7 @@ if (filter != "None") {
 		cam.filterWheelConnect();
 	} catch (e) {
 		out = "SkyX filter wheel Connection Error: " + e;
-		throw '';
+		throw 'b';
 	}
 	cam.FilterIndexZeroBased = filter;
 }
@@ -46,7 +47,7 @@ for (i=0; i<nframes; ++i)
 			cam.TakeImage();
 		} catch (e) {
 			out = "SkyX Camera Error during exposure: " + e;
-			throw '';
+			throw 'c';
 		}
 	};
 
