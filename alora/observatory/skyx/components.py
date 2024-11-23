@@ -2,7 +2,7 @@ from os.path import join, abspath
 import socket
 import tomlkit
 import astropy.units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from alora.observatory.config import config_path
 from .config import js_script_path
 
@@ -179,8 +179,22 @@ class Telescope:
             raise ConnectionError("Cannot check last slew error: no connection to SkyX.")
         self.conn.send(load_script("check_last_slew_error.js"))
         return self.conn.parse_response()
-    
 
+    def slew(self, coord:SkyCoord, closed_loop=True):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot slew telescope: no connection to SkyX.")
+        ra = coord.ra.deg
+        dec = coord.dec.deg
+        if closed_loop:
+            script = load_script("slew_closed_loop.js",ra=ra,dec=dec)
+        else:
+            script = load_script("slew_open_loop.js",ra=ra,dec=dec)
+        self.conn.send(script)
+        resp = self.conn.parse_response()
+        if resp != "0":
+            raise SkyXException(f"SkyX reports that slew failed. Response was {resp}")
+        return True
+    
 class Camera:
     def __init__(self, write_out=print) -> None:
         self.write_out = write_out
@@ -222,7 +236,6 @@ class Camera:
         outdir = outdir.replace("\\","/")
         script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir,prefix=name_prefix,asynchronous=asynchronous)
 
-        
         if not self.conn.connected:
             raise ConnectionError("Cannot take exposure: no connection to SkyX.")
         self.conn.send(script)
