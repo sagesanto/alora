@@ -10,5 +10,5 @@ if (!sky6RASCOMTele.IsConnected)
 
 sky6RASCOMTele.Asynchronous=false;
 
-sky6RASCOMTele.SetTracking(1,0,{{dRA}},{{dDec}})  // start tracking at custom rate
-out = sky6RASCOMTele.IsTracking;
+sky6RASCOMTele.SetTracking(0,1,0,0)  // stop tracking
+out = !sky6RASCOMTele.IsTracking;

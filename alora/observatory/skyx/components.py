@@ -2,6 +2,7 @@ from os.path import join, abspath
 import socket
 import tomlkit
 import astropy.units as u
+from astropy.units import Quantity
 from astropy.coordinates import SkyCoord, Angle
 from alora.observatory.config import config_path
 from .config import js_script_path
@@ -180,13 +181,13 @@ class Telescope:
         self.conn.send(load_script("check_last_slew_error.js"))
         return self.conn.parse_response()
 
-    def slew(self, coord:SkyCoord, closed_loop=True):
+    def slew(self, coord:SkyCoord, closed_loop=True,closed_exptime=1):
         if not self.conn.connected:
             raise ConnectionError("Cannot slew telescope: no connection to SkyX.")
         ra = coord.ra.hour
         dec = coord.dec.deg
         if closed_loop:
-            script = load_script("slew_closed_loop.js",ra=ra,dec=dec)
+            script = load_script("slew_closed_loop.js",ra=ra,dec=dec,exptime=closed_exptime)
         else:
             script = load_script("slew_open_loop.js",ra=ra,dec=dec)
         self.conn.send(script)
@@ -201,11 +202,44 @@ class Telescope:
         self.conn.send(load_script("find_home.js"))
         resp = self.conn.parse_response()
         if resp == "0":
-            return True, 0
+            return True
         else:
-            self.write_out(f"SkyX reports that homing failed with error code {resp}")
-            return False, resp
+            raise SkyXException(f"SkyX reports that homing failed with error code {resp}")
+    
+    def track_at_custom_rates(self,dRA:Quantity,dDec:Quantity):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot track telescope: no connection to SkyX.")
+        try:
+            _dRA = dRA.to_value("arcsec/second")
+            _dDec = dDec.to_value("arcsec/second")
+        except Exception as e:
+            _dRA = dRA.to_value("arcsec")
+            _dDec = dDec.to_value("arcsec")
 
+        script = load_script("start_custom_tracking.js",dRA=_dRA,dDec=_dDec)
+        self.conn.send(script)
+        resp = self.conn.parse_response()
+        if resp != "0":
+            raise SkyXException(f"SkyX reports that setting track rates failed. Response was {resp}")
+        return True
+    
+    def track_sidereal(self):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot track telescope: no connection to SkyX.")
+        self.conn.send(load_script("start_sidereal_tracking.js"))
+        resp = self.conn.parse_response()
+        if resp != "0":
+            raise SkyXException(f"SkyX reports that starting sidereal tracking failed. Response was {resp}")
+        return True
+    
+    def stop_tracking(self):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot stop tracking: no connection to SkyX.")
+        self.conn.send(load_script("stop_tracking.js"))
+        resp = self.conn.parse_response()
+        if resp != "0":
+            raise SkyXException(f"SkyX reports that stopping tracking failed. Response was {resp}")
+        return True
 
 class Camera:
     def __init__(self, write_out=print) -> None:
