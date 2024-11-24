@@ -281,7 +281,7 @@ class Camera:
     def connected(self):
         return self.conn.connected and self.test_camera_conn()
 
-    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"], asynchronous=True):
+    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"], asynchronous=True):
         if filter not in FILTER_WHEEL:
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
@@ -303,7 +303,7 @@ class Camera:
             return True, 0  # success
         return None, 0  # async in progress
     
-    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"]):
+    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"]):
         # synchronous version of start_dataset. works the same but strictly synchronous
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, binning=binning, asynchronous=False)
    
