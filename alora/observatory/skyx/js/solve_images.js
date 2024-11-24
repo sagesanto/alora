@@ -11,7 +11,7 @@ function solve(impath)
     try{
         iml.execute();
     } catch(e){
-        // return "0 " + "%{"+e+"}% ";
+        return "0 " + "%{"+e+"}% ";
     }
     r = ImageLinkResults;
     if(r.succeeded){
@@ -20,6 +20,9 @@ function solve(impath)
         return "0 "+ "%{" + r.errorText+"}% ";
     }
 }
-for (let im of [{{impaths}}]){
+const impaths = [{{impaths}}];
+for (i = 0; i < impaths.length; ++i) {
+    const im = impaths[i];
     out = out + solve(im)
 }
+out = out

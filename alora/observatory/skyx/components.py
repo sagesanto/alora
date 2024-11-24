@@ -348,7 +348,7 @@ class Camera:
         imscale = config["CAMERA"]["PIX_SCALE"] * binning
         print(f"Predicted imscale: {imscale} arcsec/pix")
 
-        impaths_str = "\""+"\",".join(impaths)+"\""
+        impaths_str = "\""+"\", \"".join(impaths)+"\""
         script = load_script("solve_images.js",impaths=impaths_str, imscale=imscale)
         self.conn.send(script)
         return self.conn.parse_response()
