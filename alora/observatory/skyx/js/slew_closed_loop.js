@@ -14,6 +14,12 @@ ccdsoftCamera.AutoSaveOn = 1;
 ccdsoftCamera.ExposureTime = {{exptime}};
 
 //Do the closed loop slew synchronously
-ClosedLoopSlew.exec();
-// sky6RASCOMTele.SetTracking(1,1,0,0)  // start tracking at sidereal rate
+try{
+    ClosedLoopSlew.exec();
+}
+    catch(e){
+    out = "SkyX Closed Loop Slew Error: " + e;
+    throw '';
+}
+    // sky6RASCOMTele.SetTracking(1,1,0,0)  // start tracking at sidereal rate
 out = sky6RASCOMTele.LastSlewError;

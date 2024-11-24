@@ -62,6 +62,7 @@ def is_socket_closed(sock: socket.socket, write_out=print) -> bool:
         return True
     return False
 
+
 class SkyXClient:
     HEADER = "/* Java Script */\n"
     def __init__(self,port, write_out=print):
@@ -104,7 +105,9 @@ class SkyXClient:
             raise ChildProcessError(f"SkyX execution of script failed. Response was {content} | {error}")
         return content.strip()
 
+
 conn = SkyXClient(config["SKYX_PORT"])
+
 
 class Telescope:
     def __init__(self, write_out=print):
@@ -248,6 +251,7 @@ class Telescope:
             raise SkyXException(f"SkyX reports that stopping tracking failed. Response was {resp}")
         return True
 
+
 class Camera:
     def __init__(self, write_out=print) -> None:
         self.write_out = write_out
@@ -263,7 +267,6 @@ class Camera:
         else:
             self.write_out("WARNING [ALORA]: Telescope object initialized but no connection to SkyX could be made")
         self.cam_status_script = load_script("check_camera_status.js")
-
 
     def test_camera_conn(self):
         if not self.conn.connected:
@@ -281,7 +284,7 @@ class Camera:
     def connected(self):
         return self.conn.connected and self.test_camera_conn()
 
-    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"], asynchronous=True):
+    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"], asynchronous=True):
         if filter not in FILTER_WHEEL:
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
@@ -303,7 +306,7 @@ class Camera:
             return True, 0  # success
         return None, 0  # async in progress
     
-    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"]):
+    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"]):
         # synchronous version of start_dataset. works the same but strictly synchronous
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, binning=binning, asynchronous=False)
    
