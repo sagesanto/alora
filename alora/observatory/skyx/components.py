@@ -1,9 +1,14 @@
-from os.path import join, abspath
+import os
+from os.path import join, abspath, exists
 import socket
 import tomlkit
+import numpy as np
+
 import astropy.units as u
 from astropy.units import Quantity
 from astropy.coordinates import SkyCoord, Angle
+from astropy.io import fits
+
 from alora.observatory.config import config
 from .config import js_script_path
 
@@ -302,6 +307,28 @@ class Camera:
         # synchronous version of start_dataset. works the same
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, asynchronous=False)
     
+    def determine_image_binning(self,impath):
+        hdul = fits.open(impath)
+        data = hdul[0].data
+        return int(np.round(data.shape[0]/config["CAMERA"]["CCD_WIDTH_PIX"]))
+
+    def solve(self,impath,binning=-1):
+        if not self.conn.connected:
+            raise ConnectionError("Cannot solve image: no connection to SkyX.")
+        impath = impath.replace("\\","/")
+        if not exists(impath):
+            raise FileNotFoundError(f"Image file {impath} does not exist.")
+        if binning == -1:
+            # need to determine the binning
+            binning = self.determine_image_binning(impath)
+            self.write_out(f"Found binning: {binning}x{binning}")
+
+        imscale = config["CAMERA"]["PIX_SCALE"] * binning
+
+        script = load_script("solve_image.js",impath=impath, imscale=imscale)
+        self.conn.send(script)
+        return self.conn.parse_response()
+
     @property
     def status(self):
         if not self.conn.connected:

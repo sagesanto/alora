@@ -10,7 +10,7 @@
 - field 24.4828' (width) by 18.5093' (height)
 
 ### Science Camera:
-- ZWO ASI 1600mm Pro 
+- ZWO ASI 1600MM Pro 
 - 3.8 um/px 
 - 4656px (width) by 3520 px (height)
 - Exptime 32us - 2000s

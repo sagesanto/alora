@@ -2,5 +2,13 @@ SKYX_PORT = 3040
 OBSERVER_PORT = 3045
 
 [DEFAULTS]
-BINX = 2
+BINX = 2  # default binning size for camera
 BINY = 2
+
+[CAMERA]
+NAME = "ZWO ASI1600MM Pro"
+FIELD_WIDTH = 24.4828 # arcmin
+FIELD_HEIGHT = 18.5093 # arcmin
+PIX_SCALE = 0.3155 # arcsec/pixel (UNBINNED)
+CCD_WIDTH_PIX = 4656
+CCD_HEIGHT_PIX = 3520
