@@ -1,7 +1,13 @@
 var out=0;
 
-sky6StarChart.RightAscension = {{ra}};
-sky6StarChart.Declination = {{dec}};
+c = sky6StarChart
+c.RightAscension = {{ra}};
+c.Declination = {{dec}};
+c.ClickFind(c.WidthInPixels/2,c.HeightInPixels/2)
+
+t = sky6RASCOMTele
+t.Connect()
+t.SetTracking(1,1,0,0)
 
 // will save images to last directory used
 try {
@@ -14,9 +20,9 @@ ccdsoftCamera.AutoSaveOn = 1;
 ccdsoftCamera.ExposureTime = {{exptime}};
 AutomatedImageLinkSettings.exposureTimeAILS = {{exptime}};
 AutomatedImageLinkSettings.imageScale = {{image_scale}};
-let orig_bin = ccdsoftCamera.BinX;
-ccdsoftCamera.BinX = {{binning}};
-ccdsoftCamera.BinY = {{binning}};
+var orig_bin = ccdsoftCamera.BinX;
+ccdsoftCamera.BinX = 2;
+ccdsoftCamera.BinY = 2;
 
 try{
     ClosedLoopSlew.exec();
