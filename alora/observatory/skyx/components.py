@@ -329,6 +329,29 @@ class Camera:
         script = load_script("solve_image.js",impath=impath, imscale=imscale)
         self.conn.send(script)
         return self.conn.parse_response()
+    
+    def batch_solve(self,impaths,binning=-1):
+        # batch solve images. must all have the same px scale!
+        if not self.conn.connected:
+            raise ConnectionError("Cannot solve image: no connection to SkyX.")
+        
+        impaths = [abspath(p).replace("\\","/") for p in impaths]
+        for impath in impaths:
+            if not exists(impath):
+                raise FileNotFoundError(f"Image file {impath} does not exist.")
+        if binning == -1:
+            # need to determine the binning
+            impath = impaths[0]
+            binning = self.determine_image_binning(impath)
+            self.write_out(f"Found binning: {binning}x{binning}")
+
+        imscale = config["CAMERA"]["PIX_SCALE"] * binning
+        print(f"Predicted imscale: {imscale} arcsec/pix")
+
+        impaths_str = "\""+"\",".join(impaths)+"\""
+        script = load_script("solve_images.js",impaths=impaths_str, imscale=imscale)
+        self.conn.send(script)
+        return self.conn.parse_response()
 
     @property
     def status(self):
