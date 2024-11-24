@@ -306,7 +306,7 @@ class Camera:
     def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im'):
         # synchronous version of start_dataset. works the same
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, asynchronous=False)
-    
+   
     def determine_image_binning(self,impath):
         hdul = fits.open(impath)
         data = hdul[0].data

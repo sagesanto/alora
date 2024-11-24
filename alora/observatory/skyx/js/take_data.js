@@ -10,6 +10,7 @@ var asynchronous = {{asynchronous}}
 var outdir = "{{outdir}}"
 var prefix = "{{prefix}}" // image prefix
 var exp_delay = {{exp_delay}} // delay between exposures
+var binning = {{binning}}
 
 cam.asynchronous = 0;
 try {
@@ -38,6 +39,8 @@ cam.asynchronous = asynchronous;
 cam.ExposureTime = exptime;
 cam.Delay = exp_delay;
 cam.Series = nframes;
+cam.BinX = binning;
+cam.BinY = binning;
 
 try{
 	cam.TakeImage();

@@ -2,8 +2,7 @@ SKYX_PORT = 3040
 OBSERVER_PORT = 3045
 
 [DEFAULTS]
-BINX = 2  # default binning size for camera
-BINY = 2
+BIN = 2  # default binning size for camera
 
 [CAMERA]
 NAME = "ZWO ASI1600MM Pro"
