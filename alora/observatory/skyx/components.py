@@ -197,7 +197,7 @@ class Telescope:
         ra = coord.ra.hour
         dec = coord.dec.deg
         if closed_loop:
-            pix_scale = config["TELESCOPE"]["PIX_SCALE"] / 2  # will do 2x2 binning for slews
+            pix_scale = config["CAMERA"]["PIX_SCALE"] / 2  # will do 2x2 binning for slews
             script = load_script("slew_closed_loop.js",ra=ra,dec=dec,exptime=closed_exptime,image_scale=pix_scale)
         else:
             script = load_script("slew_open_loop.js",ra=ra,dec=dec)
