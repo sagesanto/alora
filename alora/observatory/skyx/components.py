@@ -310,7 +310,7 @@ class Camera:
     def determine_image_binning(self,impath):
         hdul = fits.open(impath)
         data = hdul[0].data
-        return int(np.round(data.shape[0]/config["CAMERA"]["CCD_WIDTH_PIX"]))
+        return int(np.round(config["CAMERA"]["CCD_WIDTH_PIX"]/data.shape[1]))
 
     def solve(self,impath,binning=-1):
         if not self.conn.connected:
@@ -324,6 +324,7 @@ class Camera:
             self.write_out(f"Found binning: {binning}x{binning}")
 
         imscale = config["CAMERA"]["PIX_SCALE"] * binning
+        print(f"Predicted imscale: {imscale} arcsec/pix")
 
         script = load_script("solve_image.js",impath=impath, imscale=imscale)
         self.conn.send(script)

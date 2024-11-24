@@ -5,17 +5,20 @@ function solve(impath)
 {
     //ImageLink.pathToFITS = cam.LastImageFileName;
     iml.pathToFITS = impath
-    iml.Scale = {{scale}};
+    iml.Scale = {{imscale}};
     iml.unknownScale = 0;
 
-    iml.execute();
-
+    try{
+        iml.execute();
+    } catch(e){
+        return e
+    }
     r = ImageLinkResults;
     if(r.succeeded){
         return "success " + String(r.imageScale) +" " + String(r.imageFWHMInArcSeconds) ;
     } else {
-        return r.errorCode
+        return "Solving image failed: "+ r.errorText
     }
 }
 
-out = solve({{impath}})
+out = solve("{{impath}}")
