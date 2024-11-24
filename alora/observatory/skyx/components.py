@@ -281,13 +281,13 @@ class Camera:
     def connected(self):
         return self.conn.connected and self.test_camera_conn()
 
-    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', asynchronous=True):
+    def start_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"], asynchronous=True):
         if filter not in FILTER_WHEEL:
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
         outdir = abspath(outdir)
         outdir = outdir.replace("\\","/")
-        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir, exp_delay=exp_delay, prefix=name_prefix,asynchronous=asynchronous)
+        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir, exp_delay=exp_delay, prefix=name_prefix,asynchronous=asynchronous, binning=binning)
 
         if not self.conn.connected:
             raise ConnectionError("Cannot take exposure: no connection to SkyX.")
@@ -303,9 +303,9 @@ class Camera:
             return True, 0  # success
         return None, 0  # async in progress
     
-    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im'):
-        # synchronous version of start_dataset. works the same
-        return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, asynchronous=False)
+    def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULT"]["BIN"]):
+        # synchronous version of start_dataset. works the same but strictly synchronous
+        return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, binning=binning, asynchronous=False)
    
     def determine_image_binning(self,impath):
         hdul = fits.open(impath)
