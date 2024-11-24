@@ -197,7 +197,8 @@ class Telescope:
         ra = coord.ra.hour
         dec = coord.dec.deg
         if closed_loop:
-            script = load_script("slew_closed_loop.js",ra=ra,dec=dec,exptime=closed_exptime)
+            pix_scale = config["TELESCOPE"]["PIX_SCALE"] / 2  # will do 2x2 binning for slews
+            script = load_script("slew_closed_loop.js",ra=ra,dec=dec,exptime=closed_exptime,image_scale=pix_scale)
         else:
             script = load_script("slew_open_loop.js",ra=ra,dec=dec)
         self.conn.send(script)
@@ -354,7 +355,12 @@ class Camera:
         impaths_str = "\""+"\", \"".join(impaths)+"\""
         script = load_script("solve_images.js",impaths=impaths_str, imscale=imscale)
         self.conn.send(script)
-        return self.conn.parse_response()
+        r = self.conn.parse_response()
+        if len(r.split(" ") != len(impaths)):
+            raise SkyXException(f"SkyX reports that batch solving failed. Response was {r}")
+        res = [s for s in r.split(" ") if s]
+        print(res)
+
 
     @property
     def status(self):
