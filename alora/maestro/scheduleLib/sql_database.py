@@ -40,7 +40,7 @@ class SQLDatabase:
     def commit(self):
         self.db_connection.commit()
 
-    def create(self,path, check_same_thread=False, **kwargs):
+    def create_db(self,path, check_same_thread=False, **kwargs):
         """Create sqlite3 db and connect to it
 
         :param path: path to db
