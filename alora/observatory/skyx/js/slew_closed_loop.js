@@ -32,7 +32,7 @@ try{
 catch(e){
     ccdsoftCamera.BinX = orig_bin;
     ccdsoftCamera.BinY = orig_bin;
-    out = "SkyX Closed Loop Slew Error: " + e;
+    out = "SkyX Closed Loop Slew Error: " + String(e);
     throw out;
 }
     // sky6RASCOMTele.SetTracking(1,1,0,0)  // start tracking at sidereal rate

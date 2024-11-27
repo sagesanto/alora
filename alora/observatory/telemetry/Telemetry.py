@@ -1,16 +1,16 @@
 import sqlite3, os, sys, json, logging
-from .sensor import SensorService
 from datetime import datetime
-from .telemetry_db import TelemetryDB
 import rpyc
 from rpyc.utils.server import ThreadedServer
-from .utils import init_logger, read_json, get_timestamp
 import traceback
 from threading import Timer, Lock
 import logging.handlers
 
+from alora.observatory.telemetry.telemetry_db import TelemetryDB
+from alora.observatory.telemetry.utils import init_logger, read_json, get_timestamp
+from alora.observatory.telemetry.sensor import SensorService
 from alora.observatory.config import config as cfg
-from .config import telem_log_dir
+from alora.observatory.telemetry.config import telem_log_dir
 
 
 dbpath = cfg['TELEM_DBPATH']
