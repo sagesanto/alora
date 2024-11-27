@@ -1,0 +1,12 @@
+venv
+telemetry
+__pycache__/**
+telemetry.db
+telemetry.log
+*.db
+logs/
+services/
+.env
+__pycache__
+
+**/.DS_Store

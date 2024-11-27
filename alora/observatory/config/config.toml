@@ -1,5 +1,8 @@
 SKYX_PORT = 3040
 OBSERVER_PORT = 3045
+TELEMETRY_PORT = 18812
+TELEM_DBPATH = "telemetry.db"
+TELEM_API_PORT = 5050
 
 [DEFAULTS]
 BIN = 2  # default binning size for camera
