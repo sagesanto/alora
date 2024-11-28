@@ -12,4 +12,4 @@ os.makedirs(logging_dir,exist_ok=True)
 with open(config_path,"rb") as f:
     config = tomlkit.load(f)
 
-from .utils import configure_logger
+from .utils import configure_logger, get_credential

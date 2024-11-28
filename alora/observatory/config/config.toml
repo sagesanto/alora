@@ -1,16 +1,27 @@
 SKYX_PORT = 3040
 OBSERVER_PORT = 3045
+
+# telemetry
 TELEMETRY_PORT = 18812
 TELEM_DBPATH = "telemetry.db"
 TELEM_API_PORT = 5050
+# telemetry: weather
+WEATHER_URL = "https://swd.weatherflow.com/swd/rest"
+[WEATHER_CONDITIONS_CLOSE]
+    [FORECAST]
+        precip_probability = [">", 0.0]
+    [NOW]
+        wind_avg = [">", 9]  # 20 mph ~= 9m/s
+        precip = [">", 0]
+        humidity = [">",80]
 
 [DEFAULTS]
-BIN = 2  # default binning size for camera
+    BIN = 2  # default binning size for camera
 
 [CAMERA]
-NAME = "ZWO ASI1600MM Pro"
-FIELD_WIDTH = 24.4828 # arcmin
-FIELD_HEIGHT = 18.5093 # arcmin
-PIX_SCALE = 0.3155 # arcsec/pixel (UNBINNED)
-CCD_WIDTH_PIX = 4656
-CCD_HEIGHT_PIX = 3520
+    NAME = "ZWO ASI1600MM Pro"
+    FIELD_WIDTH = 24.4828 # arcmin
+    FIELD_HEIGHT = 18.5093 # arcmin
+    PIX_SCALE = 0.3155 # arcsec/pixel (UNBINNED)
+    CCD_WIDTH_PIX = 4656
+    CCD_HEIGHT_PIX = 3520

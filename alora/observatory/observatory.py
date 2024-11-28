@@ -1,7 +1,8 @@
 import os
 import dotenv
 from . import Telescope, Dome, Camera
-from .data_archive import Observation    
+from .data_archive import Observation
+from .config import get_credential  
 
 class Observatory:
     def __init__(self, write_out=print):
@@ -14,7 +15,7 @@ class Observatory:
     def connect(self):
         self.telescope = Telescope(write_out=self.write_out)
         dotenv.load_dotenv()
-        self.dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"), write_out=self.write_out)
+        self.dome = Dome(get_credential("dome",'addr'), get_credential("dome",'user'),get_credential("dome",'password'), write_out=self.write_out)
         self.camera = Camera(write_out=self.write_out)
 
     def open(self,do_home=True):

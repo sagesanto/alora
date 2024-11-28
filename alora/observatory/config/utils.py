@@ -1,9 +1,12 @@
 import os
 import json
 import logging
+import keyring
 from pathlib import Path
 import logging.config
 from alora.observatory.config import logging_config_path
+from os.path import join, dirname, abspath, pardir
+
 
 def configure_logger(name, outfile_path=None):
     # first, check if the logger has already been configured
@@ -36,3 +39,9 @@ def configure_logger(name, outfile_path=None):
 
     # install_mp_handler()
     return logger
+
+def get_credential(cred_name,username):
+    p = keyring.get_password(cred_name,username)
+    if p is None:
+        raise ValueError(f"Missing credential for service '{cred_name}' with username '{username}'! Please consult {abspath(join(dirname(__file__),pardir,'credentials.md'))}")
+    return p
