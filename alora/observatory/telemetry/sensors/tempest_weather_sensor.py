@@ -107,7 +107,7 @@ if __name__ == "__main__":
     'precip': ["FLOAT","mm"],
     'precip_accum_last_1hr': ["FLOAT","mm"],
     'pressure_trend': ['TEXT','unitless'],
-    'relative_humidity': ["INT","%"],
+    'relative_humidity': ["INT","percent"],
     'sea_level_pressure': ["FLOAT","mb"],
     'solar_radiation': ["INT","w/m2"],
     'station_pressure': ["FLOAT","mb"],
@@ -123,5 +123,3 @@ if __name__ == "__main__":
 
     s = TempestWeatherService("TempestWeather", "Weather",blueprint,polling_interval=60)
     s.write_service()
-    s.start()
-    time.sleep(60)

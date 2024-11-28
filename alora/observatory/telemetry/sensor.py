@@ -29,12 +29,18 @@ def find_available_port(start_port, end_port):
             return port
     return None
 
+BANNED_BLUEPRINT_CHARS = ["%", "\\"]
+
 class SensorService(rpyc.Service, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, sensor_name: str, table_name: str, blueprint: dict, polling_interval,local_db_name="default"):
         self.sensor_name = sensor_name
         self.table_name = table_name
         self.blueprint = blueprint
+        for k,v in self.blueprint.items():
+            for c in BANNED_BLUEPRINT_CHARS:
+                if c in k or c in v[0] or c in v[1]:
+                    raise ValueError(f"Character '{c}' is not allowed in blueprint!")
         self.interval = polling_interval
         self.logger, self.logger_listener = self.init_sensor_logger(os.path.join(telem_log_dir,f"{self.sensor_name}.log"))
         if local_db_name == "default":
