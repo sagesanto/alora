@@ -2,12 +2,12 @@
 # example temperature sensor class, currently returns only random values unless subclassed
 # mostly for testing
 
-from alora.observatory.telemetry.sensor import SensorService
 import rpyc
 import random
 from rpyc.utils.server import ThreadedServer
 import time
 from threading import Timer
+from alora.observatory.telemetry.sensor import SensorService
 
 class TemperatureSensorService(SensorService):
     def __init__(self, sensor_name: str, table_name: str, blueprint: dict, polling_interval=1, local_db_name="default"):

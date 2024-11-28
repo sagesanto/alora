@@ -215,15 +215,12 @@ class SensorService(rpyc.Service, metaclass=ABCMeta):
 
     def write_service(self):
         service_path = join(service_dir,f"{self.sensor_name}_serv.bat")   
-        print(service_dir,service_path)
-        # if not exists(service_path):
         with open(service_path,"w+") as f:
             f.write("@echo off\n")
             f.write(f"call {join(dirname(sys.executable),'activate.bat')}\n")
             classname = type(self).__name__
             class_modfile = inspect.getmodule(type(self)).__file__
             f.write(f"python -c \"import sys,time; from threading import Event; sys.path.append(r'{dirname(class_modfile)}'); from {splitext(basename(class_modfile))[0]} import {classname}; s = {classname}('{self.sensor_name}', '{self.table_name}', {self.blueprint}, {self.interval}, r'{self.local_db_name}'); s.start(); Event().wait()\"")
-                # f.write(f"python {os.path.realpath(sys.argv[0])}")
         return service_path
 
     def start_service(self):

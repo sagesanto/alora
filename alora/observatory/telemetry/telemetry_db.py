@@ -46,9 +46,12 @@ class TelemetryDB:
         try:
             self.execute(create_statement)
             self.logger.info(f"Creating table '{table_name}' for sensor {sensor_name} with blueprint {sensor_blueprint}")
-        except Exception as e:
-            self.logger.debug(f"Did not need to create table for sensor {sensor_name}: {repr(e)}")
-
+        except sqlite3.OperationalError as e:
+            if (f"table \"{table_name}\" already exists") in str(e):
+                self.logger.info(f"Did not need to create table for sensor {sensor_name} (already exists).")
+            else:
+                raise e
+            
     @classmethod
     def create_sql_statement(cls, measurement_dict, table_name):
         if "Timestamp" not in measurement_dict.keys():
