@@ -102,4 +102,4 @@ if __name__ == '__main__':
     subscriber_port = 5101
     choir_port = config["CHOIR_PORT"]
     logger = configure_logger("Slack Notifier",join(logging_dir,"choir_slack.log"))
-    subscriber = SlackNotifier(own_port=subscriber_port, webhook_url=f'http://localhost:{subscriber_port}', critic_url=f'http://localhost:{choir_port}', min_severity='info')
+    subscriber = SlackNotifier(own_port=subscriber_port, webhook_url=f'http://127.0.0.1:{subscriber_port}', critic_url=f'http://127.0.0.1:{choir_port}', min_severity='info')
