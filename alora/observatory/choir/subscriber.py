@@ -22,7 +22,7 @@ class Subscriber:
         url = f'{self.critic_url}/subscribe'
         data = {'webhook_url': self.webhook_url, 'severity': self.min_severity, 'name':self.name}
         try:
-            response = requests.post(url, json=data)
+            response = requests.post(url, json=data,timeout=3)
         except Exception as e:
             self.write_out(f"Failed to subscribe to Choir:\n{e}")
             exit()
@@ -40,4 +40,4 @@ if __name__ == '__main__':
     choir_port = cfg['CHOIR_PORT']
     
     subscriber_port = 5101
-    subscriber = Subscriber("test_subscriber",own_port=subscriber_port, webhook_url=f'http://localhost:{subscriber_port}', critic_url=f'http://localhost:{choir_port}', min_severity='info')
+    subscriber = Subscriber("test_subscriber",own_port=subscriber_port, webhook_url=f'http://127.0.0.1:{subscriber_port}', critic_url=f'http://127.0.0.1:{choir_port}', min_severity='info')
