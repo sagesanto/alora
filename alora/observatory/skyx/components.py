@@ -158,8 +158,11 @@ class Telescope:
 
     @property
     def connected(self):
-        return self.conn.connected and self.test_mount_conn()
-
+        try:
+            return self.conn.connected and self.test_mount_conn()
+        except ConnectionResetError:
+            return False
+        
     def park(self):
         if not self.conn.connected:
             raise ConnectionError("Cannot park telescope: no connection to SkyX.")
