@@ -22,3 +22,12 @@ The package expects *all* of the following credentials to appear in the computer
     - dome login username
 - `dome`, username `password`
     - dome login password
+
+## Choir
+### Slack
+- `slack`, username `token`
+    - self-explanatory
+- `slack`, username `channel`
+    - channel that slack messages should be sent to
+- `slack`, username `whisper`
+    - user ID that whispers should be sent to

@@ -1,0 +1,1 @@
+from .vocalist import Vocalist
