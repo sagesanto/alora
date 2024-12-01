@@ -59,7 +59,7 @@ def notify(severity,msg):
     except Exception as e:
         logger.error(f"Couldn't send notification: {e}")
 
-def is_weather_safe():
+def is_weather_safe(do_notif:bool):
     funcs = {">": lambda a,b: a>b, "<": lambda a,b: a<b, "==": lambda a,b: a==b}
     forecast = weather_sensor.get_forecast()
     current = weather_sensor.get_observation()
@@ -73,8 +73,9 @@ def is_weather_safe():
                 if k in measured.keys():
                     safe = safe and not funcs[v[0]](measured[k],v[1])   # compare measured value (forecast[k]) with criteria val (v[1]) using comparison func (v[0])
                     if not safe:
-                        logger.warning(f"Failed weather check! {k} {v[0]} {v[1]}")
-                        notify("warning",f"Failed weather check! {k} {v[0]} {v[1]}")
+                        if do_notif:
+                            logger.warning(f"Failed weather check! {crit_name} {k} {v[0]} {v[1]}")
+                            notify("warning",f"Failed weather check! {crit_name} {k} {v[0]} {v[1]}")
                 else:
                     logger.warning(f"Was asked to check for '{k}' in weather for {crit_name}, but couldn't find it.")
     except Exception as e:
@@ -171,7 +172,7 @@ def run_watchdog(address_to_monitor,port):
             i = 1
             check_weather_now = False
             was_unsafe = not weather_safe
-            weather_safe = is_weather_safe()
+            weather_safe = is_weather_safe(do_notif = close_if_unsafe)
             if weather_safe and was_unsafe:
                 write_out("Weather is safe again")
                 safe_state_queue.put(dropped<DROP_LIMIT and weather_safe and not lost_skyx,timeout=0.2)
