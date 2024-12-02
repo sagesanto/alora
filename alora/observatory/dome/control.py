@@ -16,6 +16,12 @@ class Dome:
     def url_template(self):
         return f"http://{self.USERNAME}:{self.PASSWORD}@{self.HOSTNAME}"
     
+    def beep(self):
+        # run a simple beeper script to warn that the dome is going to move
+        _ = self.session.get(self.url_template+f"/script?run001")
+        time.sleep(10)
+
+
     def status(self):
         r = self.session.get(self.url_template+"/status")
         s = BeautifulSoup(r.content,features="html.parser")
@@ -24,6 +30,7 @@ class Dome:
     def _close(self):
         # DANGER: DO NOT CALL DIRECTLY.
         # Call through observatory object to avoid damaging telescope
+        self.beep()
         _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
         _ = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
         time.sleep(0.2)
@@ -38,6 +45,7 @@ class Dome:
     def _open(self):
         # DANGER: DO NOT CALL DIRECTLY.
         # Call through observatory object to avoid damaging telescope
+        self.beep()
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['close']}=OFF")
         r = self.session.get(self.url_template+f"/outlet?{Dome.RELAYS['open']}=OFF")
         time.sleep(0.2)

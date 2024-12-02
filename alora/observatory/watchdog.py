@@ -80,19 +80,29 @@ def close():
 
 
 def run_watchdog(address_to_monitor,port):
+    global o
     DROP_LIMIT = 3
 
     i = 0
     dropped = 0
     close_if_unsafe = True
     weather_safe = True
+    lost_skyx = False
     write_out(f"Watching for internet dropouts ({address_to_monitor}:{port})...")
     write_out(f"Watching weather...")
     while True:
         # check skyx connection
-        if not o.telescope.connected:
-            notify("critical","Dome-close watchdog lost connection to skyx - will not be able to close in an emergency!!")
-
+        if i % 5 == 0:
+            if not o.telescope.connected:
+                if not lost_skyx:
+                    notify("critical","Dome-close watchdog lost connection to skyx - will not be able to close in an emergency!!")
+                    logger.error("Dome-close watchdog lost connection to skyx - will not be able to close in an emergency!!")
+                lost_skyx = True
+                o = Observatory(write_out=write_out)
+            elif lost_skyx:
+                notify("info", "Connection to SkyX regained.")
+                logger.info("Connection to SkyX regained.")
+                lost_skyx = False
         # check internet
         r = ping(address_to_monitor,port)
         if not r:
@@ -113,7 +123,7 @@ def run_watchdog(address_to_monitor,port):
         if i % 30 == 0:
             i = 1
             weather_safe = is_weather_safe()
-            if weather_safe and close_if_unsafe:
+            if weather_safe and not close_if_unsafe and dropped <= DROP_LIMIT:
                 write_out("Weather is safe, resuming monitoring")
             if not weather_safe and close_if_unsafe:
                 write_out("CLOSING DUE TO WEATHER")
