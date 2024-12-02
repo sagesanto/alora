@@ -13,21 +13,25 @@ from alora.observatory.config import config, configure_logger, logging_dir, get_
 class SlackNotifier(Subscriber):
     def __init__(self, own_port, webhook_url, critic_url, min_severity) -> None:
         self.slack_token = get_credential('slack','token')
-        self.slack_channel = get_credential('slack','channel')
         self.slack_client = WebClient(token=self.slack_token)
+        self.channels = config["SLACK_CHANNELS"]
+        self.whispers = config["SLACK_WHISPERS"]
         super().__init__("Slack",own_port, webhook_url, critic_url, min_severity)
 
     def send(self, message, **kwargs):
         # send message to slack channel
-        return self.slack_client.chat_postMessage(channel=self.slack_channel, text=message, **kwargs)
+        for channel in self.channels:
+            return self.slack_client.chat_postMessage(channel=channel, text=message, **kwargs)
     
     def whisper(self,message,**kwargs):
-        user = get_credential('slack','whisper')
-        return self.slack_client.chat_postEphemeral(channel=self.slack_channel, text=message, user=user, **kwargs)
+        for user in self.whispers:
+            # self.channels[0] is sus
+            return self.slack_client.chat_postEphemeral(channel=self.channels[0], text=message, user=user, **kwargs)
     
-    def dm(self,message,uid=None,**kwargs):
-        user = uid if uid else get_credential('slack','whisper')
-        return self.slack_client.chat_postMessage(channel=user, text=message, **kwargs)
+    def dm(self,message,uid:str=None,**kwargs):
+        users = [uid] if uid else self.whispers
+        for user in users:
+            return self.slack_client.chat_postMessage(channel=user, text=message, **kwargs)
 
     def setup_routes(self):
         @self.app.route('/', methods=['POST'])
@@ -40,7 +44,7 @@ class SlackNotifier(Subscriber):
 
     def notify_crash(self, event):        
         block = self.make_msg_block(event)
-        print("Message success?",self.dm(message=f"*Alora Choir Notification* <@{get_credential('slack','whisper')}>",attachments=block)["ok"])
+        print("Message success?",self.dm(message="*Alora Choir Notification*",attachments=block)["ok"])
         # print("Message success?",self.whisper(message=f"*Critic Crash Alert* <@{os.getenv('WHISPER_TO')}>",attachments=block)["ok"])
     
     def make_msg_block(self, event):
