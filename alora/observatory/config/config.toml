@@ -7,6 +7,10 @@ TELEMETRY_PORT = 18812
 TELEM_DBPATH = "telemetry.db"
 TELEM_API_PORT = 5050
 
+# choir: slack
+SLACK_WHISPERS = ["U03VA46UGSJ","W01148Y9LHM"]
+SLACK_CHANNELS = ["C07P35WNX4G"]
+
 # telemetry: weather
 WEATHER_URL = "https://swd.weatherflow.com/swd/rest"
 [WEATHER_CONDITIONS_CLOSE]
@@ -15,9 +19,6 @@ WEATHER_URL = "https://swd.weatherflow.com/swd/rest"
     NOW.precip = [">", 0]
     NOW.relative_humidity = [">",80]
 
-# choir: slack
-SLACK_WHISPERS = ["U03VA46UGSJ","W01148Y9LHM"]
-SLACK_CHANNELS = ["C02489Y9P8A"]
 
 [DEFAULTS]
     BIN = 2  # default binning size for camera
