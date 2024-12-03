@@ -33,10 +33,10 @@ class Vocalist:
         return self.notify("critical",topic,msg,source)
 
 if __name__ == "__main__":
-    v = Vocalist("vocalist test")
-    print(v.info("test","hi"))
-    print(v.warning("test","hi"))
-    print(v.error("test","hi"))
-    print(v.critical("test","hi"))
-    print(v.notify("info","test","hi"))
-    print(v.notify("test2","test","this should fail"))
+    v = Vocalist("Vocalist/Choir notification test")
+    # print(v.info("test","hi"))
+    # print(v.warning("test","hi"))
+    # print(v.error("test","hi"))
+    print(v.critical("Test","Test of the Vocalist/Choir notification system"))
+    # print(v.notify("info","test","hi"))
+    # print(v.notify("test2","test","this should fail"))

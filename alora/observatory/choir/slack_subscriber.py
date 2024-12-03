@@ -20,19 +20,24 @@ class SlackNotifier(Subscriber):
 
     def send(self, message, **kwargs):
         # send message to slack channel
+        success = True
         for channel in self.channels:
-            return self.slack_client.chat_postMessage(channel=channel, text=message, **kwargs)
+            success = success and self.slack_client.chat_postMessage(channel=channel, text=message, **kwargs)
+        return success
     
     def whisper(self,message,**kwargs):
+        success = True
         for user in self.whispers:
-            # self.channels[0] is sus
-            return self.slack_client.chat_postEphemeral(channel=self.channels[0], text=message, user=user, **kwargs)
-    
+            success = success and self.slack_client.chat_postEphemeral(channel=self.channels[0], text=message, user=user, **kwargs)
+        return success
+
     def dm(self,message,uid:str=None,**kwargs):
+        success = True
         users = [uid] if uid else self.whispers
         for user in users:
-            return self.slack_client.chat_postMessage(channel=user, text=message, **kwargs)
-
+            success = success and self.slack_client.chat_postMessage(channel=user, text=message, **kwargs)
+        return success
+    
     def setup_routes(self):
         @self.app.route('/', methods=['POST'])
         def receive():
