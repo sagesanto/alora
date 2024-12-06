@@ -19,8 +19,8 @@ WATCHDOG_PORT = 3055
 [WEATHER_CONDITIONS_CLOSE]
     FORECAST.precip_probability = [">", 0.0]
     NOW.precip = [">", 0]
-    #NOW.wind_avg = [">", 9]  # 20 mph ~= 9m/s
-    #NOW.relative_humidity = [">",80]
+    NOW.wind_avg = [">", 9]  # 20 mph ~= 9m/s
+    NOW.relative_humidity = [">",80]
 
 
 [DEFAULTS]
