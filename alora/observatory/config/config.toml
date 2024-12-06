@@ -13,6 +13,9 @@ SLACK_CHANNELS = ["C07P35WNX4G"]
 
 # telemetry: weather
 WEATHER_URL = "https://swd.weatherflow.com/swd/rest"
+
+# watchdog
+WATCHDOG_PORT = 3055
 [WEATHER_CONDITIONS_CLOSE]
     FORECAST.precip_probability = [">", 0.0]
     NOW.wind_avg = [">", 9]  # 20 mph ~= 9m/s

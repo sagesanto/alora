@@ -6,6 +6,28 @@ import time
 from alora.observatory.config import configure_logger, config
 from alora.observatory.telemetry.sensors.tempest_weather_sensor import TempestWeatherSensor
 from alora.observatory.choir import Vocalist
+import flask
+from queue import Queue, LifoQueue, Empty
+from threading import Thread
+
+reactivate_queue = Queue()
+safe_state_queue = LifoQueue()
+
+def api():
+    app = flask.Flask(__name__)
+
+    @app.route("/resume", methods=["POST"])
+    def resume_monitoring():
+        reactivate_queue.put(True,timeout=0.5)
+        return "OK"
+
+    @app.route("/status", methods=["GET"])
+    def get_status():
+        state = safe_state_queue.get(timeout=0.5)
+        safe_state_queue.put(state,timeout=0.5)
+        return {"safe_to_open": state}
+
+    app.run(host="127.0.0.1",port=config["WATCHDOG_PORT"])
 
 # from https://stackoverflow.com/a/67217558
 def ping(server: str, port: int, timeout=3):
@@ -83,55 +105,86 @@ def run_watchdog(address_to_monitor,port):
     global o
     DROP_LIMIT = 3
 
+    state = "active"  # once we close, we go into standby until the condition is resolved (to prevent spam)
     i = 0
-    dropped = 0
-    close_if_unsafe = True
-    weather_safe = True
-    lost_skyx = False
+    dropped = 0  # number of times we dropped a conn
+    weather_safe = True  # is it safe to operate?
+    lost_skyx = False  # have we lost the skyx connection?
+    check_weather_now = False
+    check_skyx_now = False
+
+    safe_state_queue.put(False)  # will be updated when weather and internet get checked
+    api_thread = Thread(target=api)
+    api_thread.daemon=True
+    api_thread.start()
+
     write_out(f"Watching for internet dropouts ({address_to_monitor}:{port})...")
     write_out(f"Watching weather...")
     while True:
-        # check skyx connection
-        if i % 5 == 0:
+        try:
+            if reactivate_queue.get(timeout=0.5):
+                state = "active"
+                check_weather_now = True
+                check_skyx_now = True
+        except Empty:
+            continue
+
+        ### SKYX CHECK
+        if i % 5 == 0 or check_skyx_now:
+            check_skyx_now = False
             if not o.telescope.connected:
                 if not lost_skyx:
                     notify("critical","Dome-close watchdog lost connection to skyx - will not be able to close in an emergency!!")
                     logger.error("Dome-close watchdog lost connection to skyx - will not be able to close in an emergency!!")
                 lost_skyx = True
+                safe_state_queue.put(False,timeout=0.2)
                 o = Observatory(write_out=write_out)
             elif lost_skyx:
                 notify("info", "Connection to SkyX regained.")
                 logger.info("Connection to SkyX regained.")
+                safe_state_queue.put(dropped<DROP_LIMIT and weather_safe,timeout=0.2)
                 lost_skyx = False
-        # check internet
+
+
+        ### INTERNET CHECK
         r = ping(address_to_monitor,port)
-        if not r:
+        if not r:  # dropped a connection
             dropped += 1
             if dropped <= DROP_LIMIT:
                 write_out(f"Dropped a connection! Consecutive drops: {dropped}")
-        else:
-            if dropped >= DROP_LIMIT:
+        else: # got a ping
+            if dropped >= DROP_LIMIT:  # did we just regain connection?
+                dropped = 0  # yes it seems redundant but it's not, we need to reset the counter if we've just regained conn so that the safe_state_queue gets updated correctly
                 write_out("Connection regained.")
-            dropped = 0
-        if dropped == DROP_LIMIT and close_if_unsafe:
+                safe_state_queue.put(dropped<DROP_LIMIT and weather_safe and not lost_skyx,timeout=0.2)
+            dropped = 0  
+        if dropped >= DROP_LIMIT and state=="active":  # close if we've dropped too many connections
             write_out("CLOSING DUE TO DROPPED CONNECTION")
             notify("warning","Shutting down observatory due to dropped internet connection!")
+            safe_state_queue.put(False,timeout=0.2)
             close()
             write_out("Waiting for internet connection...")
-        
-        # check weather
-        if i % 30 == 0:
+
+        ### WEATHER CHECK
+
+        if i % 30 == 0 or check_weather_now:
             i = 1
+            check_weather_now = False
+            was_unsafe = not weather_safe
             weather_safe = is_weather_safe()
-            if weather_safe and not close_if_unsafe and dropped <= DROP_LIMIT:
-                write_out("Weather is safe, resuming monitoring")
-            if not weather_safe and close_if_unsafe:
+            if weather_safe and was_unsafe:
+                write_out("Weather is safe again")
+                safe_state_queue.put(dropped<DROP_LIMIT and weather_safe and not lost_skyx,timeout=0.2)
+            if not weather_safe and state=="active":
                 write_out("CLOSING DUE TO WEATHER")
                 notify("warning","Shutting down observatory because of bad weather conditions!")
+                safe_state_queue.put(False,timeout=0.2)
                 close()  
                 write_out("Waiting for safe weather...")
         
-        close_if_unsafe = weather_safe and dropped < DROP_LIMIT  # to prevent repeatedly closing the dome
+
+        # if we're in standby, check if we can go back to active
+        state = "active" if weather_safe and dropped < DROP_LIMIT else "standby" # to prevent repeatedly closing the dome
 
         i += 1
         time.sleep(1)
