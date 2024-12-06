@@ -33,6 +33,7 @@ class RelayDome(Dome):
         # DANGER: DO NOT CALL DIRECTLY.
         # Call through observatory object to avoid damaging telescope
         self.beep()
+        self.write_out("Beeping to warn of dome movement")
         _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF")
         _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF")
         time.sleep(0.2)
@@ -47,6 +48,7 @@ class RelayDome(Dome):
     def _open(self):
         # DANGER: DO NOT CALL DIRECTLY.
         # Call through observatory object to avoid damaging telescope
+        self.write_out("Beeping to warn of dome movement")
         self.beep()
         r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF")
         r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF")
