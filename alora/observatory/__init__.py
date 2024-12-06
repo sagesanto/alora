@@ -1,3 +1,3 @@
-from alora.observatory.dome import Dome
-from alora.observatory.skyx import Telescope, Camera
+from alora.observatory.relay_dome import RelayDome
+from alora.observatory.skyx import SkyXTelescope, SkyXCamera
 from .observatory import Observatory

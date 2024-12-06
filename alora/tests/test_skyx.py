@@ -1,5 +1,5 @@
 import unittest
-from alora.observatory import Telescope
+from alora.observatory import SkyXTelescope
 import alora.observatory.skyx.components as components
 
 class TestSkyX(unittest.TestCase):
@@ -8,7 +8,7 @@ class TestSkyX(unittest.TestCase):
         # setup code to run before each test
         components.conn = components.SkyXClient(components.config["SKYX_PORT"])
         self.skyx_conn = components.conn
-        self.telescope = Telescope()
+        self.telescope = SkyXTelescope()
 
     def tearDown(self):
         del self.telescope

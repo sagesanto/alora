@@ -1,1 +1,1 @@
-from .components import Telescope, Camera
+from .components import SkyXTelescope, SkyXCamera

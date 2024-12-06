@@ -3,13 +3,15 @@ from os.path import join, abspath, exists
 import socket
 import tomlkit
 import numpy as np
-
+from abc import ABC, abstractmethod, abstractproperty
+from typing import Union, Callable, Tuple
 import astropy.units as u
 from astropy.units import Quantity
 from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
 
 from alora.observatory.config import config
+from alora.observatory.interfaces import Telescope, Camera
 from .config import js_script_path
 
 FILTER_WHEEL = {
@@ -109,9 +111,9 @@ class SkyXClient:
 conn = SkyXClient(config["SKYX_PORT"])
 
 
-class Telescope:
+class SkyXTelescope(Telescope):
     def __init__(self, write_out=print):
-        self.write_out = write_out
+        super().__init__(write_out)
         self.conn = conn
         conn.set_write_out(write_out)
         try:
@@ -208,7 +210,6 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp != "0":
             raise SkyXException(f"SkyX reports that slew failed. Response was {resp}")
-        return True
     
     def home(self):
         if not self.conn.connected:
@@ -216,7 +217,7 @@ class Telescope:
         self.conn.send(load_script("find_home.js"))
         resp = self.conn.parse_response()
         if resp == "0":
-            return True
+            return
         else:
             raise SkyXException(f"SkyX reports that homing failed with error code {resp}")
     
@@ -229,13 +230,11 @@ class Telescope:
         except Exception as e:
             _dRA = dRA.to_value("arcsec")
             _dDec = dDec.to_value("arcsec")
-
         script = load_script("start_custom_tracking.js",dRA=_dRA,dDec=_dDec)
         self.conn.send(script)
         resp = self.conn.parse_response()
         if resp != "1":
             raise SkyXException(f"SkyX reports that setting track rates failed. Response was {resp}")
-        return True
     
     def track_sidereal(self):
         if not self.conn.connected:
@@ -244,7 +243,6 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp != "1":
             raise SkyXException(f"SkyX reports that starting sidereal tracking failed. Response was {resp}")
-        return True
     
     def stop_tracking(self):
         if not self.conn.connected:
@@ -253,12 +251,11 @@ class Telescope:
         resp = self.conn.parse_response()
         if resp != "0":
             raise SkyXException(f"SkyX reports that stopping tracking failed. Response was {resp}")
-        return True
 
 
-class Camera:
+class SkyXCamera(Camera):
     def __init__(self, write_out=print) -> None:
-        self.write_out = write_out
+        super().__init__(write_out)
         self.conn = conn
         current_filter = None
         conn.set_write_out(write_out)
@@ -363,7 +360,6 @@ class Camera:
             raise SkyXException(f"SkyX reports that batch solving failed. Response was {r}")
         res = [s for s in r.split(" ") if s]
         print(res)
-
 
     @property
     def status(self):

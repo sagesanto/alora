@@ -2,17 +2,13 @@
 
 def main():
     import os
-    import dotenv
+    from alora.observatory import Observatory
 
-    from alora.observatory import Dome
-
-    dotenv.load_dotenv()
-
-    dome = Dome(os.getenv("DOME_ADDR"),os.getenv("DOME_USERNAME"),os.getenv("DOME_PASSWORD"))
+    o = Observatory()
     print("DOME EMERGENCY CLOSE")
     confirm = input("Confirm that the telescope is in a park position by typing \"the telescope is parked\": ")
     if confirm == "the telescope is parked":
-        dome._close()
+        o.dome._close()
     else:
         print("Confirmation failed.")
 

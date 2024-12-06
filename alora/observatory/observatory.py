@@ -1,6 +1,7 @@
 import os
 import dotenv
-from . import Telescope, Dome, Camera
+from .skyx import SkyXTelescope, SkyXCamera
+from .relay_dome import RelayDome
 from .data_archive import Observation
 from .config import get_credential  
 
@@ -12,11 +13,11 @@ class Observatory:
         self.camera = None
         self.connect()
     
-    def connect(self):
-        self.telescope = Telescope(write_out=self.write_out)
+    def connect(self, telescope=SkyXTelescope, dome=RelayDome, camera=SkyXCamera):
+        self.telescope = telescope(write_out=self.write_out)
         dotenv.load_dotenv()
-        self.dome = Dome(get_credential("dome",'addr'), get_credential("dome",'user'),get_credential("dome",'password'), write_out=self.write_out)
-        self.camera = Camera(write_out=self.write_out)
+        self.dome = dome(write_out=self.write_out)
+        self.camera = camera(write_out=self.write_out)
 
     def open(self,do_home=True):
         self.write_out("Parking telescope...")
