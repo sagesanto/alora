@@ -5,7 +5,9 @@ from .relay_dome import RelayDome
 from .data_archive import Observation
 from .config import config
 import requests
-from alora import AloraError
+
+class AloraError(Exception):
+    pass
 
 class Observatory:
     def __init__(self, write_out=print):
