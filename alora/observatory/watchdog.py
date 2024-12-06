@@ -16,7 +16,7 @@ safe_state_queue = LifoQueue()
 def api():
     app = flask.Flask(__name__)
 
-    @app.route("/resume", methods=["POST"])
+    @app.route("/resume", methods=["GET"])
     def resume_monitoring():
         reactivate_queue.put(True,timeout=0.5)
         return "OK"
@@ -114,7 +114,8 @@ def run_watchdog(address_to_monitor,port):
     check_weather_now = False
     check_skyx_now = False
 
-    safe_state_queue.put(False)  # will be updated when weather and internet get checked
+    safe_state_queue.put(True)  # will be updated when weather and internet get checked
+    first_check = True
     api_thread = Thread(target=api)
     api_thread.daemon=True
     api_thread.start()
@@ -127,6 +128,7 @@ def run_watchdog(address_to_monitor,port):
                 state = "active"
                 check_weather_now = True
                 check_skyx_now = True
+                logger.info("Activating due to web request")
         except Empty:
             continue
 
@@ -167,12 +169,11 @@ def run_watchdog(address_to_monitor,port):
             write_out("Waiting for internet connection...")
 
         ### WEATHER CHECK
-
         if i % 30 == 0 or check_weather_now:
             i = 1
             check_weather_now = False
             was_unsafe = not weather_safe
-            weather_safe = is_weather_safe(do_notif = close_if_unsafe)
+            weather_safe = is_weather_safe(do_notif = state=="active")
             if weather_safe and was_unsafe:
                 write_out("Weather is safe again")
                 safe_state_queue.put(dropped<DROP_LIMIT and weather_safe and not lost_skyx,timeout=0.2)
@@ -186,6 +187,10 @@ def run_watchdog(address_to_monitor,port):
 
         # if we're in standby, check if we can go back to active
         state = "active" if weather_safe and dropped < DROP_LIMIT else "standby" # to prevent repeatedly closing the dome
+
+        if first_check:
+            first_check = False
+            safe_state_queue.put(dropped<DROP_LIMIT and weather_safe and not lost_skyx,timeout=0.2)
 
         i += 1
         time.sleep(1)
