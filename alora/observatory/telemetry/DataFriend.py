@@ -1,17 +1,21 @@
 import pandas as pd, numpy as np, matplotlib.pyplot as plt, seaborn as sns
 import requests, json, os, sys, time, datetime, re, random, math, pickle
 
+from alora.observatory.config import config
+
+port = config["TELEM_API_PORT"]
+
 class DataFriend:
-    def __init__(self,api_url="http://localhost:5000/api"):
+    def __init__(self,api_url=f"http://127.0.0.1:{port}/query"):
         self.api_url = api_url
     
-    def sql_query(self,query, asDf = True):
+    def sql_query(self,query, as_dataframe = True):
         data = requests.get(self.api_url,json={"query":query}).json()
         print("received response")
         if data["error"]:
             raise ValueError(f"Response came back with error {data['error']}")
         r = data["result"]
-        if asDf:
+        if as_dataframe:
             r = pd.DataFrame(r)
             for col in r.columns:
                 r[col] = pd.to_numeric(r[col],errors="ignore")

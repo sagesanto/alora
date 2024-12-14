@@ -32,8 +32,8 @@ def time_to_str(time):
     return t
 
 
-@app.route('/api', methods=['GET'])
-def api():
+@app.route('/query', methods=['GET'])
+def query():
     if telemetry_conn is None:
         logger.error("No telemetry connection!")
         return jsonify({"result":"","error": "No telemetry connection when trying to answer data request!"})
@@ -58,7 +58,8 @@ def api():
         logger.error(f"Error raised: {repr(e)}")
         return jsonify({"result":"","error": repr(e)})
 
-@app.route('/api/blueprint', methods=['GET'])
+# TODO: we should store blueprints and return all, not just those of the sensors that are currently connected (tho that could be an option)
+@app.route('/blueprint', methods=['GET'])
 def blueprint():
     if telemetry_conn is None:
         logger.error("No telemetry connection!")
@@ -71,26 +72,25 @@ def blueprint():
         logger.error(f"Error raised: {repr(e)}")
         return jsonify({"result":"","error": repr(e)})
 
-@app.route('/weather', methods=['GET'])
-def weather():
-    if telemetry_conn is None:
-        logger.error("No telemetry connection when trying to fetch weather!")
-        return jsonify({"result":"","error": "No telemetry connection!"})
-    weather_data = telemetry_conn.root.sql_query("SELECT * FROM Weather ORDER BY Timestamp DESC LIMIT 1")[0][0]
-    print("weather data:",weather_data)
-    return jsonify({
-        'error': '',
-        'result': weather_data
-    })
+# @app.route('/weather', methods=['GET'])
+# def weather():
+#     if telemetry_conn is None:
+#         logger.error("No telemetry connection when trying to fetch weather!")
+#         return jsonify({"result":"","error": "No telemetry connection!"})
+#     weather_data = telemetry_conn.root.sql_query("SELECT * FROM Weather ORDER BY Timestamp DESC LIMIT 1")[0][0]
+#     print("weather data:",weather_data)
+#     return jsonify({
+#         'error': '',
+#         'result': weather_data
+#     })
 
-@app.route('/api/status', methods=['GET'])
+@app.route('/status', methods=['GET'])
 def status():
     sensor_status = telemetry_conn.root.sql_query("SELECT * FROM SensorUptime ORDER BY Timestamp DESC LIMIT 1")[0][0]
     return jsonify({
         'error': '',
         'result': sensor_status
     })
-
 
 
 if __name__ == "__main__":

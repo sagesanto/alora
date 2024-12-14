@@ -35,7 +35,7 @@ class TemperatureSensorService(SensorService):
 
 if __name__ == "__main__":
     s1 = TemperatureSensorService("PT100", "Temperature", {"temperature": ["INTEGER", "degrees C"]})
-    s1.start_service()
+    s1.start()
     # s2 = TemperatureSensorService("PT101", "Temperature", {"temperature": ["INTEGER", "degrees C"]})
     # s3 = TemperatureSensorService("PT102", "Temperature", {"temperature": ["INTEGER", "degrees C"]})
     

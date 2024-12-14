@@ -220,17 +220,38 @@ class SensorService(rpyc.Service, metaclass=ABCMeta):
         pass
 
     def write_service(self):
-        service_path = join(service_dir,f"{self.sensor_name}_serv.bat")   
-        with open(service_path,"w+") as f:
-            f.write("@echo off\n")
-            f.write(f"call {join(dirname(sys.executable),'activate.bat')}\n")
+        if sys.platform == "darwin":
+            raise NotImplementedError("Service writing not implemented for MacOS")
+        if "linux" in sys.platform:
+            raise NotImplementedError("Service writing not implemented on Linux")
+        if sys.platform == "win32" or sys.platform == "cygwin" or sys.platform == "msys":
+            service_path = join(service_dir,f"{self.sensor_name}_serv.bat")   
             classname = type(self).__name__
             class_modfile = inspect.getmodule(type(self)).__file__
-            f.write(f"python -c \"import sys,time; from threading import Event; sys.path.append(r'{dirname(class_modfile)}'); from {splitext(basename(class_modfile))[0]} import {classname}; s = {classname}('{self.sensor_name}', '{self.table_name}', {self.blueprint}, {self.interval}, r'{self.local_db_name}'); s.start(); Event().wait()\"")
-        return service_path
+            py_path = join(service_dir,f"{self.sensor_name}_serv.py")   
+            with open(py_path,"w+") as f:
+                f.write("import sys,time\n")
+                f.write(f"sys.path.append(r'{dirname(class_modfile)}')\n")
+                f.write(f"from {splitext(basename(class_modfile))[0]} import {classname}\n")
+                f.write(f"s = {classname}('{self.sensor_name}', '{self.table_name}', {self.blueprint}, {self.interval}, r'{self.local_db_name}')\n")
+                f.write(f"s.start()")
+                f.write("while True:\n")
+                f.write("\ttime.wait(0.5)")
+            with open(service_path,"w+") as f:
+                f.write("@echo off\n")
+                f.write(f"call {join(dirname(sys.executable),'activate.bat')}\n")
+                f.write(f"python {py_path}")
+            return service_path
 
     def start_service(self):
-        spath = self.write_service()
+        if sys.platform == "darwin":
+            raise NotImplementedError("Service running not implemented for MacOS")
+        if "linux" in sys.platform:
+            raise NotImplementedError("Service running not implemented on Linux")
+        if sys.platform == "win32" or sys.platform == "cygwin" or sys.platform == "msys":
+            spath = self.write_service()
+            # sussss
+            os.system(f"nssm install Alora{self.sensor_name.replace(' ','')} {spath} DisplayName \"Alora {self.sensor_name}\" ")
 
 
 if __name__ == "__main__":

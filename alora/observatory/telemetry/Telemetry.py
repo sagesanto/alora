@@ -45,7 +45,9 @@ class TelemetryService(rpyc.Service):
         self.logger.info("")
         self.logger.info("Session Started")
         self.connected_sensors = ConnectedSensors()
-        TelemetryDB(dbpath, self.logger).make_uptime_table()
+        db = TelemetryDB(dbpath, self.logger) 
+        db.make_uptime_table()
+        db.make_blueprint_table()
         self.sensor_reading_count = {}
         self.logger.info("Telemetry Service initialized.")
         self.poll()
@@ -89,10 +91,13 @@ class TelemetryService(rpyc.Service):
 
     @property
     def blueprint(self):
-        d = None
-        with self.connected_sensors as connected_sensors:
-            d = {sensor_name: sensor.blueprint for sensor_name, sensor in connected_sensors.items()}.copy()
-        return d
+        # d = None
+        # with self.connected_sensors as connected_sensors:
+        #     d = {sensor_name: sensor.blueprint for sensor_name, sensor in connected_sensors.items()}.copy()
+        # return d
+        db = TelemetryDB(dbpath, self.logger)
+        result, error =  db.query("SELECT * FROM Blueprints")
+        return result
 
     @property
     def exposed_blueprint(self):

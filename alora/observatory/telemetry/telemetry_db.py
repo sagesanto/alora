@@ -17,6 +17,11 @@ class TelemetryDB:
     def make_uptime_table(self):
         create_statement = """CREATE TABLE IF NOT EXISTS "SensorUptime" ("Timestamp"	FLOAT NOT NULL)"""
         self.execute(create_statement)
+    
+    def make_blueprint_table(self):
+        create_statement = """CREATE TABLE IF NOT EXISTS "Blueprints" ("SensorName"\tTEXT NOT NULL,\n"Blueprint"\tTEXT NOT NULL,\n"TableName"\tTEXT NOT NULL,\nPRIMARY KEY (SensorName,Blueprint,TableName))"""
+        print(create_statement)
+        self.execute(create_statement)        
 
     def close(self):
         self.conn.close()
@@ -34,8 +39,15 @@ class TelemetryDB:
     def commit(self):
         self.conn.commit()
 
+    def log_blueprint(self,sensor_name,table_name, sensor_blueprint):
+        try:
+            self.execute("INSERT INTO Blueprints (SensorName,Blueprint,TableName) VALUES (?,?,?)",[sensor_name,str(sensor_blueprint),table_name])
+        except sqlite3.IntegrityError:  # unique constraint violated
+            self.execute("UPDATE Blueprints SET Blueprint = ?, TableName = ? WHERE SensorName=?",[str(sensor_blueprint),table_name,sensor_name])
+        
     # if not exists, create table for sensor
     def make_sensor_table(self, sensor_name, table_name, sensor_blueprint: dict):
+        self.log_blueprint(sensor_name,table_name,sensor_blueprint)
         create_statement = f'''CREATE TABLE "{table_name}" (\n"Timestamp"\tFLOAT NOT NULL,\n"SensorName"\tSTRING NOT NULL,\n"ID"\tINTEGER,'''
 
         for col, val in sensor_blueprint.items():
