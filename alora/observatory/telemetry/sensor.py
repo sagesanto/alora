@@ -234,9 +234,9 @@ class SensorService(rpyc.Service, metaclass=ABCMeta):
                 f.write(f"sys.path.append(r'{dirname(class_modfile)}')\n")
                 f.write(f"from {splitext(basename(class_modfile))[0]} import {classname}\n")
                 f.write(f"s = {classname}('{self.sensor_name}', '{self.table_name}', {self.blueprint}, {self.interval}, r'{self.local_db_name}')\n")
-                f.write(f"s.start()")
+                f.write(f"s.start()\n")
                 f.write("while True:\n")
-                f.write("\ttime.wait(0.5)")
+                f.write("\ttime.sleep(0.5)")
             with open(service_path,"w+") as f:
                 f.write("@echo off\n")
                 f.write(f"call {join(dirname(sys.executable),'activate.bat')}\n")
