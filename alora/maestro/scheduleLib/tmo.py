@@ -61,10 +61,10 @@ class TMO:
         else:
             self.horizon_box = HORIZON_BOX
         self.flipped_box = flip_box
-        self.locationInfo = LocationInfo(name="TMO", region="CA, USA",
+        self.locationInfo = LocationInfo(name="Alora", region="AZ, USA",
                                 timezone="UTC",
-                                latitude=34.36,
-                                longitude=-117.63)
+                                latitude=31.955556,
+                                longitude=-110.306667)
         self._dec_vertices = list(set([item for key in self.horizon_box.keys() for item in
                          key]))  # this is just a list of integers, each being one member of one of the dec tuples that are the keys to the horizonBox dictionary
         self._dec_vertices.sort()
