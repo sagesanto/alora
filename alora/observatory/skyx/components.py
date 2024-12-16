@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
 
 from alora.observatory.config import config
-from alora.observatory.interfaces import Telescope, Camera
+from alora.observatory.interfaces import Telescope, Camera, PlateSolve
 from .config import js_script_path
 
 FILTER_WHEEL = {
@@ -310,18 +310,35 @@ class SkyXCamera(Camera):
     def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"]):
         # synchronous version of start_dataset. works the same but strictly synchronous
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, binning=binning, asynchronous=False)
-   
-    def determine_image_binning(self,impath):
-        hdul = fits.open(impath)
-        data = hdul[0].data
-        return int(np.round(config["CAMERA"]["CCD_WIDTH_PIX"]/data.shape[1]))
 
-    def solve(self,impath,binning=-1):
+    def add_to_pointing_model(self,exptime):
+        # use AutoMap to take img, solve field, and add to pointing model
+        if not self.conn.connected:
+            raise ConnectionError("Cannot add to pointing model: no connection to SkyX.")
+        # will always do 2x2 binning
+        self.conn.send(load_script("add_to_pointing_model.js",exptime=exptime,image_scale=config["CAMERA"]["PIX_SCALE"]*2))
+        return self.conn.parse_response()
+
+
+class SkyXImageLink(PlateSolve):
+    def __init__(self, write_out=print):
+        super().__init__(write_out)
+        self.conn = conn
+        conn.set_write_out(write_out)
+        try:
+            self.conn.connect()
+        except Exception as e:
+            self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable. Error: {e}")        
+        if not self.conn.connected:
+            self.write_out("WARNING [ALORA]: ImageLink object initialized but no connection to SkyX could be made")
+
+    def solve(self,impath,**kwargs):
         if not self.conn.connected:
             raise ConnectionError("Cannot solve image: no connection to SkyX.")
         impath = impath.replace("\\","/")
         if not exists(impath):
             raise FileNotFoundError(f"Image file {impath} does not exist.")
+        binning = kwargs.get("binning",-1)
         if binning == -1:
             # need to determine the binning
             binning = self.determine_image_binning(impath)
@@ -334,7 +351,7 @@ class SkyXCamera(Camera):
         self.conn.send(script)
         return self.conn.parse_response()
     
-    def batch_solve(self,impaths,binning=-1):
+    def batch_solve(self,impaths,**kwargs):
         # batch solve images. must all have the same px scale!
         if not self.conn.connected:
             raise ConnectionError("Cannot solve image: no connection to SkyX.")
@@ -343,6 +360,8 @@ class SkyXCamera(Camera):
         for impath in impaths:
             if not exists(impath):
                 raise FileNotFoundError(f"Image file {impath} does not exist.")
+        
+        binning = kwargs.get("binning",-1)
         if binning == -1:
             # need to determine the binning
             impath = impaths[0]
@@ -361,9 +380,7 @@ class SkyXCamera(Camera):
         res = [s for s in r.split(" ") if s]
         print(res)
 
-    @property
-    def status(self):
-        if not self.conn.connected:
-            raise ConnectionError("Cannot check camera status: no connection to SkyX.")
-        self.conn.send(self.cam_status_script)
-        return self.conn.parse_response()
+    def determine_image_binning(self,impath):
+        hdul = fits.open(impath)
+        data = hdul[0].data
+        return int(np.round(config["CAMERA"]["CCD_WIDTH_PIX"]/data.shape[1]))

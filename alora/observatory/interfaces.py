@@ -67,3 +67,15 @@ class Dome(ABC):
     @abstractmethod
     def _close(self):
         pass
+
+class PlateSolve(ABC):
+    def __init__(self,write_out:Callable[[str],None]=print) -> None:
+        self.write_out = write_out
+
+    @abstractmethod
+    def solve(self, impath, **kwargs):
+        pass
+
+    # @abstractmethod
+    # def solve_data(self, data, **kwargs):
+        # ffile = temp

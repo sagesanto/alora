@@ -32,6 +32,7 @@ HORIZON_BOX = {  # {tuple(decWindow):tuple(minHA,maxHA)}
     (60, 65): (-105, 135),
     (65,70): (-120, 135),
     (70,75): (-135, 150),
+    (75,90): (-180,180)
 }
 
 def sign(num):
