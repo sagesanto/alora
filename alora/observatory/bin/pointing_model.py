@@ -47,14 +47,13 @@ def main():
     coords = []
     t=current_dt_utc()
     lst = tmo.get_current_tmo_sidereal_time()
-    while len(coords) < NSAMPLES:
-        ra = rng.uniform(0,360)
-        dec = rng.uniform(-90,90)
-        if tmo.observation_viable(dt=t,ra=ra*u.deg,dec=dec*u.deg, current_sidereal_time=lst):
-            coords.append((ra,dec))
     
     best_ras, best_decs, best_nums = [], [], []
-    for RA, DEC in coords:
+    while len(best_ras) < NSAMPLES:
+        RA = rng.uniform(0,360)
+        DEC = rng.uniform(-90,90)
+        if not tmo.observation_viable(dt=t,ra=ra*u.deg,dec=dec*u.deg, current_sidereal_time=lst):
+            continue
         query = f"""
         SELECT
         source_id,
@@ -97,6 +96,10 @@ def main():
                     best_dec = dec
                     best_num = n_in_box
 
+        if best_num < 3:
+            print(f"Could only find a spot with {best_num} sources. Moving on...")
+            continue
+
         logger.info(f"Best spot: ({best_ra}, {best_dec}): {best_num} sources")
         best_ras.append(best_ra)
         best_decs.append(best_dec)
@@ -118,7 +121,7 @@ def main():
     fields = fields[permutation]
     fname = f"{t.strftime('%Y_%m_%d')}_pointing.csv"
     fields.write(fname,overwrite=True)
-    logger.info("Wrote path to {fname}")
+    logger.info(f"Wrote path to {fname}")
 
     plt.plot(fields["ra"],fields["dec"])
     plt.title("Proposed Pointing Model Run {t}")
@@ -130,7 +133,7 @@ def main():
     o.connect(telescope=SkyXTelescope,camera=SkyXCamera)
 
     for i,(ra,dec) in enumerate(zip(fields["ra"], fields["dec"])):
-        logger.info(f"{i+1}/{len(ra)} Slewing to ({ra},{dec})")
+        logger.info(f"{i+1}/{len(fields)} Slewing to ({ra},{dec})")
         o.telescope.slew(SkyCoord(ra*u.deg,dec*u.deg),closed_loop=False)
         o.telescope.track_sidereal()
         time.sleep(2) # give it some time to start tracking
