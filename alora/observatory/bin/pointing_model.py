@@ -52,7 +52,7 @@ def main():
     while len(best_ras) < NSAMPLES:
         RA = rng.uniform(0,360)
         DEC = rng.uniform(-90,90)
-        if not tmo.observation_viable(dt=t,ra=ra*u.deg,dec=dec*u.deg, current_sidereal_time=lst):
+        if not tmo.observation_viable(dt=t,ra=RA*u.deg,dec=DEC*u.deg, current_sidereal_time=lst):
             continue
         query = f"""
         SELECT
