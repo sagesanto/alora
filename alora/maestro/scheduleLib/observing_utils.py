@@ -34,9 +34,9 @@ def current_dt_utc():
 def file_timestamp():
     return current_dt_utc().strftime("%Y%m%d_%H_%M")
 
-def get_current_sidereal_time(locationInfo):
+def get_current_sidereal_time(locationInfo,kind="mean"):
     now = current_dt_utc().replace(second=0, microsecond=0)
-    return Time(now).sidereal_time('mean', longitude=locationInfo.longitude)
+    return Time(now).sidereal_time(kind, longitude=locationInfo.longitude)
 
 def get_sunrise_sunset(locationInfo, dt=current_dt_utc(), jd=False):
     """!

@@ -1,4 +1,8 @@
+
+# SHOULD LOOK AT THIS: https://github.com/dam90/tpoint
+
 def main():
+    import sys, os
     from os.path import join
     from astroquery.gaia import Gaia
     import numpy as np
@@ -9,6 +13,7 @@ def main():
     from astropy.table import Table
     from astropy.coordinates import SkyCoord
     import astropy.units as u
+    from astropy.io import fits
 
     from alora.observatory.skyx import SkyXCamera, SkyXTelescope
     from alora.maestro.scheduleLib.tmo import TMO
@@ -32,14 +37,22 @@ def main():
         return M
 
     cam_config = config["CAMERA"]
+    pointing_config = config["POINTING_MODEL"]
 
     FIELD_WIDTH = cam_config["FIELD_WIDTH"]/60 
     FIELD_HEIGHT = cam_config["FIELD_HEIGHT"]/60 
 
+
     MAG_LIM = 11
+    EXPTIME = pointing_config["EXPTIME"]
+    FILTER = pointing_config["FILTER"]
     RADIUS = 0.5  # search radius, degrees
-    NSAMPLES = 5
-    
+    NSAMPLES = pointing_config["NSAMPLES"]
+    BINNING = pointing_config["BIN"]
+    MIN_BRIGHT_STARS = pointing_config["MIN_BRIGHT_STARS"]
+    OUTDIR = join(pointing_config["OUTDIR"],current_dt_utc().strftime("%Y_%m_%d"))
+    IMG_OUTDIR = join(OUTDIR,"imgs")
+    os.makedirs(IMG_OUTDIR,exist_ok=True)
     
     rng = np.random.default_rng()
     tmo = TMO()
@@ -96,7 +109,7 @@ def main():
                     best_dec = dec
                     best_num = n_in_box
 
-        if best_num < 3:
+        if best_num < MIN_BRIGHT_STARS:
             print(f"Could only find a spot with {best_num} sources. Moving on...")
             continue
 
@@ -119,12 +132,12 @@ def main():
     logger.info(f"Solved with n={len(c)} in t={time.perf_counter()-start}s")
     
     fields = fields[permutation]
-    fname = f"{t.strftime('%Y_%m_%d')}_pointing.csv"
+    fname = join(OUTDIR,f"{t.strftime('%Y_%m_%d')}_pointing.csv")
     fields.write(fname,overwrite=True)
     logger.info(f"Wrote path to {fname}")
 
     plt.plot(fields["ra"],fields["dec"])
-    plt.title("Proposed Pointing Model Run {t}")
+    plt.title(f"Proposed Pointing Model Run {t}")
     plt.xlabel("RA (deg)")
     plt.xlabel("Dec (deg)")
     plt.show()
@@ -137,7 +150,23 @@ def main():
         o.telescope.slew(SkyCoord(ra*u.deg,dec*u.deg),closed_loop=False)
         o.telescope.track_sidereal()
         time.sleep(2) # give it some time to start tracking
-        logger.info(o.camera.add_to_pointing_model(2))
+        prefiles = set(os.listdir(IMG_OUTDIR))
+        o.camera.take_dataset(1,EXPTIME,FILTER,IMG_OUTDIR,name_prefix=f"im{i}",binning=BINNING)
+        try:
+            img = list(prefiles - set(os.listdir(IMG_OUTDIR)))[0]
+        except Exception as e:
+            logger.error(f"Couldn't find a file for pointing {i+1}: {e}. Moving on.")
+            continue
+    
+        # get RA, Dec from telescope
+        # write telescope RA, Dec, sidereal time to fits header
+        lst = tmo.get_current_tmo_sidereal_time(kind="apparent")
+        tele_pos = o.telescope.pos
+        with fits.open(join(IMG_OUTDIR,img)) as hdul:
+            header = hdul[0].header
+            header["RAW_RA"] = str(tele_pos.ra.to_value("deg"))
+            header["RAW_DEC"] = str(tele_pos.dec.to_value("deg"))
+            header["LST"] = str(lst.to_value("hourangle"))
 
     # generate points
         # determine zenith coords

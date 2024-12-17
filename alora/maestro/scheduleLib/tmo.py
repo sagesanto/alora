@@ -70,8 +70,8 @@ class TMO:
         self._dec_vertices.sort()
         self.horizon_box_vertices = self.get_horizon_box_vertices()
     
-    def get_current_tmo_sidereal_time(self):
-        return get_current_sidereal_time(self.locationInfo)
+    def get_current_tmo_sidereal_time(self,kind="mean"):
+        return get_current_sidereal_time(self.locationInfo,kind=kind)
 
     def get_hour_angle_limits(self,dec):
         """

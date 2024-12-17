@@ -33,3 +33,11 @@ WATCHDOG_PORT = 3055
     PIX_SCALE = 0.3155 # arcsec/pixel (UNBINNED)
     CCD_WIDTH_PIX = 4656
     CCD_HEIGHT_PIX = 3520
+
+[POINTING_MODEL]
+    OUTDIR = "D:/Data/pointing_models/"
+    MIN_BRIGHT_STARS = 3
+    EXPTIME = 2
+    FILTER = "L"
+    NSAMPLES = 5
+    BIN = 2

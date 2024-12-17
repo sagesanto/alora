@@ -1,5 +1,5 @@
 // take image, add to pointing model
-
+var out;
 t = sky6RASCOMTele
 t.Connect()
 t.SetTracking(1,1,0,0)
@@ -18,5 +18,19 @@ AutomatedImageLinkSettings.imageScale = {{image_scale}};
 var orig_bin = ccdsoftCamera.BinX;
 ccdsoftCamera.BinX = 2;
 ccdsoftCamera.BinY = 2;
+
+cam.ExposureTime = {{exptime}};
+
+try{
+	cam.TakeImage();
+} catch (e) {
+	out = "SkyX Camera Error during exposure: " + e;
+	throw 'c';
+}
+
+iml = ImageLink;
+iml.pathToFITS = cam.LastImageFileName;
+iml.Scale = {{image_scale}};
+iml.unknownScale = 0;
 
 sky6RASCOMTheSky.AutoMap()
