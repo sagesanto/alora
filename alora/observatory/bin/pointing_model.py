@@ -60,12 +60,11 @@ def main():
     coords = []
     t=current_dt_utc()
     lst = tmo.get_current_tmo_sidereal_time()
-    
     best_ras, best_decs, best_nums = [], [], []
     while len(best_ras) < NSAMPLES:
         RA = rng.uniform(0,360)
         DEC = rng.uniform(-90,90)
-        if not tmo.observation_viable(dt=t,ra=RA*u.deg,dec=DEC*u.deg, current_sidereal_time=lst):
+        if not tmo.observation_viable(dt=t,ra=RA*u.deg,dec=DEC*u.deg, current_sidereal_time=lst,ignore_night=True):
             continue
         query = f"""
         SELECT
