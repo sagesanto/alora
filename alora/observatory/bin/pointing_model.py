@@ -152,20 +152,24 @@ def main():
         prefiles = set(os.listdir(IMG_OUTDIR))
         o.camera.take_dataset(1,EXPTIME,FILTER,IMG_OUTDIR,name_prefix=f"im{i}",binning=BINNING)
         try:
-            img = list(prefiles - set(os.listdir(IMG_OUTDIR)))[0]
+            img = [f for f in os.listdir(IMG_OUTDIR) if f not in prefiles][0]
         except Exception as e:
             logger.error(f"Couldn't find a file for pointing {i+1}: {e}. Moving on.")
             continue
-    
+
+
+        # skyx already writes RA, Dec, LST to header
+
         # get RA, Dec from telescope
         # write telescope RA, Dec, sidereal time to fits header
-        lst = tmo.get_current_tmo_sidereal_time(kind="apparent")
-        tele_pos = o.telescope.pos
-        with fits.open(join(IMG_OUTDIR,img)) as hdul:
-            header = hdul[0].header
-            header["RAW_RA"] = str(tele_pos.ra.to_value("deg"))
-            header["RAW_DEC"] = str(tele_pos.dec.to_value("deg"))
-            header["LST"] = str(lst.to_value("hourangle"))
+        # lst = tmo.get_current_tmo_sidereal_time(kind="apparent")
+        # tele_pos = o.telescope.pos
+
+        # with fits.open(join(IMG_OUTDIR,img)) as hdul:
+        #     header = hdul[0].header
+        #     header["RAW_RA"] = str(tele_pos.ra.to_value("deg"))
+        #     header["RAW_DEC"] = str(tele_pos.dec.to_value("deg"))
+        #     header["LST"] = str(lst.to_value("hourangle"))
 
     # generate points
         # determine zenith coords
