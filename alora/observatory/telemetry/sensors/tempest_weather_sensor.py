@@ -3,7 +3,7 @@ import time, os
 from threading import Timer, Lock
 
 from alora.observatory.telemetry.sensor import SensorService
-from alora.observatory.config import config, get_credential
+from alora.config import config, get_credential
 
 class TempestWeatherSensor:
     def __init__(self, logger):

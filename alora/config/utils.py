@@ -4,7 +4,7 @@ import logging
 import keyring
 from pathlib import Path
 import logging.config
-from alora.observatory.config import logging_config_path
+from alora.config import logging_config_path
 from os.path import join, dirname, abspath, pardir
 
 

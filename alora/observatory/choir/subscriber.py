@@ -1,7 +1,7 @@
 import requests
 from flask import request, jsonify, Flask
 
-from alora.observatory.config import config as cfg
+from alora.config import config as cfg
 
 class Subscriber:
     def __init__(self, name, own_port, webhook_url, critic_url, min_severity) -> None:

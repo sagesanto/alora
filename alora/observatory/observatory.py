@@ -3,7 +3,7 @@ import dotenv
 from .skyx import SkyXTelescope, SkyXCamera
 from .relay_dome import RelayDome
 from .data_archive import Observation
-from .config import config
+from alora.config import config
 import requests
 
 class AloraError(Exception):

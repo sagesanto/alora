@@ -9,7 +9,7 @@ import logging.handlers
 from alora.observatory.telemetry.telemetry_db import TelemetryDB
 from alora.observatory.telemetry.utils import init_logger, read_json, get_timestamp
 from alora.observatory.telemetry.sensor import SensorService
-from alora.observatory.config import config as cfg
+from alora.config import config as cfg
 from alora.observatory.telemetry.config import telem_log_dir
 
 

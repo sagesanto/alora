@@ -1,7 +1,7 @@
 import pandas as pd, numpy as np, matplotlib.pyplot as plt, seaborn as sns
 import requests, json, os, sys, time, datetime, re, random, math, pickle
 
-from alora.observatory.config import config
+from alora.config import config
 
 port = config["TELEM_API_PORT"]
 

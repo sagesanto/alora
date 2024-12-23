@@ -8,7 +8,7 @@ from os.path import join
 from slack_sdk.models.attachments import Attachment
 from slack_sdk import WebClient
 
-from alora.observatory.config import config, configure_logger, logging_dir, get_credential
+from alora.config import config, configure_logger, logging_dir, get_credential
 
 class SlackNotifier(Subscriber):
     def __init__(self, own_port, webhook_url, critic_url, min_severity) -> None:

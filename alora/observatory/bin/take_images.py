@@ -16,7 +16,7 @@ def main():
     
     args = argparser.parse_args()    
     from alora.observatory.observatory import Observatory
-    from alora.observatory.config import config
+    from alora.config import config
     o = Observatory()
     o.connect()
     binning = args.binning

@@ -10,9 +10,9 @@ from astropy.units import Quantity
 from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
 
-from alora.observatory.config import config
+from alora.config import config
 from alora.observatory.interfaces import Telescope, Camera, PlateSolve
-from .config import js_script_path
+from alora.observatory.skyx.config import js_script_path
 
 FILTER_WHEEL = {
     # L, B, G, R, N1, N2, N3

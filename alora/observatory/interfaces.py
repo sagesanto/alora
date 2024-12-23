@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Union, Callable, Tuple
 from astropy.coordinates import SkyCoord
-from alora.observatory.config import default_binning
+from alora.config import default_binning
 
 class Telescope(ABC):
     def __init__(self,write_out:Callable[[str],None]=print) -> None:

@@ -22,9 +22,16 @@ WATCHDOG_PORT = 3055
     NOW.wind_avg = [">", 9]  # 20 mph ~= 9m/s
     NOW.relative_humidity = [">",80]
 
-
 [DEFAULTS]
     BIN = 2  # default binning size for camera
+
+[OBSERVATORY]
+    NAME = "Alora"
+    REGION = "AZ, USA"  # can be any string
+    LATITUDE = 31.955556
+    LONGITUDE = -110.306667
+    TIMEZONE = "UTC"
+    BBOX_BUFFER_DEG = 0  # buffer to shrink bounding box by when determining whether target is within pointing limits
 
 [CAMERA]
     NAME = "ZWO ASI1600MM Pro"
@@ -41,3 +48,6 @@ WATCHDOG_PORT = 3055
     FILTER = "L"
     NSAMPLES = 5
     BIN = 2
+
+[ASTROMETRY]
+    SEARCH_RADIUS = 3.0 # degrees to search around guess RA/Dec if provided

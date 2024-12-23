@@ -16,10 +16,10 @@ def main():
     from astropy.io import fits
 
     from alora.observatory.skyx import SkyXCamera, SkyXTelescope
-    from alora.maestro.scheduleLib.tmo import TMO
+    from alora.astroutils.obs_constraints import ObsConstraint
     from alora.observatory.observatory import Observatory
-    from alora.maestro.scheduleLib.observing_utils import current_dt_utc, ang_sep
-    from alora.observatory.config import config, configure_logger, logging_dir
+    from alora.astroutils.observing_utils import current_dt_utc, ang_sep
+    from alora.config import config, configure_logger, logging_dir
     
     logger = configure_logger("pointing_model",join(logging_dir,"pointing_model.log"))
 
@@ -55,7 +55,7 @@ def main():
     os.makedirs(IMG_OUTDIR,exist_ok=True)
     
     rng = np.random.default_rng()
-    tmo = TMO()
+    tmo = ObsConstraint()
 
     coords = []
     t=current_dt_utc()

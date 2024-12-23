@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy.units import Quantity
 import astropy.units as u
 
-from alora.observatory.config import config
+from alora.config import config
 
 path = sys.argv[1]
 

@@ -6,11 +6,11 @@ import rpyc, os
 from .utils import init_logger, read_json
 from datetime import datetime
 import time, hashlib, hmac, base64
-from .config import telem_log_dir
+from alora.observatory.telemetry.config import telem_log_dir
 
 logger = init_logger(os.path.join(telem_log_dir,"api.log"))[0]
 
-from alora.observatory.config import config as cfg
+from alora.config import config as cfg
 
 telem_port = int(cfg['TELEMETRY_PORT'])
 host_port = (cfg['TELEM_API_PORT'])

@@ -1,7 +1,7 @@
 import sys, os
 import requests
 
-from alora.observatory.config import config
+from alora.config import config
 
 class Vocalist:
     def __init__(self,name):

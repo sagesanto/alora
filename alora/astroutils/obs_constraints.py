@@ -1,8 +1,8 @@
 # Sage Santomenna 2024
-# TMO-specific utilities. relies on observing_utils.py
+# observability utilities. relies on observing_utils.py
 
 import os
-# from observing_utils import get_angle, get_centroid, get_current_sidereal_time, dateToSidereal, find_transit_time, get_sunrise_sunset, get_hour_angle, angleToTimedelta, ensureFloat, ensureAngle, wrap_around, sidereal_rate, current_dt_utc
+import json
 from .observing_utils import get_angle, get_centroid, get_current_sidereal_time, dateToSidereal, find_transit_time, get_sunrise_sunset, get_hour_angle, angleToTimedelta, ensureFloat, ensureAngle, wrap_around, sidereal_rate, current_dt_utc
 import pytz, time
 from datetime import datetime, timedelta, timezone
@@ -12,63 +12,61 @@ from astropy.table import Table, QTable
 import astropy.units as u
 import matplotlib.pyplot as plt, numpy as np
 import logging
+from alora.config import config, observatory_location, horizon_box_path
 
-BBOX_BUFFER_DEG = 0
+obs_cfg = config["OBSERVATORY"]
 
-HORIZON_BOX = {  # {tuple(decWindow):tuple(minHA,maxHA)}
-    (-50, -45): (-30, 0),
-    (-45, -40): (-30, 15),
-    (-40, -30): (-45, 30),
-    (-30, -20): (-45, 45),
-    (-20, -10): (-60, 45),
-    (-10, 5): (-60,60),
-    (5,10): (-60,75),
-    (10, 25): (-75,75),
-    (25, 30): (-75, 90),
-    (30, 35): (-75, 105),
-    (35, 50): (-90, 105),
-    (50, 55): (-90, 120),
-    (55, 60): (-105, 120),
-    (60, 65): (-105, 135),
-    (65,70): (-120, 135),
-    (70,75): (-135, 150),
-    (75,90): (-180,180)
-}
+BBOX_BUFFER_DEG = obs_cfg["BBOX_BUFFER_DEG"]
+
+with open(horizon_box_path, "r") as f:
+    data = json.load(f)
+HORIZON_BOX = {}
+for i in np.arange(len(data),step=2):
+    HORIZON_BOX[tuple(data[i])] = tuple(data[i+1])
 
 def sign(num):
     return 0 if num == 0 else num/abs(num)
 
-# #christ this is ugly
-# HORIZON_BOX_2 = HORIZON_BOX.copy()
-# for k,v in HORIZON_BOX.items():
-#     v1 = (sign(v[0]) * (abs(v[0])-BBOX_BUFFER_DEG), sign(v[0]) * (abs(v[1])-BBOX_BUFFER_DEG))
-#     HORIZON_BOX_2[k] = v1
-# HORIZON_BOX = HORIZON_BOX_2
+# ugly - shrink the bbox by BBOX_BUFFER_DEG
+HORIZON_BOX_2 = HORIZON_BOX.copy()
+for k,v in HORIZON_BOX.items():
+    v1 = (sign(v[0]) * (abs(v[0])-BBOX_BUFFER_DEG), sign(v[1]) * (abs(v[1])-BBOX_BUFFER_DEG))
+    HORIZON_BOX_2[k] = v1
+HORIZON_BOX = HORIZON_BOX_2
 
 # flip the sign of the HA (second tuple) and their order in HORIZON_BOX to represent flipping the telescope
-FLIP_BOX = {k:(-v[1],-v[0]) for k,v in HORIZON_BOX.items()}
+FLIPPED_BOX = {k:(-v[1],-v[0]) for k,v in HORIZON_BOX.items()}
 # print(FLIP_BOX)
 
-# does this work??
-def vertices_to_x_and_y(vertices):
-    # take a list of tuples and return two lists, one of the x coords and one of the y coords
-    return zip(*vertices)
+_bbox_x, _bbox_y = [],[]
+for (min_dec,max_dec),(min_ha,max_ha) in HORIZON_BOX.items():
+    _bbox_x.append(min_ha); _bbox_y.append(min_dec)
+    _bbox_x.append(min_ha); _bbox_y.append(max_dec)
+    _bbox_x.append(max_ha); _bbox_y.append(min_dec)
+    _bbox_x.append(max_ha); _bbox_y.append(max_dec)
+_bbox_x = np.array(_bbox_x)
+_bbox_y = np.array(_bbox_y)
 
-class TMO:
+neg_x = _bbox_x[_bbox_x<0]
+neg_x_y = _bbox_y[_bbox_x<0]
+pos_x = _bbox_x[_bbox_x>=0]
+pos_x_y = _bbox_y[_bbox_x>=0]
+bbox_x = np.concatenate([neg_x,pos_x[::-1],[neg_x[0]]])
+bbox_y = np.concatenate([neg_x_y,pos_x_y[::-1],[neg_x_y[0]]])
+
+
+class ObsConstraint:
     def __init__(self, flip_box=False):
         if flip_box:
-            self.horizon_box = FLIP_BOX
+            self.horizon_box = FLIPPED_BOX
         else:
             self.horizon_box = HORIZON_BOX
-        self.flipped_box = flip_box
-        self.locationInfo = LocationInfo(name="Alora", region="AZ, USA",
-                                timezone="UTC",
-                                latitude=31.955556,
-                                longitude=-110.306667)
-        self._dec_vertices = list(set([item for key in self.horizon_box.keys() for item in
-                         key]))  # this is just a list of integers, each being one member of one of the dec tuples that are the keys to the horizonBox dictionary
-        self._dec_vertices.sort()
-        self.horizon_box_vertices = self.get_horizon_box_vertices()
+        self.is_box_flipped = flip_box
+        self.locationInfo = observatory_location
+        # self._dec_vertices = list(set([item for key in self.horizon_box.keys() for item in
+        #                  key]))  # this is just a list of integers, each being one member of one of the dec tuples that are the keys to the horizonBox dictionary
+        # self._dec_vertices.sort()
+        # # self.horizon_box_vertices = self.get_horizon_box_vertices()
     
     def get_current_tmo_sidereal_time(self,kind="mean"):
         return get_current_sidereal_time(self.locationInfo,kind=kind)
@@ -135,31 +133,31 @@ class TMO:
             raWindow[0] = Angle(0, unit=u.deg)
         return raWindow, adjusted_ra
 
-    def get_horizon_box_vertices(self):
-        horizon_box_vertices = []
-        for dec in self._dec_vertices:
-            for offset in (0.5,-0.5):
-                window = self.get_hour_angle_limits(dec+offset)
-                if not window:
-                    continue
-                window = [a.deg for a in window]
-                horizon_box_vertices.append((window[0],dec))
-                horizon_box_vertices.append((window[1],dec))
-        # put the vertices in clockwise order
+    # def get_horizon_box_vertices(self):
+    #     horizon_box_vertices = []
+    #     for dec in self._dec_vertices:
+    #         for offset in (0.5,-0.5):
+    #             window = self.get_hour_angle_limits(dec+offset)
+    #             if not window:
+    #                 continue
+    #             window = [a.deg for a in window]
+    #             horizon_box_vertices.append((window[0],dec))
+    #             horizon_box_vertices.append((window[1],dec))
+    #     # put the vertices in clockwise order
 
-        # find the centroid of the points
-        centroid = get_centroid(horizon_box_vertices)
-        # sort the points based on their angles with respect to the centroid
-        ordered_vertices = sorted(horizon_box_vertices, key=lambda point: get_angle(point, centroid, centroid))
-        # append the first vertex at the end to close the polygon
-        ordered_vertices.append(ordered_vertices[0])
-        # fix annoying shape malformation
-        if self.flipped_box:
-            ordered_vertices[30], ordered_vertices[31] = ordered_vertices[31], ordered_vertices[30]
-        else:
-            ordered_vertices[42], ordered_vertices[43] = ordered_vertices[43], ordered_vertices[42]
+    #     # find the centroid of the points
+    #     centroid = get_centroid(horizon_box_vertices)
+    #     # sort the points based on their angles with respect to the centroid
+    #     ordered_vertices = sorted(horizon_box_vertices, key=lambda point: get_angle(point, centroid, centroid))
+    #     # append the first vertex at the end to close the polygon
+    #     ordered_vertices.append(ordered_vertices[0])
+    #     # fix annoying shape malformation
+    #     # if self.flipped_box:
+    #     #     ordered_vertices[30], ordered_vertices[31] = ordered_vertices[31], ordered_vertices[30]
+    #     # else:
+    #     #     ordered_vertices[42], ordered_vertices[43] = ordered_vertices[43], ordered_vertices[42]
 
-        return ordered_vertices
+    #     return ordered_vertices
 
     def observation_viable(self, dt: datetime, ra: Angle, dec: Angle, current_sidereal_time=None, ignore_night=False, debug=False, dbg_not_obs = False):
         """
@@ -199,9 +197,15 @@ class TMO:
                 dt = dt_or_column
             mask[i] = self.observation_viable(dt,row[ra_column],row[dec_column],current_sidereal_time=current_sidereal_time,ignore_night=ignore_night)
         return mask
+    
+    def plot_bbox(self,ax,**kwargs):
+        """ Plot the TMO bounding box on the given axes"""
+        kwargs["color"] = kwargs.get("color","green")
+        kwargs["linestyle"] = kwargs.get("linestyle","dashed")
+        return ax.plot(bbox_x,bbox_y,**kwargs)
 
-    def plot_onsky(self, dt=None,candidates=None,current_sidereal_time=None, fig=None, ax=None):
-        """ Take a list of candidates, create 2 plots of their observability at dt, and return the figures, axes and artists (to allow animation)"""
+    def plot_onsky(self, dt=None,candidates=None,current_sidereal_time=None, ax=None, crop_to_bbox=False,observable_only=False):
+        """ Take a list of candidates, create a plot of them onsky (plus sunrise, sunset, and bbox) and return the figures, axes and artists (to allow animation)"""
         if dt is None:
             dt = current_dt_utc()
         sunrise, sunset = self.get_sunrise_sunset(dt)
@@ -211,67 +215,65 @@ class TMO:
         ras = [c.RA for c in candidates]
         decs = [c.Dec for c in candidates]
         table = QTable([names,ras,decs],names=["name","RA","Dec"])
-        # calculate hour angles
-        # print("Table RA:",table["RA"])
-        # print("Table RA Type:",table["RA"].dtype)
-        # print("Current sidereal:",sidereal)
+        
         table["HA"] = [get_hour_angle(ra,dt,current_sidereal_time).deg for ra in table["RA"]]
-        # print("Table HA:",table["HA"])
-        # make column indicating which targets are observable
-        # this line used to look for obs viable at dt-timedelta(day=1), not sure why:
-        table["Observable"] = [self.observation_viable(dt,Angle(row["RA"],unit='deg'),Angle(row["Dec"],unit='deg'), current_sidereal_time=current_sidereal_time) for row in table]
+        if observable_only:
+        # make column indicating which targets are observable  - this line used to look for obs viable at dt-timedelta(day=1), not sure why:
+            table["Observable"] = [self.observation_viable(dt,Angle(row["RA"],unit='deg'),Angle(row["Dec"],unit='deg'), current_sidereal_time=current_sidereal_time, ignore_night=True) for row in table]
+            data = table[table["Observable"]]
+        else:
+            data = table
 
-        x,y = vertices_to_x_and_y(self.horizon_box_vertices)
-        # graph min needs to become more negative if already negative else less positive
-        min_coeff = 1.1 if min(x) < 0 else 0.9
+        figsize = (20,5)
+        if ax is None:
+            _, ax = plt.subplots(figsize=figsize)
 
-        xlims = [(-180,180),(min_coeff*min(x),1.1*max(x))]
-        min_coeff = 1.1 if min(y) < 0 else 0.9
-        ylims = [(-90,90),(min_coeff*min(y),1.1*max(y))]
-        figsizes = [(20,5),(10,10)]
-        tables = [table,table[table["Observable"]]]
+        if not crop_to_bbox:
+            xlimits = (-180,180)
+            ylimits = (-90,90)
+        else:
+            # graph min x, min y need to become more negative if already negative else less positive
+            x_min_coeff = 1.1 if min(bbox_x) < 0 else 0.9
+            xlimits = (x_min_coeff*min(bbox_x),1.1*max(bbox_x))
+            y_min_coeff = 1.1 if min(bbox_y) < 0 else 0.9
+            ylimits = (y_min_coeff*min(bbox_y),1.1*max(bbox_y))
+
+
         artists_ls = []
-        fig_ax_pairs = []
-        for data, figsize, xlimits, ylimits in zip(tables, figsizes,xlims,ylims):
-            fig, ax = plt.subplots(figsize=figsize)
-            # Plot the polygon outline
-            colors = plt.cm.tab20(np.linspace(0, 1, len(data)))
-            # draw the ha box
-            ax.cla()
-            # p = ax.plot(x, y, color='green', linestyle='dashed')
-            # HA = [wrap_around(ha) for ha in table["HA"]]
-            HA = table["HA"]
-            # print("HA:",HA)
-            ax.set_xlabel('HA (deg)')
-            ax.set_ylabel('Dec (deg)')
-            plt.axis('scaled')
-            ax.set_xlim(*xlimits)
-            ax.set_ylim(*ylimits)
-            plt.title(f"Observability at {dt.strftime('%Y-%m-%d %H:%M:%S')} UTC")
-            sunr, suns = dateToSidereal(sunrise,current_sidereal_time), dateToSidereal(sunset, current_sidereal_time)
-            sunr, suns = sunr-sidereal, suns-sidereal
-            sunr, suns = wrap_around(sunr.deg), wrap_around(suns.deg)
-            sunrise_line = ax.axvline(x=sunr, linestyle='--', color='red')
-            sunset_line = ax.axvline(x=suns, linestyle='--', color='blue')
+        colors = plt.cm.tab20(np.linspace(0, 1, len(data)))
+        ax.cla()
+        ax.set_xlabel('HA (deg)')
+        ax.set_ylabel('Dec (deg)')
+        plt.axis('scaled')
+        ax.set_xlim(*xlimits)
+        ax.set_ylim(*ylimits)
+        plt.title(f"Observability at {dt.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        sunr, suns = dateToSidereal(sunrise,current_sidereal_time), dateToSidereal(sunset, current_sidereal_time)
+        sunr, suns = sunr-sidereal, suns-sidereal
+        sunr, suns = wrap_around(sunr.deg), wrap_around(suns.deg)
+        sunrise_line = ax.axvline(x=sunr, linestyle='--', color='red')
+        sunset_line = ax.axvline(x=suns, linestyle='--', color='blue')
 
-            if suns < sunr:
-                fill = ax.axvspan(suns, sunr, alpha=0.2, color='gray')
-            else:
-                fill1 = ax.axvspan(xlimits[0],sunr,alpha=0.2,color="gray")
-                fill2 = ax.axvspan(suns,xlimits[1],alpha=0.2,color="gray")
+        if suns < sunr:
+            fill = ax.axvspan(suns, sunr, alpha=0.2, color='gray')
+        else:
+            fill1 = ax.axvspan(xlimits[0],sunr,alpha=0.2,color="gray")
+            fill2 = ax.axvspan(suns,xlimits[1],alpha=0.2,color="gray")
 
-            artists = [ax.plot(x, y, color='green', linestyle='dashed'),sunrise_line,sunset_line]
-            
-            # to label the vertices of the box for debugging:
-            # for i, p in enumerate(zip(x,y)):
-            #     px,py = p
-            #     artists.append(ax.text(px,py,s=str(i)))
+        # draw the bbox
+        bbox = self.plot_bbox(ax)
 
-            for i, row in enumerate(data):
-                artists.append(ax.scatter(row["HA"], row["Dec"], c=[colors[i]], label=row["name"],s=10))
-            artists_ls.append(artists)
-            fig_ax_pairs.append((fig,ax))
-        return fig_ax_pairs, artists_ls, tables
+        artists = [bbox,sunrise_line,sunset_line]
+        
+        # to label the vertices of the box for debugging:
+        # for i, p in enumerate(zip(x,y)):
+        #     px,py = p
+        #     artists.append(ax.text(px,py,s=str(i)))
+
+        for i, row in enumerate(data):
+            artists.append(ax.scatter(row["HA"], row["Dec"], c=[colors[i]], label=row["name"],s=10))
+        artists_ls.append(artists)
+        return ax, artists_ls, data
     
 if __name__ == "__main__":
     class Candidate:
@@ -280,15 +282,14 @@ if __name__ == "__main__":
             self.Dec = Dec
             self.CandidateName = CandidateName
 
-    tmo = TMO()
+    tmo = ObsConstraint()
     lst = get_current_sidereal_time(tmo.locationInfo)
     t = find_transit_time(lst,tmo.locationInfo)
     print("Current time:",current_dt_utc())
     print("Hour angle:",get_hour_angle(lst,t,lst))
     print("Transit time:", find_transit_time(RA=lst,location=tmo.locationInfo,target_dt=t))
     c = [Candidate(**{"RA":lst,"Dec":0,'CandidateName':"test"})]
-    t = find_transit_time(c[0].RA,tmo.locationInfo) + timedelta(hours=1.5)
+    # t = find_transit_time(c[0].RA,tmo.locationInfo) + timedelta(hours=1.5)
     tmo.plot_onsky(candidates=c,dt=t)
-    print("Observable:",tmo.observation_viable(t,lst,0))
+    print("Observable:",tmo.observation_viable(t,lst,0, ignore_night=True))
     plt.show()
-    # plt.show(block=False)

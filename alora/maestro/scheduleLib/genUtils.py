@@ -22,9 +22,9 @@ from abc import ABCMeta, abstractmethod
 import pandas as pd
 from pytz import UTC as dtUTC
 
-from .tmo import TMO
+from ...astroutils.obs_constraints import ObsConstraint
 
-tmo = TMO()
+tmo = ObsConstraint()
 
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ScheduleError(Exception):
 class TypeConfiguration(metaclass=ABCMeta):
     """!
     The TypeConfiguration class is a class subclassed by each Config module. Must be constructed and returned by the
-    getConfig() function in the TypeConfiguration's database_[config_name].py file.
+    getConfig() function in the TypeConfiguration's schedule_[config_name].py file.
     """
 
     @abstractmethod
@@ -402,7 +402,7 @@ def toSexagesimal(angle: Angle):
     return angle.to_string()
 
 
-from .observing_utils import ensureAngle
+from ...astroutils.observing_utils import ensureAngle
 
 # def ensureAngle(angle):
 #     """!
@@ -422,7 +422,7 @@ from .observing_utils import ensureAngle
 #     return angle
 
 
-from .observing_utils import ensureFloat
+from ...astroutils.observing_utils import ensureFloat
 
 # def ensureFloat(angle):
 #     """!
@@ -455,7 +455,7 @@ def roundToTenMinutes(dt):
     return dt - timedelta(minutes=dt.minute % 10, seconds=dt.second, microseconds=dt.microsecond)
 
 
-from .observing_utils import angleToTimedelta
+from ...astroutils.observing_utils import angleToTimedelta
 
 # def angleToTimedelta(angle: Angle):  # low precision
 #     """!
@@ -552,20 +552,20 @@ observation_viable = tmo.observation_viable
 #         return window[0] < dt < window[1]
 
 
-from .observing_utils import current_dt_utc
+from ...astroutils.observing_utils import current_dt_utc
 
 # def current_dt_utc():
     # return datetime.utcnow().replace(tzinfo=dtUTC)
 
 
 
-from .observing_utils import get_current_sidereal_time
+from ...astroutils.observing_utils import get_current_sidereal_time
 
 # def get_current_sidereal_time(locationInfo):
 #     now = current_dt_utc().replace(second=0, microsecond=0)
 #     return Time(now).sidereal_time('mean', longitude=locationInfo.longitude)
 
-from .observing_utils import find_transit_time
+from ...astroutils.observing_utils import find_transit_time
 
 # def find_transit_time(rightAscension: Angle, location):
 #     """!Calculate the transit time of an object at the given location.

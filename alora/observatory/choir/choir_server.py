@@ -11,7 +11,7 @@ from threading import Thread, Event
 from datetime import datetime
 from pytz import UTC
 
-from alora.observatory.config import config as cfg, configure_logger, logging_dir
+from alora.config import config as cfg, configure_logger, logging_dir
 
 app = Flask(__name__)
 notification_queue = queue.Queue()

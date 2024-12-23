@@ -12,8 +12,8 @@ import queue, threading
 import atexit
 import inspect
 
-from alora.observatory.config import config as cfg
-from .config import telem_log_dir, service_dir, fallback_dir
+from alora.config import config as cfg
+from alora.observatory.telemetry.config import telem_log_dir, service_dir, fallback_dir
 
 telem_port = int(cfg['TELEMETRY_PORT'])
 valid_sqlite_datatypes = ['INT', 'INTEGER', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'BIGINT', 'UNSIGNED BIG INT', 'INT2', 'INT8', 'CHARACTER', 'VARCHAR', 'VARYING CHARACTER', 'NCHAR', 'NATIVE CHARACTER', 'NVARCHAR', 'TEXT', 'CLOB', 'BLOB', 'REAL', 'DOUBLE', 'DOUBLE PRECISION', 'FLOAT', 'NUMERIC', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME']

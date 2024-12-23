@@ -90,7 +90,7 @@ def make_csv_candidates(csv_names):
         "pl_obs_start": "CVal1",
         "pl_obs_end": "CVal2",
         "NightOfTransit": "CVal3",
-        "pl_ingress": "CVal4",
+        "pl_ingress": "CVal4",  # this is in julian day
         "pl_egress": "CVal5",
         "pl_dur_in_min": "CVal6",
         "pl_dur_in_min_buffered": "CVal7",

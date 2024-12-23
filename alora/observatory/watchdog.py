@@ -3,7 +3,7 @@ from os.path import dirname, join
 from alora.observatory.observatory import Observatory
 import socket
 import time
-from alora.observatory.config import configure_logger, config
+from alora.config import configure_logger, config
 from alora.observatory.telemetry.sensors.tempest_weather_sensor import TempestWeatherSensor
 from alora.observatory.choir import Vocalist
 import flask
