@@ -2,7 +2,6 @@ import os
 from os.path import join, dirname, abspath
 import subprocess
 from flask import Flask, request, jsonify
-from alora.astroutils import calc_mean_fwhm, source_catalog
 from astropy.io import fits
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
@@ -21,11 +20,6 @@ os.makedirs(config["SOLVE_DIR"],exist_ok=True)
 
 app = Flask(__name__)
 
-def make_source_cat(data:np.ndarray):
-    mean_fwhm = calc_mean_fwhm(data)
-    cat = source_catalog(data,source_sigma=3,ncont=5,fwhm_pix=mean_fwhm)
-    return cat
-
 def _solve(data):
     filepath = data.get('filepath').replace("D:\\", "/mnt/d/").replace("C:\\", "/mnt/c/")
     flags = data.get('flags', [])
@@ -33,22 +27,10 @@ def _solve(data):
     if not filepath or not os.path.isfile(filepath):
         return jsonify({'error': 'Invalid file path'}), 400
     
-    with fits.open(filepath) as hdul:
-        data = hdul[0].data
-    
-    cat = make_source_cat(data)
-    newpath = filepath.replace(".fits", "_cat.fits")
-    cat.write(newpath, format='fits', overwrite=True)
-
-    data["width"] = data.shape[1]
-    data["height"] = data.shape[0]
-    data["xcolumn"] = "xcentroid"
-    data["ycolumn"] = "ycentroid"
-
     wcspath = join(config["SOLVE_DIR"], filepath.replace(".fits", ".wcs"))
     data["wcs"] = wcspath
 
-    args = ['solve-field', newpath] + flags
+    args = ['solve-field', filepath] + flags
     for key in data:
         if key not in ['filepath',"flags"]:
             args.append(f'--{key}')
@@ -63,7 +45,9 @@ def _solve(data):
         with fits.open(wcspath) as hdul:
             wcs_header = hdul[0].header
 
-        with fits.open(filepath, mode='update') as hdul:
+        fitspath = data.get("fitspath",filepath)
+
+        with fits.open(fitspath, mode='update') as hdul:
             header = hdul[0].header
             for key in ["CRVAL1", "CRVAL2", "CRPIX1", "CRPIX2", "CUNIT1", "CUNIT2", "CD1_1", "CD1_2", "CD2_1", "CD2_2"]:
                 header[key] = wcs_header[key]
