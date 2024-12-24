@@ -1,4 +1,5 @@
 import sys, os
+from os.path import abspath
 import requests
 import numpy as np
 from astropy.io import fits
@@ -6,14 +7,14 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy.units import Quantity
 import astropy.units as u
 from alora.astroutils import calc_mean_fwhm, source_catalog
-from alora.observatory.config import config
+from alora.config import config
 
 path = sys.argv[1]
 
 def make_source_cat(data:np.ndarray):
     mean_fwhm = calc_mean_fwhm(data)
     cat = source_catalog(data,source_sigma=3,ncont=5,fwhm_pix=mean_fwhm)
-    return cat
+    return cat["xcentroid","ycentroid"]
 
 def fancy_solve(path, *args, **kwargs):
     with fits.open(path) as hdul:
@@ -49,19 +50,24 @@ def gensolve(path, guess_ra=None, guess_dec=None, scale_lower=None, scale_upper=
     return _solve(path, *args, **kwargs)
 
 def _solve(filepath, *args, **kwargs):
-    kwargs["filepath"] = path
-    
+    # kwargs["filepath"] = abspath(path)
+    print("solving",filepath)
     with fits.open(filepath) as hdul:
         data = hdul[0].data
 
     cat = make_source_cat(data)
-    newpath = filepath.replace(".fits", "_cat.fits")
+    if ".fits" in filepath:
+        newpath = filepath.replace(".fits", "_cat.fits")
+    else:
+        newpath = filepath.replace(".fit", "_cat.fits")
+
     cat.write(newpath, format='fits', overwrite=True)
+    print("cat path:",newpath)
 
     kwargs["width"] = data.shape[1]
     kwargs["height"] = data.shape[0]
-    kwargs["xcolumn"] = "xcentroid"
-    kwargs["ycolumn"] = "ycentroid"
+    kwargs["x-column"] = "xcentroid"
+    kwargs["y-column"] = "ycentroid"
     kwargs["fitspath"] = filepath  # specify the fits path that the sol will be written into, even tho the actual file the solution is derived from is a catalog
     kwargs["filepath"] = newpath
 
