@@ -50,7 +50,7 @@ def _solve(data):
 
     args = ['solve-field', newpath] + flags
     for key in data:
-        if key != 'filepath':
+        if key not in ['filepath',"flags"]:
             args.append(f'--{key}')
             args.append(str(data[key]))
         print(f"{key}: {data[key]}")
