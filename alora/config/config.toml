@@ -51,3 +51,10 @@ WATCHDOG_PORT = 3055
 
 [ASTROMETRY]
     SEARCH_RADIUS = 3.0 # degrees to search around guess RA/Dec if provided
+    SOLVE_DIR = "./solutions"
+    ASTROM_EXEC = "wsl"
+    PORT = 5555
+    [EXTRACTION]
+        SIGMA = 3
+        NCONT = 5
+
