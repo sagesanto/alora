@@ -1,18 +1,24 @@
 import os
 from os.path import join, dirname, abspath
 import subprocess
+import tomlkit
+import sqlite3
 from flask import Flask, request, jsonify
+import numpy as np
+from threading import Thread, Event
+import queue, threading
 from astropy.io import fits
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
-import numpy as np
-import tomlkit
-import sqlite3
 
 db_path = join(dirname(abspath(__file__)), "astrom.db")
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
+
+solve_queue = queue.Queue()
+lock = threading.Lock()
+
 
 cur.execute("CREATE TABLE IF NOT EXISTS astrometry (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT, wcs TEXT, flags TEXT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 conn.commit()
@@ -36,12 +42,18 @@ app = Flask(__name__)
 
 def create_record(filepath,wcspath,flags):
     conn,cur = connect_to_db()
-    cur.execute("INSERT INTO astrometry (filepath, wcs, flags, status) VALUES (?,?,?,?)",(filepath,wcspath,flags,"processing"))
+    cur.execute("INSERT INTO astrometry (filepath, wcs, flags, status) VALUES (?,?,?,?)",(filepath,wcspath,flags,"queued"))
     conn.commit()
     cur.execute("SELECT last_insert_rowid()")
     res= cur.fetchone()[0]
     conn.close()
     return res
+
+def mark_processing(record_id):
+    conn,cur = connect_to_db()
+    cur.execute("UPDATE astrometry SET status = 'processing' WHERE id = ?",(record_id,))
+    conn.commit()
+    conn.close()
 
 def mark_solved(record_id):
     conn,cur = connect_to_db()
@@ -54,6 +66,29 @@ def mark_failed(record_id):
     cur.execute("UPDATE astrometry SET status = 'failed' WHERE id = ?",(record_id,))
     conn.commit()
     conn.close()
+
+def unpack_args(req_dict):
+    args = []
+    for key in req_dict:
+        if key not in ['filepath',"flags","fitspath"]:
+            args.append(f'--{key}')
+            args.append(str(req_dict[key]))
+    return args
+
+def solver(stop_event):
+    while True:
+        if stop_event.is_set():
+            return
+        try:
+            event = solve_queue.get(timeout=0.1)
+        except queue.Empty:
+            continue
+        with lock:
+            # create record in db
+            fpath = event.pop("filepath")
+            wcspath = event.pop("wcs")
+            job_id = create_record(fpath, "","")
+
 
 def _solve(data):
     print(data["filepath"])
