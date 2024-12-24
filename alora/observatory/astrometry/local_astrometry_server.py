@@ -64,6 +64,7 @@ def _solve(data):
     try:
         result = subprocess.run(args, capture_output=True, text=True)
         if result.returncode != 0:
+            mark_failed(job_id)
             return jsonify({'astrometry error': result.stderr, "job_id":job_id}), 500
         
         with fits.open(wcspath) as hdul:
@@ -78,6 +79,7 @@ def _solve(data):
         with open(join(logging_dir,f"astrom_{job_id}.log"),"w+") as f:
             f.write(result.stdout)
         print(f"Solved {filepath}")
+        mark_solved(job_id)
         return jsonify({'message': 'Astrometry.net processing complete', "job_id":job_id}), 200
     except Exception as e:
         return jsonify({'error': str(e),"job_id":job_id}), 500
