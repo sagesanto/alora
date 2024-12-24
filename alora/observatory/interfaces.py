@@ -73,7 +73,7 @@ class PlateSolve(ABC):
         self.write_out = write_out
 
     @abstractmethod
-    def solve(self, impath, **kwargs):
+    def solve(self, impath, *args, **kwargs):
         pass
 
     # @abstractmethod

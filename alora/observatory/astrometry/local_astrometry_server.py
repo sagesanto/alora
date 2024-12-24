@@ -16,11 +16,18 @@ cur = conn.cursor()
 
 cur.execute("CREATE TABLE IF NOT EXISTS astrometry (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT, wcs TEXT, flags TEXT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 conn.commit()
+conn.close()
 config_path = join(dirname(abspath(__file__)),"config.toml")
 with open(config_path,"rb") as f:
     config = tomlkit.load(f)
 
-logging_dir = abspath(join(dirname(abspath(__file__)),os.pardir,"logs"))
+def connect_to_db():
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    return conn, cur
+
+logging_dir = abspath(join(dirname(abspath(__file__)),"logs"))
 
 os.makedirs(logging_dir,exist_ok=True)
 os.makedirs(config["SOLVE_DIR"],exist_ok=True)
@@ -28,18 +35,25 @@ os.makedirs(config["SOLVE_DIR"],exist_ok=True)
 app = Flask(__name__)
 
 def create_record(filepath,wcspath,flags):
+    conn,cur = connect_to_db()
     cur.execute("INSERT INTO astrometry (filepath, wcs, flags, status) VALUES (?,?,?,?)",(filepath,wcspath,flags,"processing"))
     conn.commit()
     cur.execute("SELECT last_insert_rowid()")
-    return cur.fetchone()[0]
+    res= cur.fetchone()[0]
+    conn.close()
+    return res
 
 def mark_solved(record_id):
+    conn,cur = connect_to_db()
     cur.execute("UPDATE astrometry SET status = 'solved' WHERE id = ?",(record_id,))
     conn.commit()
+    conn.close()
 
 def mark_failed(record_id):
+    conn,cur = connect_to_db()
     cur.execute("UPDATE astrometry SET status = 'failed' WHERE id = ?",(record_id,))
     conn.commit()
+    conn.close()
 
 def _solve(data):
     print(data["filepath"])
@@ -94,8 +108,10 @@ def status():
     job_id = data.get("job_id")
     if job_id is None:
         return jsonify({'error': 'Missing job_id'}), 400
+    conn,cur = connect_to_db()
     cur.execute("SELECT * FROM astrometry WHERE id = ?",(job_id,))
     record = cur.fetchone()
+    conn.close()
     if record is None:
         return jsonify({'error': 'Job not found'}), 404
     return jsonify({"status":record[4]})
@@ -117,9 +133,11 @@ def log():
 
 @app.route("/jobs", methods=["GET"])
 def jobs():
+    conn,cur = connect_to_db()
     cur.execute("SELECT * FROM astrometry")
     records = cur.fetchall()
-    return jsonify({"jobs":records})
+    conn.close()
+    return jsonify({"jobs":[dict(r) for r  in records]})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=config["PORT"])
