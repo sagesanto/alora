@@ -1,8 +1,0 @@
-SOLVE_DIR = "/home/alora/observatory/solutions"
-
-PORT = 5555
-
-[EXTRACTION]
-SIGMA = 3
-NCONT = 5
-
