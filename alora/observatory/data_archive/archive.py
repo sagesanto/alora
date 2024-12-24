@@ -1,4 +1,4 @@
-from alora.observatory.config import config
+from alora.config import config
 
 class Observation:
     def __init__(self, coord, obs_time, exp_time_s, nframes, filter, track_rates="sidereal", closed_loop=False, exp_delay=0, binning=config["DEFAULTS"]["BIN"]):
