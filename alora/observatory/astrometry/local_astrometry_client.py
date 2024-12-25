@@ -1,5 +1,5 @@
 import sys, os
-from os.path import abspath
+from os.path import abspath, join, dirname
 import requests
 import numpy as np
 from astropy.io import fits
@@ -21,7 +21,7 @@ class Astrometry(PlateSolve):
             scale = config["CAMERA"]["FIELD_WIDTH"] # arcmin
 
         resp = solve(impath, guess_coords=guess_coords, scale=scale, scale_units="arcminwidth", *args, write_out=self.write_out, **kwargs)
-        return resp.json()["success"], resp.content
+        return resp.json()
 
 def solve(path, guess_coords:SkyCoord=None, scale:float=config["CAMERA"]["PIX_SCALE"], scale_units="arcsecperpix", *args, **kwargs):
     if guess_coords is not None:
@@ -61,13 +61,17 @@ def _solve(filepath,write_out=print,extract=True, *args, **kwargs):
 
     endpoint = "cat_and_solve" if extract else "solve"
 
-    return requests.post(f"http://localhost:{acfg['PORT']}/{endpoint}", json=kwargs, headers={"Content-Type": "application/json"})
+    return requests.post(f"http://localhost:{acfg['PORT']}/{endpoint}", json=kwargs, headers={"Content-Type": "application/json"}, timeout=8)
 
 
 def main():
     path = sys.argv[1]
     ast = Astrometry()
-    print(ast.solve(path))
+    if os.path.isdir(path):
+        for f in [f for f in os.listdir(path) if f.endswith("fit")]:
+            ast.solve(join(path,f))
+    else:
+        print(ast.solve(path))
 
 if __name__ == "__main__":
     main()

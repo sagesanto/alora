@@ -157,6 +157,8 @@ def main():
             logger.error(f"Couldn't find a file for pointing {i+1}: {e}. Moving on.")
             continue
 
+        o.plate_solver.solve(join(IMG_OUTDIR,img))
+
 
         # skyx already writes RA, Dec, LST to header
 

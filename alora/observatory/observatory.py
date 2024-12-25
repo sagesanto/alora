@@ -2,6 +2,7 @@ import os
 import dotenv
 from .skyx import SkyXTelescope, SkyXCamera
 from .relay_dome import RelayDome
+from .astrometry import Astrometry
 from .data_archive import Observation
 from alora.config import config
 import requests
@@ -15,13 +16,15 @@ class Observatory:
         self.telescope = None
         self.dome = None
         self.camera = None
+        self.plate_solver=None
         self.connect()
     
-    def connect(self, telescope=SkyXTelescope, dome=RelayDome, camera=SkyXCamera):
+    def connect(self, telescope=SkyXTelescope, dome=RelayDome, camera=SkyXCamera, plate_solver=Astrometry):
         self.telescope = telescope(write_out=self.write_out)
         dotenv.load_dotenv()
         self.dome = dome(write_out=self.write_out)
         self.camera = camera(write_out=self.write_out)
+        self.plate_solver = plate_solver(write_out=self.write_out)
 
     def open(self,do_home=True):
         self.write_out("Checking whether it is safe to open the dome...")
