@@ -9,11 +9,31 @@ import astropy.units as u
 from alora.astroutils import calc_mean_fwhm, source_catalog
 from alora.config import config
 from alora.observatory.interfaces import PlateSolve
-
+import socketio
 
 acfg = config["ASTROMETRY"]
 
 class Astrometry(PlateSolve):
+    def __init__(self, write_out=print):
+        self.write_out = write_out
+        self.sio = socketio.Client()
+        self.sio.connect(f"http://localhost:{acfg['PORT']}")
+
+    def solve_sync(self,impath, *args, **kwargs):
+        # try:
+        job_id = solve(impath, *args, **kwargs)["job_id"]
+        # except Exception as e:
+        #     self.write_out(f"Error : {e}")
+        #     return
+        self.write_out(f"Job ID: {job_id}")
+        @self.sio.on("job_done")
+        def job_done(data):
+            if data["job_id"] == job_id:
+                self.write_out("Job done.")
+                self.sio.disconnect()
+        while True:
+            self.sio.wait()
+
     def solve(self,impath, *args, **kwargs):
         with fits.open(impath) as hdul:
             header = hdul[0].header

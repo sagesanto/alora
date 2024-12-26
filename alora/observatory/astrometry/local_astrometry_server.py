@@ -4,6 +4,7 @@ import subprocess
 import tomlkit
 import sqlite3
 from flask import Flask, request, jsonify
+from flask_socketio import SocketIO, emit
 import numpy as np
 from threading import Thread, Event
 import queue, threading
@@ -55,6 +56,7 @@ os.makedirs(astrom_logging_dir,exist_ok=True)
 os.makedirs(acfg["SOLVE_DIR"],exist_ok=True)
 
 app = Flask(__name__)
+sio = SocketIO(app)
 
 def create_record(filepath,flags):
     with lock: 
@@ -94,6 +96,13 @@ def mark_failed(record_id):
         conn.commit()
         conn.close()
 
+def mark_crashed(record_id):
+    with lock:
+        conn,cur = connect_to_db()
+        cur.execute("UPDATE astrometry SET status = 'crashed' WHERE id = ?",(record_id,))
+        conn.commit()
+        conn.close()
+
 def set_status_message(record_id,msg):
     with lock:
         conn,cur = connect_to_db()
@@ -129,8 +138,9 @@ def solver(stop_event):
         try:
             if not filepath or not os.path.isfile(filepath):
                 logger.error(f"File not found: {filepath}")
-                mark_failed(job_id)
+                mark_crashed(job_id)
                 set_status_message(job_id, f"file not found: '{filepath}'")
+                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
                 continue
 
             mark_processing(job_id)
@@ -181,12 +191,13 @@ def solver(stop_event):
             logger.info("Solving...")
             result = subprocess.run(args=args, capture_output=True, text=True)
             if result.returncode != 0:
-                mark_failed(job_id)
+                mark_crashed(job_id)
                 err = result.stderr
                 logger.error("Astrometry error: "+ err)
                 set_status_message(job_id,"Astrometry error: "+err)
                 with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
                     f.write(result.stderr)
+                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
                 continue
             
             with fits.open(wcspath) as hdul:
@@ -204,16 +215,20 @@ def solver(stop_event):
                 logger.info(f"Solved {filepath}")
                 mark_solved(job_id)
                 set_status_message(job_id,"Astrometry.net successfully solved the field.")
+                sio.emit("job_finished",{"job_id":job_id,"status":"solved"})
                 continue
             else:
                 logger.error(f"Failed to solve {filepath}")
                 mark_failed(job_id)
                 set_status_message(job_id,"Astrometry.net did not find a solution.")
+                sio.emit("job_finished",{"job_id":job_id,"status":"failed"})
                 continue
         except Exception as e:
             logger.error("Alora Astrom server exception: "+str(e))
+            logger.exception(e)
             if job_id != -1:
-                mark_failed(job_id)
+                mark_crashed(job_id)
+                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
                 set_status_message(job_id,"Alora Astrom server exception: "+str(e))
             continue
 
@@ -281,7 +296,7 @@ if __name__ == '__main__':
     solver_thread = Thread(target=solver, args=(stop_event,))
     solver_thread.start()
     logger.info(f'Starting Astrometry server on port {acfg["PORT"]}')
-    app.run(host='0.0.0.0', port=acfg["PORT"])
+    sio.run(app, host='0.0.0.0', port=acfg["PORT"])
     logger.info('Shutting down...')
     stop_event.set()
     solver_thread.join()
