@@ -12,6 +12,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
+from datetime import datetime
 import numpy as np
 import tomlkit
 import sqlite3
@@ -75,31 +76,10 @@ def set_args(record_id,args):
         conn.commit()
         conn.close()
 
-def mark_processing(record_id):
+def mark_status(record_id,status):
     with lock:
         conn,cur = connect_to_db()
-        cur.execute("UPDATE astrometry SET status = 'processing' WHERE id = ?",(record_id,))
-        conn.commit()
-        conn.close()
-
-def mark_solved(record_id):
-    with lock:
-        conn,cur = connect_to_db()
-        cur.execute("UPDATE astrometry SET status = 'solved' WHERE id = ?",(record_id,))
-        conn.commit()
-        conn.close()
-
-def mark_failed(record_id):
-    with lock:
-        conn,cur = connect_to_db()
-        cur.execute("UPDATE astrometry SET status = 'failed' WHERE id = ?",(record_id,))
-        conn.commit()
-        conn.close()
-
-def mark_crashed(record_id):
-    with lock:
-        conn,cur = connect_to_db()
-        cur.execute("UPDATE astrometry SET status = 'crashed' WHERE id = ?",(record_id,))
+        cur.execute("UPDATE astrometry SET status = ? WHERE id = ?",(status, record_id,))
         conn.commit()
         conn.close()
 
@@ -122,6 +102,13 @@ def unpack_args(req_dict):
             args.append(str(req_dict[key]))
     return args
 
+def notify(job_id,status, status_msg):
+    mark_status(job_id,status)
+    set_status_message(job_id,status_msg)
+    with lock:
+        sio.emit("job_finished",{"job_id":job_id,"status":status})
+
+
 def solver(stop_event):
     while True:
         if stop_event.is_set():
@@ -138,12 +125,10 @@ def solver(stop_event):
         try:
             if not filepath or not os.path.isfile(filepath):
                 logger.error(f"File not found: {filepath}")
-                mark_crashed(job_id)
-                set_status_message(job_id, f"file not found: '{filepath}'")
-                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
+                notify(job_id,"crashed",f"file not found: '{filepath}'")
                 continue
 
-            mark_processing(job_id)
+            mark_status(job_id,"processing")
 
             if event.pop("do_source_extraction"):
                 with fits.open(filepath) as hdul:
@@ -191,18 +176,15 @@ def solver(stop_event):
             logger.info("Solving...")
             result = subprocess.run(args=args, capture_output=True, text=True)
             if result.returncode != 0:
-                mark_crashed(job_id)
                 err = result.stderr
+                notify(job_id,"crashed","Astrometry error: "+err)
                 logger.error("Astrometry error: "+ err)
-                set_status_message(job_id,"Astrometry error: "+err)
                 with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
                     f.write(result.stderr)
-                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
                 continue
+
             if os.path.exists(solpath):
                 logger.info(f"Solved {filepath}")
-                mark_solved(job_id)
-                set_status_message(job_id,"Astrometry.net successfully solved the field.")
                 with fits.open(wcspath) as hdul:
                     wcs_header = hdul[0].header
 
@@ -214,20 +196,17 @@ def solver(stop_event):
                         header[key] = wcs_header[key]
                 with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
                     f.write(result.stdout)
+                notify(job_id,"solved","Astrometry.net successfully solved the field.")
                 continue
             else:
                 logger.error(f"Failed to solve {filepath}")
-                mark_failed(job_id)
-                set_status_message(job_id,"Astrometry.net did not find a solution.")
-                sio.emit("job_finished",{"job_id":job_id,"status":"failed"})
+                notify(job_id,"failed","Astrometry.net did not find a solution")
                 continue
         except Exception as e:
             logger.error("Alora Astrom server exception: "+str(e))
             logger.exception(e)
             if job_id != -1:
-                mark_crashed(job_id)
-                sio.emit("job_finished",{"job_id":job_id,"status":"crashed"})
-                set_status_message(job_id,"Alora Astrom server exception: "+str(e))
+                notify(job_id,"crashed","Alora Astrom server exception: "+str(e))
             continue
 
 
@@ -288,6 +267,86 @@ def jobs():
     records = cur.fetchall()
     conn.close()
     return jsonify({"jobs":[dict(r) for r  in records]})
+
+@app.route("/show",methods=["GET"])
+def show():
+    with lock:
+        conn, cur = connect_to_db()
+        cur.execute("SELECT id, filepath, status, status_msg, created_at FROM astrometry ORDER BY created_at DESC")
+        records = cur.fetchall()
+        conn.close()
+        html_content = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Astrometry Job Results</title>
+            <style>
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                .processing {
+                    background-color: lightblue;
+                }
+                .failed {
+                    background-color: lightcoral;
+                }
+                .crashed {
+                    background-color: darkred;
+                    color: white;
+                }
+                .solved {
+                    background-color: lightgreen;
+                }
+                .queued {
+                    background-color: gray;
+                    color: white;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Astrometry Job Results</h1>
+            <table>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Date Requested</th>
+                    <th>Filepath</th>
+                    <th>Status</th>
+                    <th>Status Message</th>
+                </tr>
+        """
+
+        for record in records:
+            job_id, filepath, status, status_msg, created_at = record
+            created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')
+            created_at_str = created_at.strftime('%Y-%m-%d %H:%M:%S')
+            html_content += f"""
+                <tr class="{status}">
+                    <td>{job_id}</td>
+                    <td>{created_at_str}</td>
+                    <td>{filepath}</td>
+                    <td>{status.capitalize()}</td>
+                    <td>{status_msg}</td?
+                </tr>
+            """
+
+        html_content += """
+            </table>
+        </body>
+        </html>
+        """
+        return html_content
+
 
 if __name__ == '__main__':
     stop_event = Event()        

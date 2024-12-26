@@ -10,6 +10,7 @@ from alora.astroutils import calc_mean_fwhm, source_catalog
 from alora.config import config
 from alora.observatory.interfaces import PlateSolve
 import socketio
+import threading
 
 acfg = config["ASTROMETRY"]
 
@@ -17,22 +18,38 @@ class Astrometry(PlateSolve):
     def __init__(self, write_out=print):
         self.write_out = write_out
         self.sio = socketio.Client()
+        self.current_job_id = None
+        self.job_done_event = threading.Event()
+        self.setup()
+
+    def setup(self):
+        self.connect()
+        
+    def connect(self):
         self.sio.connect(f"http://localhost:{acfg['PORT']}")
 
+    def reset(self):
+        self.job_done_event.clear()
+        self.connect()
+
     def solve_sync(self,impath, *args, **kwargs):
-        # try:
-        job_id = solve(impath, *args, **kwargs)["job_id"]
-        # except Exception as e:
-        #     self.write_out(f"Error : {e}")
-        #     return
-        self.write_out(f"Job ID: {job_id}")
-        @self.sio.on("job_done")
-        def job_done(data):
-            if data["job_id"] == job_id:
-                self.write_out("Job done.")
+        self.current_job_id = self.solve(impath, *args, **kwargs)["job_id"]
+        self.write_out(f"Waiting for job {self.current_job_id} to finish...")
+        @self.sio.on("job_finished")
+        def job_finished(data):
+            self.write_out(f"Got job finished event: {data}")
+            if data["job_id"] == self.current_job_id:
+                self.write_out(f"Job {self.current_job_id} done. Status: {data['status']}")
                 self.sio.disconnect()
-        while True:
-            self.sio.wait()
+                self.job_done_event.set()
+            else:
+                self.write_out(f"Got job finished event for job {data['job_id']}, but current job is {self.current_job_id}")
+
+ 
+        self.job_done_event.wait()
+        self.write_out("Job done.")
+        self.reset()
+        
 
     def solve(self,impath, *args, **kwargs):
         with fits.open(impath) as hdul:
@@ -95,7 +112,7 @@ def main():
         for f in [f for f in os.listdir(path) if f.endswith("fit")]:
             ast.solve(join(path,f))
     else:
-        print(ast.solve(path))
+        print(ast.solve_sync(path))
 
 if __name__ == "__main__":
     main()

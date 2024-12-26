@@ -5,7 +5,10 @@ __pycache__/
 # C extensions
 *.so
 alora\observatory\astrometry\logs
+alora\observatory\astrometry\solutions
+**solutions
 **.db
+**.dat
 
 # Distribution / packaging
 .Python
