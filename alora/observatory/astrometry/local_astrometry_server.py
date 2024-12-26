@@ -188,22 +188,21 @@ def solver(stop_event):
                 with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
                     f.write(result.stderr)
                 continue
-            
-            with fits.open(wcspath) as hdul:
-                wcs_header = hdul[0].header
-
-            fitspath = event.get("fitspath",filepath)
-
-            with fits.open(fitspath, mode='update') as hdul:
-                header = hdul[0].header
-                for key in ["WCSAXES","CTYPE1","CTYPE2","EQUINOX","CRVAL1", "CRVAL2", "CRPIX1", "CRPIX2", "CUNIT1", "CUNIT2", "CD1_1", "CD1_2", "CD2_1", "CD2_2"]:
-                    header[key] = wcs_header[key]
-            with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
-                f.write(result.stdout)
             if os.path.exists(solpath):
                 logger.info(f"Solved {filepath}")
                 mark_solved(job_id)
                 set_status_message(job_id,"Astrometry.net successfully solved the field.")
+                with fits.open(wcspath) as hdul:
+                    wcs_header = hdul[0].header
+
+                fitspath = event.get("fitspath",filepath)
+
+                with fits.open(fitspath, mode='update') as hdul:
+                    header = hdul[0].header
+                    for key in ["WCSAXES","CTYPE1","CTYPE2","EQUINOX","CRVAL1", "CRVAL2", "CRPIX1", "CRPIX2", "CUNIT1", "CUNIT2", "CD1_1", "CD1_2", "CD2_1", "CD2_2"]:
+                        header[key] = wcs_header[key]
+                with open(join(astrom_logging_dir,f"astrom_{job_id}.log"),"w+") as f:
+                    f.write(result.stdout)
                 continue
             else:
                 logger.error(f"Failed to solve {filepath}")
@@ -212,6 +211,7 @@ def solver(stop_event):
                 continue
         except Exception as e:
             logger.error("Alora Astrom server exception: "+str(e))
+            logger.exception(e)
             if job_id != -1:
                 mark_failed(job_id)
                 set_status_message(job_id,"Alora Astrom server exception: "+str(e))

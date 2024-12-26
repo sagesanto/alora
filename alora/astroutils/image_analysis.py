@@ -75,12 +75,14 @@ def source_catalog(data:np.ndarray, source_sigma, ncont, precision=np.float32, f
 
 def calc_mean_fwhm(data:np.ndarray, source_sigma=5, ncont=16, precision=np.float32, return_catalog=False):
     catalog = source_catalog(data, source_sigma, ncont, precision=precision)
+    if not len(catalog):
+         raise ValueError("No sources detected in image!")
     mean_cat = catalog.groups.aggregate(np.mean)
     mean_fwhm = float(mean_cat["fwhm"][0].to_value("pix"))
 
-    catalog = source_catalog(data, source_sigma, ncont, precision=precision, fwhm_pix=mean_fwhm)
-    mean_cat = catalog.groups.aggregate(np.mean)
-    mean_fwhm = float(mean_cat["fwhm"][0].to_value("pix"))
+    # catalog = source_catalog(data, source_sigma, ncont, precision=precision, fwhm_pix=mean_fwhm)
+    # mean_cat = catalog.groups.aggregate(np.mean)
+    # mean_fwhm = float(mean_cat["fwhm"][0].to_value("pix"))
     if return_catalog:
         return mean_fwhm, catalog
     return mean_fwhm
