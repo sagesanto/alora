@@ -37,7 +37,11 @@ class Astrometry(PlateSolve):
     def solve(self,impath, *args, **kwargs):
         with fits.open(impath) as hdul:
             header = hdul[0].header
-            guess_coords = SkyCoord(Angle(header["OBJCTRA"],unit="hourangle"), Angle(header["OBJCTDEC"],unit="deg"))
+            try:
+                guess_coords = SkyCoord(Angle(header["OBJCTRA"],unit="hourangle"), Angle(header["OBJCTDEC"],unit="deg"))
+            except Exception as e:
+                self.write_out(f"Exception when getting coords from header for '{impath}' {str(e)}")
+                guess_coords = None
             scale = config["CAMERA"]["FIELD_WIDTH"] # arcmin
 
         resp = solve(impath, guess_coords=guess_coords, scale=scale, scale_units="arcminwidth", *args, write_out=self.write_out, **kwargs)

@@ -3,23 +3,29 @@
 
 def main():
     import sys, os
-    from os.path import join
+    from os.path import dirname, abspath, join
     from astroquery.gaia import Gaia
     import numpy as np
     from python_tsp.heuristics import solve_tsp_local_search
     import time
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt    
+    from datetime import datetime
+    from pytz import UTC
 
     from astropy.table import Table
     from astropy.coordinates import SkyCoord
     import astropy.units as u
     from astropy.io import fits
+    from astropy.coordinates import Angle, SkyCoord, Latitude, Longitude
+    from astropy.time import Time
+    from astropy.coordinates import ICRS, FK5
 
     from alora.observatory.skyx import SkyXCamera, SkyXTelescope
     from alora.astroutils.obs_constraints import ObsConstraint
     from alora.observatory.observatory import Observatory
     from alora.astroutils.observing_utils import current_dt_utc, ang_sep
-    from alora.config import config, configure_logger, logging_dir
+    from alora.config import config, configure_logger, logging_dir, observatory_location
+
     
     logger = configure_logger("pointing_model",join(logging_dir,"pointing_model.log"))
 
@@ -154,14 +160,55 @@ def main():
         try:
             img = [f for f in os.listdir(IMG_OUTDIR) if f not in prefiles][0]
         except Exception as e:
-            logger.error(f"Couldn't find a file for pointing {i+1}: {e}. Moving on.")
+            logger.error(f"Couldn't find a file for pointing {i+1}: {e}. (Is SkyX using a date-based subfolder?) Moving on.")
             continue
 
         o.plate_solver.solve(join(IMG_OUTDIR,img))
 
 
-        # skyx already writes RA, Dec, LST to header
+    # make tpoint file
+    LATITUDE = str(Latitude(observatory_location.latitude*u.deg).to_string(sep=" ",pad=True,alwayssign=True))
+    fitsfiles = [join(IMG_OUTDIR,f) for f in os.listdir(IMG_OUTDIR) if f.endswith("fit")]
+    with fits.open(fitsfiles[0]) as hdul:
+        DATE = datetime.strptime(hdul[0].header["DATE-OBS"],"%Y-%m-%dT%H:%M:%S.%f")
+    
+    outfile = join(OUTDIR,f"pointing_{DATE.strftime('%Y%m%d')}.dat")
+    d = {"temp":"10.00","pressure":"1000.00", "altitude":"1103.00","humidity":"0.50","wavelength":"0.5500","lapse rate":"0.0065"}
+    fk5_apparent = FK5(equinox=Time(datetime.now(tz=UTC).year,format="jyear"))
+    with open(outfile,"w+") as f:
+        f.write(f"! Pointing Model: {DATE.strftime('%Y%m%d')}"+"\n")
+        f.write("! Alora Observatory\n")
+        f.write(":NODA\n")
+        f.write(":EQUAT\n")  # is this right?
+        f.write(f"{LATITUDE} {DATE.strftime('%Y %m %d')} {d['temp']} {d['pressure']} {d['altitude']} {d['humidity']} {d['wavelength']} {d['lapse rate']}\n")
 
+        dRAs = []
+        dDecs = []
+        for fit in fitsfiles:
+            with fits.open(fit) as hdul:
+                header = hdul[0].header
+            try:
+                ra_ac = Angle(header["CRVAL1"]*u.deg)
+            except KeyError:  # didnt solve
+                continue
+            dec_ac = Angle(header["CRVAL2"]*u.deg)
+
+            coord = SkyCoord(ra_ac, dec_ac, frame='fk5')
+            c2 = coord.transform_to(fk5_apparent)
+            lst = header["LST"]
+            lst_ang = Angle(lst,u.hourangle)
+            round(lst_ang.hour,4)
+
+            ra_ac_str = c2.ra.to_string(sep=" ",pad=True,unit="hourangle",precision=4)
+            dec_ac_str = c2.dec.to_string(sep=" ",alwayssign=True,pad=True,precision=4)
+            dRAs.append((Longitude(Angle(header['OBJCTRA'],unit="hourangle"))-Longitude(c2.ra)).degree)
+            dDecs.append((Angle(header['OBJCTDEC'],unit="degree")-c2.dec).degree)
+            lst_minute = (lst_ang.hour - int(lst_ang.hour)) * 60
+            # plt.plot([(lst_ang-Angle(header['OBJCTRA'],unit="hourangle")).degree,(lst_ang-c2.ra).degree], [Angle(header['OBJCTDEC'],u.deg).degree,c2.dec.degree])
+            f.write(f"{ra_ac_str} {dec_ac_str} {header['OBJCTRA']} {header['OBJCTDEC']}  {round(lst_ang.hour):02} {str(round(lst_minute,3)).rjust(6)} \n")
+                # skyx already writes RA, Dec, LST to header
+
+    print("All done!")
         # get RA, Dec from telescope
         # write telescope RA, Dec, sidereal time to fits header
         # lst = tmo.get_current_tmo_sidereal_time(kind="apparent")
