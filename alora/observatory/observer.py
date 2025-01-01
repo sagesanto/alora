@@ -41,7 +41,7 @@ cur = conn.cursor()
 cur.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_name TEXT, client TEXT, priority TEXT, status TEXT, arguments TEXT, status_msg TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, executed_at INTEGER)")
 conn.commit()
 cur.execute("SELECT max(id) FROM events")
-event_id_counter=cur.fetchone()[0]
+event_id_counter=cur.fetchone()[0] or 0
 print("Initial event id counter:",event_id_counter)
 conn.close()
 db_job_queue = queue.Queue()
@@ -235,7 +235,7 @@ def handle_event(event_name):
     queues[event.priority].put(event)
     return jsonify({"status":"ok","event_id":event_id}), 200
 
-@app.route("/state",methods=["GET"])
+@app.route("/status",methods=["GET"])
 def state():
     job_state = job_state_stack.get(timeout=0.1)
     job_state_stack.put(job_state)

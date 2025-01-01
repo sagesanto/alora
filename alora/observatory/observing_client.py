@@ -19,8 +19,9 @@ class Observatory(ObsConstraint):
         self.sio = socketio.Client()
         self.sio.connect(self.URL)
         self.write_out = write_out
+        self.synchronous = True
 
-    def _send_event(self,event_name,client,priority,args,wait=False):
+    def _send_event(self,event_name,client,priority,args):
         r = self.session.post(f"{self.URL}/exec/{event_name}",json={"client":client,"priority":priority,"args":args})
         self.write_out(f"Sent event {event_name}")
         if r.status_code != 200:
@@ -29,7 +30,7 @@ class Observatory(ObsConstraint):
             return
         event_id = r.json()["event_id"]
         self.write_out(f"Event {event_id} created.")
-        if wait:
+        if self.synchronous:
             self.write_out("Waiting for event to finish...")
             event_done_event = threading.Event()
             @self.sio.on("event_finished")
@@ -49,13 +50,20 @@ class Observatory(ObsConstraint):
     def slew(self, coord:SkyCoord, closed_loop=True,closed_exptime=1):
         self._send_event("Slew","test","normal",{"ra":{"ra":coord.ra.deg,"unit":"deg"},"dec":{"dec":coord.dec.deg,"unit":"deg"}, "closed_loop":closed_loop,"closed_exptime":{"closed_exptime":closed_exptime,"unit":"second"}},wait=True)
 
+    def close(self):
+        self._send_event("CloseSequence","test","normal",{})
+
 def write_out(*args):
-    logger.info(" ".join(args))    
+    logger.info(" ".join([str(a) for a in args]))    
 
 obs = Observatory(write_out=write_out)
 lst = obs.get_obs_lst()
 
-obs.slew(SkyCoord(ra=lst,dec=0*u.deg),closed_loop=True,closed_exptime=1)
+obs.close()
+
+# obs.slew(SkyCoord(ra=lst,dec=0*u.deg),closed_loop=False,closed_exptime=1)
+
+
 
 # endpoints = {"s":"Shutdown","u":"Reactivate","r":"Reserve","f":"Free"}
 

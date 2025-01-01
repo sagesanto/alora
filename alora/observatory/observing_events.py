@@ -58,6 +58,19 @@ class QArg(Arg):
     def serialize(self, value):
         return {self.name:value.value,"unit":value.unit._long_names[0]}
     
+# class BoolArg(Arg):
+#     @property
+#     def template(self):
+#         return self.name
+    
+#      def __call__(self, v:Any) -> Any:
+#         if v.lower() not in ["true","false"]:
+#             raise ValueError(f"Invalid bool value '{v}'")
+#         return True if v.lower() == "true" else False
+
+#     # serialize the value for json
+#     def serialize(self, value):
+#         return value
 
 class Event(ABC):
     name = None

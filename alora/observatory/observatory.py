@@ -27,7 +27,7 @@ class Observatory:
         self.camera = None
         self.plate_solver=None
         self.job_state = "free"
-        self.dome_state = "closed"  # we assume the dome is closed when we start, but we don't actually know for now
+        self.dome_state = "open"  # we assume the dome is open when we start, but we don't actually know for now
         self.connect()
     
     def connect(self, telescope=SkyXTelescope, dome=RelayDome, camera=SkyXCamera, plate_solver=Astrometry):
@@ -54,6 +54,7 @@ class Observatory:
             self.write_out("Homing telescope...")
             self.telescope.home()
             self.write_out("Homed telescope.")
+        self.dome_state = "open"
 
     def close(self):
         self.write_out("Parking telescope...")
@@ -65,6 +66,7 @@ class Observatory:
         self.write_out("Closing dome...")
         self.dome._close()
         self.write_out("Closed!")
+        self.dome_state = "closed"
 
     @property
     def safe_to_open(self):
