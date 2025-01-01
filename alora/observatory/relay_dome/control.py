@@ -34,29 +34,29 @@ class RelayDome(Dome):
         # Call through observatory object to avoid damaging telescope
         self.beep()
         self.write_out("Beeping to warn of dome movement")
-        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF")
-        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF")
+        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF",timeout=1)
+        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF",timeout=1)
         time.sleep(0.2)
         assert self.status() == "00" 
-        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=ON")
+        _ = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=ON",timeout=1)
         wait_time = RelayDome.TIMINGS_S['close'] + 10 
         self.write_out(f"Waiting {wait_time} seconds for dome to close")
         time.sleep(wait_time)
         self.write_out("Done!")
-        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF")
+        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF",timeout=1)
 
     def _open(self):
         # DANGER: DO NOT CALL DIRECTLY.
         # Call through observatory object to avoid damaging telescope
         self.write_out("Beeping to warn of dome movement")
         self.beep()
-        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF")
-        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF")
+        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['close']}=OFF",timeout=1)
+        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF",timeout=1)
         time.sleep(0.2)
         assert self.status() == "00" 
-        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=ON")
+        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=ON",timeout=1)
         wait_time = RelayDome.TIMINGS_S['open'] + 10 
         self.write_out(f"Waiting {wait_time} seconds for dome to open")
         time.sleep(wait_time)
         self.write_out("Done!")
-        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF")
+        r = self.session.get(self.url_template+f"/outlet?{RelayDome.RELAYS['open']}=OFF",timeout=1)
