@@ -1,11 +1,19 @@
 import os
+import requests
 import dotenv
+import numpy as np
+
+from astropy.coordinates import SkyCoord, Angle
+from astropy.io import fits
+import astropy.units as u
+
+from alora.astroutils.observing_utils import J2000_to_apparent
 from .skyx import SkyXTelescope, SkyXCamera
 from .relay_dome import RelayDome
 from .astrometry import Astrometry
 from .data_archive import Observation
 from alora.config import config
-import requests
+
 
 class AloraError(Exception):
     pass
@@ -64,5 +72,31 @@ class Observatory:
             return watchdog_status
         except Exception as e:
             raise AloraError(f"Couldn't get watchdog status when checking whether it was safe to open the dome: {e}") from e
+
+    def slew(self, coord:SkyCoord, closed_loop=True,closed_exptime=2, epoch="J2000"):
+        if epoch not in ["J2000","apparent"]:
+            raise ValueError(f"Invalid epoch: {epoch}. Valid values are 'J2000' and 'apparent'.")
+        if epoch == "J2000":
+            # need to convert to apparent for skyx
+            coord = J2000_to_apparent(coord)
+        self.write_out(f"Slewing to {coord}")
+        self.telescope.slew(coord)
+        if closed_loop:
+            closed_path = config["CLOSED_LOOP_OUTDIR"]
+            offset = None
+            while offset is None or offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
+                success, fnames, status = self.camera.take_dataset(1,closed_exptime,"CLEAR",closed_path)
+                im = fnames[0]
+                self.plate_solver.solve(im,synchronous=True)
+                with fits.open(im) as hdul:
+                    ra = hdul[0].header["CRVAL1"]*u.deg
+                    dec = hdul[0].header["CRVAL2"]*u.deg
+                actual_pos = SkyCoord(ra,dec)
+                actual_pos = J2000_to_apparent(actual_pos)
+                offset = actual_pos.separation(coord)
+                self.write_out(f"Tried to slew to {coord}. Actual position is {actual_pos}. Offset is {offset}.")
+                if offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
+                    self.write_out(f"Offset is {offset}. Doing another slew loop.")
+                    self.telescope.jog((coord.ra-actual_pos.ra)*np.cos(coord.dec.rad),coord.dec-actual_pos.dec)
 
     # def queue_observation():

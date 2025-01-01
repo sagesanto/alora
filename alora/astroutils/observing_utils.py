@@ -16,16 +16,23 @@ from astropy.coordinates import SkyCoord
 from datetime import datetime, timedelta, timezone
 #from datetime import UTC as dtUTC 
 from astropy.time import Time
+from astropy.coordinates import angular_separation
+from astropy.coordinates import ICRS, FK5
 import pytz
 from pytz import UTC as dtUTC
-from astropy.coordinates import angular_separation
 
 
 # dec_vertices = [item for key in horizonBox.keys() for item in key]  # this is just a list of integers, each being one member of one
 
 sidereal_rate = 360 / (23 * 3600 + 56 * 60 + 4.091)  # deg/second
+fk5_apparent = FK5(equinox=Time(datetime.now(tz=dtUTC).year,format="jyear"))
 
 def ang_sep(c1, c2): return angular_separation(c1.ra, c1.dec, c2.ra, c2.dec)
+
+def J2000_to_apparent(coord):
+    # technically this actually goes fk5 -> fk5now but should be pretty close?
+    c = SkyCoord(coord.ra, coord.dec, frame='fk5')
+    return c.transform_to(fk5_apparent)
 
 def current_dt_utc():
     return datetime.utcnow().replace(tzinfo=dtUTC)

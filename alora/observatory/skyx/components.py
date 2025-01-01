@@ -251,6 +251,15 @@ class SkyXTelescope(Telescope):
         resp = self.conn.parse_response()
         if resp != "0":
             raise SkyXException(f"SkyX reports that stopping tracking failed. Response was {resp}")
+    
+    def jog(self,dRA:Angle,dDec:Angle):
+        dec_jog_dir = "N" if dDec.deg > 0 else "S"
+        ra_jog_dir = "E" if dRA.deg > 0 else "W"
+        script = load_script("jog_telescope.js",dRA=dRA.to_value("arcmin"),dDec=dDec.to_value("arcmin"),ra_dir=ra_jog_dir,dec_dir=dec_jog_dir)
+        self.conn.send(script)
+        resp = self.conn.parse_response()
+        if resp != "0":
+            raise SkyXException(f"SkyX reports that jogging failed. Response was {resp}. Last slew error: {self.check_last_slew_error()}")
 
 
 class SkyXCamera(Camera):
@@ -290,9 +299,13 @@ class SkyXCamera(Camera):
             raise ValueError(f"Invalid filter '{filter}'. Must be one of {list(FILTER_WHEEL.keys())}")
         filter = FILTER_WHEEL[filter]
         outdir = abspath(outdir)
-        outdir = outdir.replace("\\","/")
-        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir, exp_delay=exp_delay, prefix=name_prefix,asynchronous=asynchronous, binning=binning)
-
+        outdir_ = outdir.replace("\\","/")
+        prefiles = []
+        if exists(outdir):
+            prefiles = os.listdir(outdir)
+        else:
+            os.makedirs(outdir)
+        script = load_script("take_data.js",exptime=exptime,nframes=nframes,filter=filter,outdir=outdir_, exp_delay=exp_delay, prefix=name_prefix,asynchronous=asynchronous, binning=binning)
         if not self.conn.connected:
             raise ConnectionError("Cannot take exposure: no connection to SkyX.")
         self.conn.send(script)
@@ -300,12 +313,13 @@ class SkyXCamera(Camera):
             r = self.conn.parse_response()
             if not r.endswith("success"):
                 raise SkyXException(f"SkyX reports that the dataset failed: {r}")
-            r = r.replace(" success","")
-            if r != "Ready":
+            fnames = [join(outdir,f) for f in os.listdir(outdir) if f not in prefiles and f.endswith(config["IMAGE_EXTENSION"])]
+            status = r.replace(" success","")
+            if status != "Ready":
                 self.write_out("WARNING [ALORA]: Camera not idle after synchronous dataset!")
-                return True, r
-            return True, 0  # success
-        return None, 0  # async in progress
+                return True, fnames, r
+            return True, fnames, 0  # success
+        return None, [], 0  # async in progress
     
     def take_dataset(self, nframes, exptime, filter:str, outdir, exp_delay=0, name_prefix='im', binning=config["DEFAULTS"]["BIN"]):
         # synchronous version of start_dataset. works the same but strictly synchronous

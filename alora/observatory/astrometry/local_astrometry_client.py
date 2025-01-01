@@ -17,7 +17,7 @@ acfg = config["ASTROMETRY"]
 
 class Astrometry(PlateSolve):
     def __init__(self, write_out=print):
-        self.write_out = write_out
+        super().__init__(write_out)
         self.sio = socketio.Client()
         self.current_job_id = None
         self.job_done_event = threading.Event()
@@ -33,25 +33,7 @@ class Astrometry(PlateSolve):
         self.job_done_event.clear()
         self.connect()
 
-    def solve_sync(self,impath, *args, **kwargs):
-        self.current_job_id = self.solve(impath, *args, **kwargs)["job_id"]
-        self.write_out(f"Waiting for job {self.current_job_id} to finish...")
-        @self.sio.on("job_finished")
-        def job_finished(data):
-            self.write_out(f"Got job finished event: {data}")
-            if data["job_id"] == self.current_job_id:
-                self.write_out(f"Job {self.current_job_id} done. Status: {data['status']}")
-                self.sio.disconnect()
-                self.job_done_event.set()
-            else:
-                self.write_out(f"Got job-finished event for job {data['job_id']}, but current job is {self.current_job_id}")
- 
-        self.job_done_event.wait()
-        self.write_out("Job done.")
-        self.reset()
-        
-
-    def solve(self,impath, *args, **kwargs):
+    def solve(self,impath, *args, synchronous=True, **kwargs):
         with fits.open(impath) as hdul:
             header = hdul[0].header
             try:
@@ -62,11 +44,27 @@ class Astrometry(PlateSolve):
             scale = config["CAMERA"]["FIELD_WIDTH"] # arcmin
 
         resp = solve(impath, guess_coords=guess_coords, scale=scale, scale_units="arcminwidth", *args, write_out=self.write_out, **kwargs)
-        return resp.json()
+        resp = resp.json()
+        if synchronous:
+            self.current_job_id = resp["job_id"]
+            self.write_out(f"Waiting for job {self.current_job_id} to finish...")
+            @self.sio.on("job_finished")
+            def job_finished(data):
+                self.write_out(f"Got job finished event: {data}")
+                if data["job_id"] == self.current_job_id:
+                    self.write_out(f"Job {self.current_job_id} done. Status: {data['status']}")
+                    self.sio.disconnect()
+                    self.job_done_event.set()
+                else:
+                    self.write_out(f"Got job-finished event for job {data['job_id']}, but current job is {self.current_job_id}")
+    
+            self.job_done_event.wait()
+            self.write_out("Job done.")
+            self.reset()
+        return resp
 
 def solve(path, guess_coords:SkyCoord=None, scale:float=config["CAMERA"]["PIX_SCALE"], scale_units="arcsecperpix", *args, **kwargs):
     if guess_coords is not None:
-        pass
         kwargs["ra"] = guess_coords.ra.deg
         kwargs["dec"] = guess_coords.dec.deg
         kwargs["radius"] = config["ASTROMETRY"]["SEARCH_RADIUS"]
@@ -109,7 +107,7 @@ def main():
     path = sys.argv[1]
     ast = Astrometry()
     if os.path.isdir(path):
-        for f in [f for f in os.listdir(path) if f.endswith("fit")]:
+        for f in [f for f in os.listdir(path) if f.endswith(config["IMAGE_EXTENSION"])]:
             ast.solve(join(path,f))
     else:
         print(ast.solve_sync(path))

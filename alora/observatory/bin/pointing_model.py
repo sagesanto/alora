@@ -168,7 +168,7 @@ def main():
 
     # make tpoint file
     LATITUDE = str(Latitude(observatory_location.latitude*u.deg).to_string(sep=" ",pad=True,alwayssign=True))
-    fitsfiles = [join(IMG_OUTDIR,f) for f in os.listdir(IMG_OUTDIR) if f.endswith("fit")]
+    fitsfiles = [join(IMG_OUTDIR,f) for f in os.listdir(IMG_OUTDIR) if f.endswith(config["IMAGE_EXTENSION"])]
     with fits.open(fitsfiles[0]) as hdul:
         DATE = datetime.strptime(hdul[0].header["DATE-OBS"],"%Y-%m-%dT%H:%M:%S.%f")
     

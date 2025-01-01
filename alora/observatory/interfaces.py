@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Union, Callable, Tuple
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from alora.config import default_binning
 
 class Telescope(ABC):
@@ -42,6 +42,10 @@ class Telescope(ABC):
     def stop_tracking(self):
         pass
 
+    @abstractmethod
+    def jog(self,dRA:Angle,dDec:Angle):
+        pass
+
 
 class Camera(ABC):
     def __init__(self,write_out:Callable[[str],None]=print) -> None:
@@ -73,7 +77,7 @@ class PlateSolve(ABC):
         self.write_out = write_out
 
     @abstractmethod
-    def solve(self, impath, *args, **kwargs):
+    def solve(self, impath, *args, synchronous=True, **kwargs):
         pass
 
     # @abstractmethod

@@ -2,9 +2,15 @@ from abc import abstractmethod, ABC
 from typing import Any
 from astropy.units import Quantity
 import astropy.units as u
+from astropy.coordinates import SkyCoord, Angle
+from astropy.io import fits
+
+import numpy as np
 import json
 import time
-from astropy.utils.decorators import classproperty
+
+from alora.astroutils.observing_utils import J2000_to_apparent
+from alora.config import config
 
 class Arg:
     def __init__(self,name,type,required,description,default=None):
@@ -220,8 +226,9 @@ class Slew(Event):
     allowed_dome_states = ["open"]
     args_template = [QArg("ra","deg",True,"The right ascension to slew to."),
                 QArg("dec","deg",True,"The declination to slew to."),
+                Arg("epoch", "str", False, "The epoch of the coordinates. Valid vals: 'J2000', 'apparent'", default="J2000"),
                 Arg("closed_loop","bool",False,"Whether to perform a closed-loop slew.",default=True),
                 QArg("closed_exptime","second",False,"The exposure time for the closed-loop slew. Only used if closed_loop is True.",default=2*u.second)]
     
     def _execute(self,observatory):
-        observatory.telescope.slew(self.args["coord"])
+        observatory.slew(SkyCoord(ra=self.args["ra"],dec=self.args["dec"]),closed_loop=self.args["closed_loop"],closed_exptime=self.args["closed_exptime"],epoch=self.args["epoch"])

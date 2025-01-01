@@ -26,7 +26,6 @@ from pytz import UTC
 
 
 from alora.observatory.observatory import Observatory
-# from alora.astroutils import calc_mean_fwhm, source_catalog
 # from .data_archive import Observation
 from alora.config import config, configure_logger, logging_dir
 import alora.observatory.observing_events as events

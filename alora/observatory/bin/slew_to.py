@@ -15,7 +15,7 @@ def main():
     import astropy.units as u
 
     o = Observatory()
-    o.connect()
+    # o.connect()
 
     ra = args.ra*u.deg 
     dec = args.dec*u.deg

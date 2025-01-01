@@ -1,6 +1,6 @@
 //Make a shorter named variable to represent the built in camera
 var cam = ccdsoftCamera;
-var out
+var out = "";
 
 // these will be replaced by the python code before being sent 
 var nframes = {{nframes}}
@@ -48,5 +48,3 @@ try{
 	out = "SkyX Camera Error during exposure: " + e;
 	throw 'c';
 }
-
-out = cam.ExposureStatus + " success"
