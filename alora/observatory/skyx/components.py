@@ -89,7 +89,7 @@ class SkyXClient:
         r = not is_socket_closed(self.socket,write_out=self.write_out)
         if r:
             return True
-        self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable.")
+        # self.write_out(f"WARNING [ALORA]: SkyXClient connection failed. SkyX connection will be unavailable.")
         return False
     
     def disconnect(self):
@@ -312,6 +312,7 @@ class SkyXCamera(Camera):
         return self.start_dataset(nframes, exptime, filter, outdir, exp_delay=exp_delay, name_prefix=name_prefix, binning=binning, asynchronous=False)
 
     def add_to_pointing_model(self,exptime):
+        raise NotImplementedError("This does not work. Use the pointing_model bin file to generate tpoint files instead.")
         # use AutoMap to take img, solve field, and add to pointing model
         if not self.conn.connected:
             raise ConnectionError("Cannot add to pointing model: no connection to SkyX.")

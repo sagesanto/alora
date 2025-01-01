@@ -6,6 +6,7 @@ from astropy.io import fits
 from astropy.coordinates import SkyCoord, Angle
 from astropy.units import Quantity
 import astropy.units as u
+import socketio.exceptions
 from alora.astroutils import calc_mean_fwhm, source_catalog
 from alora.config import config
 from alora.observatory.interfaces import PlateSolve
@@ -20,10 +21,10 @@ class Astrometry(PlateSolve):
         self.sio = socketio.Client()
         self.current_job_id = None
         self.job_done_event = threading.Event()
-        self.setup()
-
-    def setup(self):
-        self.connect()
+        try:
+            self.connect()
+        except socketio.exceptions.ConnectionError:
+            self.write_out("Could not connect to astrometry server. Will try again when needed.")
         
     def connect(self):
         self.sio.connect(f"http://localhost:{acfg['PORT']}")
@@ -43,8 +44,7 @@ class Astrometry(PlateSolve):
                 self.sio.disconnect()
                 self.job_done_event.set()
             else:
-                self.write_out(f"Got job finished event for job {data['job_id']}, but current job is {self.current_job_id}")
-
+                self.write_out(f"Got job-finished event for job {data['job_id']}, but current job is {self.current_job_id}")
  
         self.job_done_event.wait()
         self.write_out("Job done.")

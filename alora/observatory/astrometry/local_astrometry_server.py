@@ -353,7 +353,7 @@ if __name__ == '__main__':
     solver_thread = Thread(target=solver, args=(stop_event,))
     solver_thread.start()
     logger.info(f'Starting Astrometry server on port {acfg["PORT"]}')
-    sio.run(app, host='0.0.0.0', port=acfg["PORT"])
+    sio.run(app, host='127.0.0.1', port=acfg["PORT"])
     logger.info('Shutting down...')
     stop_event.set()
     solver_thread.join()

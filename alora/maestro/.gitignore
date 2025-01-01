@@ -21,6 +21,7 @@ LogOut.csv
 LogOut.csv
 files/misc_and_records/temp_addcandidates.csv
 /files/configs/**
+/files/db_csvs
 user_fixed_test.csv
 files/temp_addcandidates.csv
 files/testing/**

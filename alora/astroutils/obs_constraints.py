@@ -68,7 +68,7 @@ class ObsConstraint:
         # self._dec_vertices.sort()
         # # self.horizon_box_vertices = self.get_horizon_box_vertices()
     
-    def get_current_tmo_sidereal_time(self,kind="mean"):
+    def get_obs_lst(self,kind="mean"):
         return get_current_sidereal_time(self.locationInfo,kind=kind)
 
     def get_hour_angle_limits(self,dec):
@@ -96,7 +96,7 @@ class ObsConstraint:
         @return: [startTime, endTime]
         @rtype: list(datetime)
         """
-        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_current_tmo_sidereal_time()
+        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_obs_lst()
 
         target_dt = target_dt or current_dt_utc()
         t = find_transit_time(ensureAngle(RA), self.locationInfo, current_sidereal_time=current_sidereal_time,
@@ -117,7 +117,7 @@ class ObsConstraint:
     def get_RA_window(self, target_dt, dec, ra=None, current_sidereal_time=None):
         # get the bounding RA coordinates of the TMO observability window for time target_dt for targets at declination dec. Optionally, input an RA to also get out that RA, adjusted for box-shifting
 
-        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_current_tmo_sidereal_time()
+        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_obs_lst()
         adjusted_ra = ra.copy() if ra is not None else None
         hourAngleWindow = self.get_hour_angle_limits(dec)
         if not hourAngleWindow: return False
@@ -165,7 +165,7 @@ class ObsConstraint:
         @return: bool
         """
         logger = logging.getLogger(__name__)
-        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_current_tmo_sidereal_time()
+        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_obs_lst()
         HA_window = self.get_hour_angle_limits(dec)
         if not HA_window:
             return False
@@ -188,7 +188,7 @@ class ObsConstraint:
 
     def observability_mask(self,table:QTable,current_sidereal_time=None,ra_column="ra",dec_column="dec",dt_or_column="dt", ignore_night=False):
         """ Take a table of candidates and return a mask of which ones are observable at the given time (or times if dt_or_column is the name of a column)"""
-        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_current_tmo_sidereal_time()
+        current_sidereal_time = current_sidereal_time if current_sidereal_time is not None else self.get_obs_lst()
         mask = np.zeros(len(table),dtype=bool)
         for i,row in enumerate(table):
             if isinstance(dt_or_column,str):

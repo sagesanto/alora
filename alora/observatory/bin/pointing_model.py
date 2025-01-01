@@ -65,7 +65,7 @@ def main():
 
     coords = []
     t=current_dt_utc()
-    lst = tmo.get_current_tmo_sidereal_time()
+    lst = tmo.get_obs_lst()
     best_ras, best_decs, best_nums = [], [], []
     while len(best_ras) < NSAMPLES:
         RA = rng.uniform(0,360)
@@ -211,7 +211,7 @@ def main():
     print("All done!")
         # get RA, Dec from telescope
         # write telescope RA, Dec, sidereal time to fits header
-        # lst = tmo.get_current_tmo_sidereal_time(kind="apparent")
+        # lst = tmo.get_obs_lst(kind="apparent")
         # tele_pos = o.telescope.pos
 
         # with fits.open(join(IMG_OUTDIR,img)) as hdul:
