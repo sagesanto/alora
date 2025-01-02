@@ -21,6 +21,7 @@ class Astrometry(PlateSolve):
         self.sio = socketio.Client()
         self.current_job_id = None
         self.job_done_event = threading.Event()
+        self.job_status = None
         try:
             self.connect()
         except socketio.exceptions.ConnectionError:
@@ -32,6 +33,7 @@ class Astrometry(PlateSolve):
     def reset(self):
         self.job_done_event.clear()
         self.connect()
+
 
     def solve(self,impath, *args, synchronous=True, **kwargs):
         with fits.open(impath) as hdul:
@@ -47,11 +49,13 @@ class Astrometry(PlateSolve):
         resp = resp.json()
         if synchronous:
             self.current_job_id = resp["job_id"]
+            self.job_status = None
             self.write_out(f"Waiting for job {self.current_job_id} to finish...")
             @self.sio.on("job_finished")
             def job_finished(data):
                 self.write_out(f"Got job finished event: {data}")
                 if data["job_id"] == self.current_job_id:
+                    self.job_status = data["status"]
                     self.write_out(f"Job {self.current_job_id} done. Status: {data['status']}")
                     self.sio.disconnect()
                     self.job_done_event.set()
@@ -61,7 +65,7 @@ class Astrometry(PlateSolve):
             self.job_done_event.wait()
             self.write_out("Job done.")
             self.reset()
-        return resp
+        return self.job_status == "solved", resp["job_id"]
 
 def solve(path, guess_coords:SkyCoord=None, scale:float=config["CAMERA"]["PIX_SCALE"], scale_units="arcsecperpix", *args, **kwargs):
     if guess_coords is not None:

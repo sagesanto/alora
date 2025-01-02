@@ -77,7 +77,7 @@ class PlateSolve(ABC):
         self.write_out = write_out
 
     @abstractmethod
-    def solve(self, impath, *args, synchronous=True, **kwargs):
+    def solve(self, impath, *args, synchronous=True, **kwargs) -> Tuple[bool,int]:
         pass
 
     # @abstractmethod

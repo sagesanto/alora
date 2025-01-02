@@ -3,6 +3,11 @@
 
 def main():
     import sys, os
+
+    if len(sys.argv) != 2:
+        print("Usage: python pointing_model.py <num points>")
+        sys.exit(1)
+
     from os.path import dirname, abspath, join
     from astroquery.gaia import Gaia
     import numpy as np
@@ -29,6 +34,8 @@ def main():
     
     logger = configure_logger("pointing_model",join(logging_dir,"pointing_model.log"))
 
+    logger.warning("RUNNING WITH CLOSED LOOP - WILL NOT PRODUCE A VALID POINTING MODEL")
+
     def dist_matrix(coords:SkyCoord):
         M = np.zeros((len(coords), len(coords)))
         indices = range(len(coords))
@@ -53,7 +60,7 @@ def main():
     EXPTIME = pointing_config["EXPTIME"]
     FILTER = pointing_config["FILTER"]
     RADIUS = 0.5  # search radius, degrees
-    NSAMPLES = pointing_config["NSAMPLES"]
+    NSAMPLES = sys.argv[1]
     BINNING = pointing_config["BIN"]
     MIN_BRIGHT_STARS = pointing_config["MIN_BRIGHT_STARS"]
     OUTDIR = join(pointing_config["OUTDIR"],current_dt_utc().strftime("%Y_%m_%d"))
@@ -152,7 +159,7 @@ def main():
 
     for i,(ra,dec) in enumerate(zip(fields["ra"], fields["dec"])):
         logger.info(f"{i+1}/{len(fields)} Slewing to ({ra},{dec})")
-        o.telescope.slew(SkyCoord(ra*u.deg,dec*u.deg),closed_loop=False)
+        o.telescope.slew(SkyCoord(ra*u.deg,dec*u.deg),closed_loop=True)   # WARNING CLOSED LOOP
         o.telescope.track_sidereal()
         time.sleep(2) # give it some time to start tracking
         prefiles = set(os.listdir(IMG_OUTDIR))

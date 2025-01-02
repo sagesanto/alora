@@ -2,6 +2,7 @@ import os
 import requests
 import dotenv
 import numpy as np
+import time
 
 from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
@@ -80,14 +81,22 @@ class Observatory:
             # need to convert to apparent for skyx
             coord = J2000_to_apparent(coord)
         self.write_out(f"Slewing to {coord}")
-        self.telescope.slew(coord)
+        self.telescope.slew(coord,closed_loop=closed_loop,closed_exptime=closed_exptime)
         if closed_loop:
             closed_path = config["CLOSED_LOOP_OUTDIR"]
             offset = None
             while offset is None or offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
+                self.telescope.track_sidereal()
+                self.write_out("Giving telescope two seconds to start tracking...")
+                time.sleep(2) # give it some time to start tracking
                 success, fnames, status = self.camera.take_dataset(1,closed_exptime,"CLEAR",closed_path)
                 im = fnames[0]
-                self.plate_solver.solve(im,synchronous=True)
+                status, job_id = self.plate_solver.solve(im,synchronous=True)
+                if not status:
+                    self.write_out(f"Failed to solve image {im}. Slewing by a field and looping again")
+                    # slew by a field width and height, then check offset
+                    self.telescope.jog(config["CAMERA"]["FIELD_WIDTH"]*u.arcmin,config["CAMERA"]["FIELD_HEIGHT"]*u.arcmin)
+                    continue
                 with fits.open(im) as hdul:
                     ra = hdul[0].header["CRVAL1"]*u.deg
                     dec = hdul[0].header["CRVAL2"]*u.deg
