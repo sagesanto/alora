@@ -2,19 +2,26 @@
 
 def main():
     import argparse
+    import os
+    from os.path import join, abspath
+    from alora.config import config
+    from alora.observatory.astrometry import Astrometry
+    
     parser = argparse.ArgumentParser()
-    parser.add_argument("images", nargs="+", type=str, help="The images to solve.")
+    parser.add_argument("paths", nargs="+", type=str, help="The images to solve or directory to solve")
+    parser.add_argument("--scale","-s",default=config["CAMERA"]["FIELD_WIDTH"], help="The width of the field, in arcmin")
     args = parser.parse_args()
-    from alora.observatory.observatory import Observatory
-    o = Observatory()
 
-    o.connect()
-    print("Solving...")
-    if len(args.images) == 1:
-        print(o.camera.solve(args.images[0]))
-    if len(args.images) > 1:
-        print(o.camera.batch_solve(args.images))
-    print("Done.")
+    paths = args.paths
+    ast = Astrometry()
+    ast.scale = args.scale
+    for path in paths:
+        path = abspath(path)
+        if os.path.isdir(path):
+            for f in [f for f in os.listdir(path) if f.endswith(config["IMAGE_EXTENSION"])]:
+                ast.solve(join(path,f),sync=True)
+        else:
+            ast.solve(path,sync=True)
 
 if __name__ == "__main__":
     main()

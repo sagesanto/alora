@@ -16,19 +16,21 @@ import threading
 acfg = config["ASTROMETRY"]
 
 class Astrometry(PlateSolve):
-    def __init__(self, write_out=print):
+    def __init__(self, write_out=print, scale=config["CAMERA"]["FIELD_WIDTH"]):
         super().__init__(write_out)
         self.sio = socketio.Client()
         self.current_job_id = None
         self.job_done_event = threading.Event()
         self.job_status = None
+        self.scale = scale
+        self.config = acfg
         try:
             self.connect()
         except socketio.exceptions.ConnectionError:
             self.write_out("Could not connect to astrometry server. Will try again when needed.")
         
     def connect(self):
-        self.sio.connect(f"http://localhost:{acfg['PORT']}")
+        self.sio.connect(f"http://localhost:{self.config['PORT']}")
 
     def reset(self):
         self.job_done_event.clear()
@@ -43,9 +45,9 @@ class Astrometry(PlateSolve):
             except Exception as e:
                 self.write_out(f"Exception when getting coords from header for '{impath}' {str(e)}")
                 guess_coords = None
-            scale = config["CAMERA"]["FIELD_WIDTH"] # arcmin
+            # scale = self.config["CAMERA"]["FIELD_WIDTH"] # arcmin
 
-        resp = solve(impath, guess_coords=guess_coords, scale=scale, scale_units="arcminwidth", *args, write_out=self.write_out, **kwargs)
+        resp = solve(impath, guess_coords=guess_coords, scale=self.scale, scale_units="arcminwidth", *args, write_out=self.write_out, **kwargs)
         resp = resp.json()
         if synchronous:
             self.current_job_id = resp["job_id"]
