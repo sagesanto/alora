@@ -1,0 +1,7 @@
+NAME = "TOI 5349"
+RA = 52.7124
+DEC = 20.87971
+PIX_SCALE = 0.226 # arcsec / pixel
+
+[CAMERA]
+FIELD_WIDTH = 6.05  # arcmin 
