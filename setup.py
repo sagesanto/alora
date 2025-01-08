@@ -35,7 +35,7 @@ setup(
             'park = alora.observatory.bin.park:main',
             'pointing_model = alora.observatory.bin.pointing_model:main',
             'imstat = alora.astroutils.bin.imstat:main',
-            'solve = alora.bin.solve:main'
+            'solve = alora.observatory.bin.solve:main'
         ]
     },
 )
