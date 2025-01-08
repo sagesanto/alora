@@ -18,7 +18,8 @@ def main():
     for path in paths:
         path = abspath(path)
         if os.path.isdir(path):
-            for f in [f for f in os.listdir(path) if f.endswith(config["IMAGE_EXTENSION"])]:
+            print("Solving dir")
+            for f in os.listdir(path):
                 ast.solve(join(path,f),sync=True)
         else:
             ast.solve(path,sync=True)
