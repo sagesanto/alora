@@ -20,7 +20,7 @@ def main():
         if os.path.isdir(path):
             print("Solving dir")
             for f in os.listdir(path):
-                ast.solve(join(path,f),sync=True)
+                ast.solve(join(path,f),synchronous=True)
         else:
             ast.solve(path,sync=True)
 
