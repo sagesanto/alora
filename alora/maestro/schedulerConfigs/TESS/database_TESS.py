@@ -90,7 +90,7 @@ def make_csv_candidates(csv_names):
         "pl_obs_start": "CVal1",
         "pl_obs_end": "CVal2",
         "NightOfTransit": "CVal3",
-        "pl_ingress": "CVal4",  # this is in julian day
+        "pl_ingress": "CVal4",
         "pl_egress": "CVal5",
         "pl_dur_in_min": "CVal6",
         "pl_dur_in_min_buffered": "CVal7",
@@ -133,8 +133,12 @@ def make_csv_candidates(csv_names):
     master_df["Filter"] = [tConfig.get("FILTER")] * len(master_df.index)
     master_df.rename(columns=colToCVal, inplace=True)
     master_df.drop(
-        columns=["ingress_dt", "egress_dt", "pl_tranmid", "pl_trandur", "RA_obs_start", "RA_obs_end"], inplace=True
+        columns=["ingress_dt", "egress_dt", "pl_tranmid", "RA_obs_start", "RA_obs_end"], inplace=True
     )
+    try:
+        master_df.drop(columns=["pl_trandur"],inplace=True)
+    except KeyError:
+        pass
 
     master_df = master_df.reset_index(drop=True)
     candidates = []
