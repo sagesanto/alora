@@ -1,5 +1,7 @@
-# Sage Santomenna 2023
+# Sage Santomenna 2023, 2025
 # models used by sqlalchemy to understand the database
+import os, sys
+import json
 from typing import List
 
 import sqlalchemy
@@ -10,12 +12,11 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import create_engine, Column, Integer, String, Numeric, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-import os, sys
 
 grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path.append(grandparentDir)
 
-from scheduleLib.db.dbConfig import Base
+from scheduleLib.db.dbConfig import candidate_base as Base, mapper_registry
 sys.path.remove(grandparentDir)
 
 # codes to be used for processing. if you change these, you need to recreate the db
@@ -59,6 +60,7 @@ class CandidateModel(Base):
     CandidateName = Column(String, nullable=False)
     Priority = Column(Integer, nullable=False)
     CandidateType = Column(String, nullable=False)
+    SchedulingType = Column(String, nullable=False)
     Updated = Column(String)
     StartObservability = Column(String)
     EndObservability = Column(String)
@@ -68,36 +70,97 @@ class CandidateModel(Base):
     RemovedDt = Column(String)
     RA = Column(Numeric)
     Dec = Column(Numeric)
-    dRA = Column(Numeric)
-    dDec = Column(Numeric)
     Magnitude = Column(Numeric)
-    RMSE_RA = Column(Numeric)
-    RMSE_Dec = Column(Numeric)
-    nObs = Column(Integer)
-    Score = Column(Integer)
-    ApproachColor = Column(String)
-    ExposureTime = Column(Numeric)
-    NumExposures = Column(Integer)
-    Scheduled = Column(Integer, default=0)
-    Observed = Column(Integer, default=0)
-    Processed = Column(Numeric, default=0)
-    Submitted = Column(Integer, default=0)
-    Notes = Column(Text)
-    CVal1 = Column(Text)
-    CVal2 = Column(Text)
-    CVal3 = Column(Text)
-    CVal4 = Column(Text)
-    CVal5 = Column(Text)
-    CVal6 = Column(Text)
-    CVal7 = Column(Text)
-    CVal8 = Column(Text)
-    CVal9 = Column(Text)
-    CVal10 = Column(Text)
-    Filter = Column(String)
+    Info: Mapped[List["Info"]] = relationship("Info", back_populates="candidate")
+    SchedulingCfg = relationship("SchedulingCfg", back_populates="candidate",uselist=False)
+    ObservingCfg = relationship("ObservingCfg", back_populates="candidate",uselist=False)
+    # Status = relationship("Status", back_populates="candidate")
     Observations: Mapped[List["Observation"]] = relationship("Observation", back_populates="candidate")
+
+    def __repr__(self):
+        return f"<CandidateModel(CandidateName={self.CandidateName}, CandidateType={self.CandidateType})>"
+    
+    def __str__(self):
+        s = f"{self.CandidateName} ({self.CandidateType})\n"
+        s += f"  RA: {self.RA}, Dec: {self.Dec}\n"
+        s += f"  Magnitude: {self.Magnitude}\n"
+        s += f"  Observability: {self.StartObservability} - {self.EndObservability}\n"
+        s += f"  Rejected: {self.RejectedReason if self.RejectedReason is not None else False}\n"
+        s += f"  Removed: {self.RejectedReason if self.RejectedReason is not None else False}\n"
+        s += f"  Scheduling Configuration: {self.SchedulingCfg}\n"
+        s += f"  Observing Configuration: {self.ObservingCfg}\n"
+        s += f"  Observations: {len(self.Observations)}\n"
+        if len(self.Info) > 0:
+            s += "  Info:\n"
+            for i in self.Info:
+                s += f"    {i}\n"
+        return s
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+class Info(Base):
+    __tablename__ = 'Info'
+
+    CandidateID = Column(Integer, ForeignKey('Candidates.ID'))
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    Key = Column(String, nullable=False)
+    Value = Column(String, nullable=False)
+    candidate = relationship('CandidateModel', back_populates='Info')
+
+    def __repr__(self):
+        return f"<Info(Key={self.Key}, Value={self.Value})>"
+    def __str__(self):
+        return f"{self.Key}: {self.Value}"
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+class SchedulingCfg(Base):
+    __tablename__ = 'SchedulingCfg'
+
+    CandidateID = Column(Integer, ForeignKey('Candidates.ID'),unique=True)
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    # Key = Column(String, nullable=False)
+    cfg = Column(String, nullable=False)
+    candidate = relationship('CandidateModel', back_populates='SchedulingCfg')
+
+    def __repr__(self):
+        return f"<SchedulingCfg(config={self.cfg})>"
+    
+    def __str__(self):
+        return self.cfg
+    
+    @property
+    def config(self):
+        return json.loads(self.cfg)
+    
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class ObservingCfg(Base):
+    __tablename__ = 'ObservingCfg'
+
+    CandidateID = Column(Integer, ForeignKey('Candidates.ID'),unique=True)
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    # Key = Column(String, nullable=False)
+    cfg = Column(String, nullable=False)
+    candidate = relationship('CandidateModel', back_populates='ObservingCfg')
+
+    def __repr__(self):
+        return f"<ObservingCfg(config={self.cfg})>"
+    
+    def __str__(self):
+        return self.cfg
+    
+    @property
+    def config(self):
+        return json.loads(self.cfg)
+    
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 # model for the observation object
 class Observation(Base):
@@ -105,17 +168,17 @@ class Observation(Base):
 
     CandidateID = Column(Integer, ForeignKey('Candidates.ID'))
     ObservationID = Column(Integer, primary_key=True, nullable=False)
-    RMSE_RA = Column(Numeric)
-    RMSE_Dec = Column(Numeric)
+    # RMSE_RA = Column(Numeric)
+    # RMSE_Dec = Column(Numeric)
     RA = Column(Numeric)
     Dec = Column(Numeric)
-    ApproachColor = Column(String)
-    AstrometryStatus = Column(String)
+    # ApproachColor = Column(String)
+    # AstrometryStatus = Column(String)
     ExposureTime = Column(Numeric)
     EncoderRA = Column(Numeric)
     EncoderDec = Column(Numeric)
-    SkyBackground = Column(Numeric)
-    Temperature = Column(Numeric)
+    # SkyBackground = Column(Numeric)
+    # Temperature = Column(Numeric)
     Dataset = Column(String)
     CaptureStartEpoch = Column(Numeric)
     Focus = Column(Numeric)

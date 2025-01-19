@@ -15,12 +15,15 @@ from string import Template
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 
-try:
-    from scheduleLib import genUtils
-    from scheduleLib.sql_database import SQLDatabase
-except ImportError:
-    import genUtils
-    from sql_database import SQLDatabase
+from alora.maestro.scheduleLib import genUtils
+from alora.maestro.scheduleLib.sql_database import SQLDatabase
+
+# try:
+#     from scheduleLib import genUtils
+#     from scheduleLib.sql_database import SQLDatabase
+# except ImportError:
+#     import genUtils
+#     from sql_database import SQLDatabase
 
 validFields = ["CandidateName", "CandidateType", "ID", "Author", "DateAdded", "DateLastEdited", "RemovedDt",
                "RemovedReason", "RejectedReason", 'Night',
