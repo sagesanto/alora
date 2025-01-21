@@ -1,0 +1,18 @@
+Crash report: 
+Exception: 'NoneType' object has no attribute 'keys'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 60, in main
+    module.update_database(dbPath)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 52, in update_database
+    candidates = Candidate.dfToCandidates(pd.read_csv("schedulerConfigs/Astrophotography/astroRes.csv"))
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 200, in dfToCandidates
+    return [Candidate.fromDictionary(d) for d in df.to_dict(orient='records')]
+            ~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 183, in fromDictionary
+    raise e
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 179, in fromDictionary
+    return cls(CandidateName, CandidateType, **entry)  # splat
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 298, in __init__
+    if CandidateType not in _modules.keys():
+                            ^^^^^^^^^^^^^

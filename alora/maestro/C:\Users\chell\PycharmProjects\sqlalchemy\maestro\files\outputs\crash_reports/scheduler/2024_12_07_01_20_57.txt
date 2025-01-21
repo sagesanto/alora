@@ -1,0 +1,40 @@
+Crash report: 
+Exception: 'NoneType' object has no attribute 'replace'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/crash_reports.py", line 33, in run_with_crash_writing
+    function(*args, **kwargs)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./scheduler.py", line 914, in main
+    scheduleDf, blocks, schedule, candidateDict, configDict = createSchedule(TMO, sunsetUTC, sunriseUTC,
+                                                              ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                                            blacklist, whitelist,
+                                                                            ^^^^^^^^^^^^^^^^^^^^^
+                                                                            excludedTimeRanges,
+                                                                            ^^^^^^^^^^^^^^^^^^^
+                                                                            candidateDbPath,
+                                                                            ^^^^^^^^^^^^^^^^
+                                                                            temperature=temperature)
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./scheduler.py", line 695, in createSchedule
+    [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
+     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/schedule_Astrophotography.py", line 52, in selectCandidates
+    candidates = Candidate.dfToCandidates(pd.read_csv("schedulerConfigs/Astrophotography/observable.csv"))
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 202, in dfToCandidates
+    return [Candidate.fromDictionary(d) for d in df.to_dict(orient='records')]
+            ~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 185, in fromDictionary
+    raise e
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 181, in fromDictionary
+    return cls(CandidateName, CandidateType, **entry)  # splat
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 312, in __init__
+    cand = associated_module.CandidateClass(CandidateName, **kwargs)
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/candidate_Astrophotography.py", line 43, in __init__
+    super().__init__(self.CandidateName, self.CandidateType, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 112, in __init__
+    self.__dict__[key] = gen_construction_dict[schema["valtype"]](value, **schema)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 46, in construct_datetime
+    return genUtils.stringToTime(tstring).replace(tzinfo=pytz.timezone(tz))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

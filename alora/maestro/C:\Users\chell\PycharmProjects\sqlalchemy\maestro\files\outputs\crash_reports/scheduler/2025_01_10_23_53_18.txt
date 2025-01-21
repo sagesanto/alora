@@ -1,0 +1,37 @@
+Crash report: 
+Exception: name 'BaseCandidate' is not defined
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/crash_reports.py", line 33, in run_with_crash_writing
+    function(*args, **kwargs)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./scheduler.py", line 914, in main
+    scheduleDf, blocks, schedule, candidateDict, configDict = createSchedule(TMO, sunsetUTC, sunriseUTC,
+                                                              ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                                            blacklist, whitelist,
+                                                                            ^^^^^^^^^^^^^^^^^^^^^
+                                                                            excludedTimeRanges,
+                                                                            ^^^^^^^^^^^^^^^^^^^
+                                                                            candidateDbPath,
+                                                                            ^^^^^^^^^^^^^^^^
+                                                                            temperature=temperature)
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./scheduler.py", line 691, in createSchedule
+    raise e
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./scheduler.py", line 686, in createSchedule
+    module = import_module(m, "schedulerConfigs")
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/__init__.py", line 6, in <module>
+    from .candidate_Astrophotography import AphotCandidate as CandidateClass
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/candidate_Astrophotography.py", line 18, in <module>
+    AphotCandidate = generate_candidate_class('Astrophotography', aphot_field_constructors, aphot_field_serializers, aphot_candidate_schema)
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/genUtils.py", line 41, in generate_candidate_class
+    class ModuleCandidate(BaseCandidate):
+                          ^^^^^^^^^^^^^

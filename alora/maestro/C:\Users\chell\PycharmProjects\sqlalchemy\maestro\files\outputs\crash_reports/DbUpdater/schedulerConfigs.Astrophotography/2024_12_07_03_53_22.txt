@@ -1,0 +1,19 @@
+Crash report: 
+Exception: 'str' object has no attribute 'tzinfo'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 60, in main
+    module.update_database(dbPath)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 64, in update_database
+    candidateDf = Candidate.candidatesToDf(candidates)
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 198, in candidatesToDf
+    candidateDicts = [candidate.asDict() for candidate in candidateList]
+                      ~~~~~~~~~~~~~~~~^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 151, in asDict
+    d[key] = gen_serialization_dict[valtype](val, **gen_construction_schema[key])
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 63, in serialize_datetime
+    dt = pytz.timezone(tz).localize(dt)
+  File "/Users/yesod/Desktop/Code/Arizona/.venv/lib/python3.13/site-packages/pytz/__init__.py", line 244, in localize
+    if dt.tzinfo is not None:
+       ^^^^^^^^^

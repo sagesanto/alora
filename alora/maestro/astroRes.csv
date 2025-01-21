@@ -2,6 +2,7 @@ CandidateName,OType,Magnitude,RA,Dec,MajorAxis
 NGC 147,Galaxy towards a Group of Galaxies,9.5,8.3005,48.508739,12.59
 NGC 185,Seyfert 2 Galaxy,9.2,9.74141667751,48.33750996518,11.48
 NGC 891,HII Galaxy,9.93,35.637112,42.348319,12.3
+Andromeda VII,Galaxy towards a Group of Galaxies,11.8,351.6292,50.6758,6.839
 IC 10,Galaxy,9.5,5.10625,59.28806,8.0
 Dra dSph,Galaxy,10.6,260.059728,57.921219,15.8
 M102,Seyfert Galaxy,9.89,226.623171,55.763308,6.31
@@ -22,7 +23,6 @@ NGC 1744,Low Surface Brightness Galaxy,11.41,74.99057651795,-26.02217795549,6.03
 M79,Globular Cluster,8.16,81.04413,-24.52425,8.7
 M38,Open Cluster,6.4,82.167,35.824,19.6
 NGC 1964,Seyfert 1 Galaxy,10.81,83.340288,-21.945473,5.5
-M37,Open Cluster,5.6,88.074,32.545,19.3
 NGC 2587,Open Cluster,9.2,125.861,-29.503,13.9
 NGC 2613,Seyfert 2 Galaxy,10.42,128.345171,-22.973669,7.59
 NGC 2627,Open Cluster,8.4,129.309,-29.952,10.4
@@ -50,6 +50,8 @@ IC 1727,Galaxy in Pair of Galaxies,11.98,26.874542,27.33335,6.31
 NGC 383 Group,Group of Galaxies,14.1,16.8654,32.3997,15.833333
 NGC 784,Low Surface Brightness Galaxy,12.07,30.32055,28.837258,5.13
 NGC 7331,LINER-type Active Galaxy Nucleus,9.48,339.26687751587,34.41577779903,10.47
+Andromeda II,Galaxy,11.7,19.1242,33.4192,10.359
+Andromeda I,Galaxy,12.7,11.4158,38.0411,5.92
 NGC 404,LINER-type Active Galaxy Nucleus,11.73,17.36259,35.71813,6.0
 M110,Galaxy towards a Group of Galaxies,8.07,10.09190514583,41.68541867226,18.62
 NGC 925,HII Galaxy,10.12,36.820471,33.578881,10.47
@@ -134,6 +136,7 @@ M10,Globular Cluster,4.98,254.28771,-4.10031,15.1
 M14,Globular Cluster,5.73,264.40063,-3.24592,13.5
 M12,Globular Cluster,6.07,251.80908,-1.94853,14.5
 M5,Globular Cluster,5.95,229.63842,2.08103,17.4
+M27,Planetary Nebula,14.089,299.90151327087,22.72119779432,6.7
 M92,Globular Cluster,6.52,259.28079,43.13594,11.2
 M29,Open Cluster,6.6,305.943,38.487,12.7
 NGC 1407,Galaxy towards a Group of Galaxies,9.67,55.0496,-18.580378,5.62

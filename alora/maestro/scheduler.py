@@ -721,8 +721,8 @@ def main():
         #                                                     Time(stringToTime(c.EndObservability) - timedelta(
         #                                                         seconds=float(c.NumExposures) * float(c.ExposureTime))))
         #                     for c in candidates}
-        timeConstraintDict = {c.CandidateName: TimeConstraint(Time(stringToTime(c.StartObservability)),
-                                                            Time(stringToTime(c.EndObservability)))
+        timeConstraintDict = {c.CandidateName: TimeConstraint(Time(c.StartObservability),
+                                                            Time(c.EndObservability))
                             for c in candidates}
 
         # make a dict of constraints to put on all targets of a given type (specified optionally by config py file)

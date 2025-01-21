@@ -1,0 +1,6 @@
+Crash report: 
+Exception: 
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/MaestroCore/utils/processes.py", line 147, in <lambda>
+    self.readyReadStandardOutput.connect(lambda: self.writeToLog(decodeStdOut(self)))
+    

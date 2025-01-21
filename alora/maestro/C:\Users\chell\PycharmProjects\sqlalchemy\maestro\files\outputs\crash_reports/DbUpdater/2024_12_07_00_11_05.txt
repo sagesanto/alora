@@ -1,0 +1,18 @@
+Crash report: 
+Exception: Unknown error
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/crash_reports.py", line 33, in run_with_crash_writing
+    function(*args, **kwargs)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 73, in main
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/_base.py", line 647, in __exit__
+    self.shutdown(wait=True)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/thread.py", line 238, in shutdown
+    t.join()
+    ~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 1092, in join
+    self._handle.join(timeout)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^

@@ -1,0 +1,6 @@
+Crash report: 
+Exception: wrapped C/C++ object of type Process has been deleted
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/MaestroCore/utils/processes.py", line 424, in <lambda>
+    process.errorOccurred.connect(lambda: self.setData(resultItem.index, process.error()))
+                                                                         ~~~~~~~~~~~~~^^

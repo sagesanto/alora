@@ -1,0 +1,18 @@
+Crash report: 
+Exception: module 'scheduleLib.genUtils' has no attribute 'import_maestro_modules'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 60, in main
+    module.update_database(dbPath)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 52, in update_database
+    candidates = Candidate.dfToCandidates(pd.read_csv("schedulerConfigs/Astrophotography/astroRes.csv"))
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 198, in dfToCandidates
+    return [Candidate.fromDictionary(d) for d in df.to_dict(orient='records')]
+            ~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 181, in fromDictionary
+    raise e
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 177, in fromDictionary
+    return cls(CandidateName, CandidateType, **entry)  # splat
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 298, in __init__
+    _modules = genUtils.import_maestro_modules()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

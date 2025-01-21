@@ -1,0 +1,19 @@
+Crash report: 
+Exception: Input is already a datetime object, expected a string.
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 60, in main
+    module.update_database(dbPath)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 55, in update_database
+    candidates = evalObservability(candidates, location)
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 37, in evalObservability
+    return [c.evaluateStaticObservability(sunset, sunrise, minHoursVisible=1, locationInfo=location) for c in
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 276, in evaluateStaticObservability
+    if not self.isObservableBetween(start, end, minHoursVisible):
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 299, in isObservableBetween
+    startObs = genUtils.stringToTime(self.StartObservability).replace(tzinfo=pytz.UTC)
+               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/genUtils.py", line 376, in stringToTime
+    raise TypeError("Input is already a datetime object, expected a string.")

@@ -1,0 +1,20 @@
+Crash report: 
+Exception: [Errno 2] No such file or directory: '/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidate_schema.json'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/arizona/alora/maestro/app.py", line 864, in <module>
+    run_with_crash_writing("MaestroApp", main)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/crash_reports.py", line 36, in run_with_crash_writing
+    raise e
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/crash_reports.py", line 33, in run_with_crash_writing
+    function(*args, **kwargs)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/yesod/Desktop/Code/arizona/alora/maestro/app.py", line 33, in main
+    from MaestroCore.addCandidateDialog import AddCandidateDialog
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/MaestroCore/addCandidateDialog.py", line 3, in <module>
+    import MaestroCore.utils.tableModel
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/MaestroCore/utils/tableModel.py", line 2, in <module>
+    from scheduleLib.candidateDatabase import Candidate
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 79, in <module>
+    with open(os.path.join(MODULE_PATH, "candidate_schema.json"), "r") as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,14 @@
+Crash report: 
+Exception: 'CVal1'
+Traceback: 
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/./MaestroCore/database.py", line 60, in main
+    module.update_database(dbPath)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/schedulerConfigs/Astrophotography/database_Astrophotography.py", line 64, in update_database
+    candidateDf = Candidate.candidatesToDf(candidates)
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 215, in candidatesToDf
+    candidateDicts = [candidate.asDict() for candidate in candidateList]
+                      ~~~~~~~~~~~~~~~~^^
+  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/scheduleLib/candidateDatabase.py", line 154, in asDict
+    valtype = schema[key]['valtype']
+              ~~~~~~^^^^^
