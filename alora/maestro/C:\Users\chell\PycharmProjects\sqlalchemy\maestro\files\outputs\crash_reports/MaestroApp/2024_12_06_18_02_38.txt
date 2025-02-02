@@ -1,5 +1,0 @@
-Crash report: 
-Exception: Test error
-Traceback: 
-  File "/Users/yesod/Desktop/Code/Arizona/alora/maestro/app.py", line 78, in test_error
-    raise ValueError("Test error")

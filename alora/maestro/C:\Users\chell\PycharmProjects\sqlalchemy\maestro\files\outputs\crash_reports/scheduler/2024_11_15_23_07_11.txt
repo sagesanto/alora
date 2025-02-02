@@ -1,8 +1,0 @@
-Crash report: 
-Exception: No module named 'seaborn'
-Traceback: 
-  File "/Users/yesod/Desktop/Code/arizona/alora/maestro/scheduleLib/crash_reports.py", line 33, in run_with_crash_writing
-    function(*args, **kwargs)
-    ~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "/Users/yesod/Desktop/Code/arizona/alora/maestro/./scheduler.py", line 31, in main
-    import seaborn as sns
