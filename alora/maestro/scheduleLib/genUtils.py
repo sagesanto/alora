@@ -21,8 +21,9 @@ from astropy.time import Time
 from abc import ABCMeta, abstractmethod
 import pandas as pd
 from pytz import UTC as dtUTC
-
+from importlib import import_module
 from .tmo import TMO
+# from alora.maestro import MAESTRO_DIR
 
 tmo = TMO()
 
@@ -35,6 +36,20 @@ def get_candidate_database_path():
     with open(settings_path, "r") as settingsFile:
         settings = json.load(settingsFile)
     return settings["candidateDbPath"][0]
+
+def generate_candidate_class(config_name,config_constructors,config_serializers, config_schema):
+    class ModuleCandidate(BaseCandidate):
+        def __init__(self, CandidateName: str, **kwargs):
+
+            self.CandidateName = CandidateName
+            # TODO: don't hardcode the module name here (but circular import?)
+            self.CandidateType = config_name
+            self.config_schema = config_schema
+            self.config_constructors = config_constructors
+            self.config_serializers = config_serializers
+            super().__init__(self.CandidateName, self.CandidateType, **kwargs)
+
+    return ModuleCandidate
 
 def configure_logger(name):
     # first, check if the logger has already been configured
@@ -371,8 +386,7 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
     @return: converted time or None
     @rtype: datetime
     """
-    if isinstance(timeString, datetime):  # they gave us a datetime, return it back to them
-        return timeString
+
     try:
         return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S")
     except:
@@ -630,6 +644,22 @@ def localize(dt):
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     return dt
+
+def import_maestro_modules():
+    root = "schedulerConfigs"
+    root_directory = join(MAESTRO_DIR, root)
+    module_names = []
+    for dir in [f"{root}."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
+        module_names.append(dir)
+    modules = {}
+    for m in module_names:
+        try:
+            modules[m.replace("_"," ").replace(f"{root}.","")] = import_module(m, "schedulerConfigs")
+        except Exception as e:
+            write_out(f"Can't import config module {m}: {e}. Fix and try again.")
+            raise e
+    return modules
+            
 
 
 get_sunrise_sunset = tmo.get_sunrise_sunset

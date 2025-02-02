@@ -147,6 +147,11 @@ def main():
 
             # self.blacklistLabel.setMinimumWidth(self.blacklistView.width())
 
+            file_path = "version.txt"
+            print("Current working directory:", os.getcwd())
+            print("Looking for file at:", os.path.abspath(file_path))
+            print("File exists:", os.path.exists(file_path))
+            
             with open("version.txt", "r") as f:
                 self.version = f.readline()
 

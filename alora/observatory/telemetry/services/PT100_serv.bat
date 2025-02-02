@@ -1,0 +1,3 @@
+@echo off
+call C:\Users\chell\PycharmProjects\alora\.venv\Scripts\activate.bat
+python -c "import sys,time; from threading import Event; sys.path.append(r'C:\Users\chell\PycharmProjects\alora\alora\observatory\telemetry\sensors'); from example_temperature_sensor import TemperatureSensorService; s = TemperatureSensorService('PT100', 'Temperature', {'temperature': ['INTEGER', 'degrees C']}, 1, r'C:\Users\chell\PycharmProjects\alora\alora\observatory\telemetry\fallbacks\local_PT100_fallback.db'); s.start(); Event().wait()"
