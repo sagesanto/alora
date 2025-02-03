@@ -1,22 +1,22 @@
 import traceback, sys, os
 import datetime, pytz
 import configparser
+from os.path import join, exists
 
-dirname = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir))
+dirname = os.path.abspath(join(os.path.dirname(__file__),os.pardir))
 config = configparser.ConfigParser()
-config.read(os.path.join(dirname, 'files','configs','config.txt'))
+config.read(join(dirname, 'files','configs','config.txt'))
 config = config['DEFAULT']
 
-BASE_CRASH_DIR = config['BASE_CRASH_DIR'] 
+BASE_CRASH_DIR = join(dirname,config['BASE_CRASH_DIR'])
 
 from alora.maestro.scheduleLib.genUtils import write_out
 
 def write_crash_report(report_dir,e,tb=None):
-    report_dir = os.path.join(BASE_CRASH_DIR, report_dir)
-    if not os.path.exists(report_dir):
-        os.makedirs(report_dir)
+    report_dir = join(BASE_CRASH_DIR, report_dir)
+    os.makedirs(report_dir,exist_ok=True)
     timestamp = datetime.datetime.now(tz=pytz.UTC).strftime('%Y_%m_%d_%H_%M_%S')
-    fname = os.path.join(report_dir, f'{timestamp}.txt')
+    fname = join(report_dir, f'{timestamp}.txt')
     write_out(f"CRASH! Writing crash report to {fname}")
     
     with open(fname, 'w') as f:
