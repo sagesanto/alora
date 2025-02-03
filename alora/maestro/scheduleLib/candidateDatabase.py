@@ -44,7 +44,7 @@ def generateID(candidateName, candidateType, author):
 def construct_datetime(tstring, valtype, tz:str):
     if not tstring or tstring == " ":
         return None
-    print(tstring)
+    # print(tstring)
     return genUtils.stringToTime(tstring).replace(tzinfo=pytz.timezone(tz))
 
 def construct_quantity(value, valtype, unit: str):
@@ -65,10 +65,10 @@ def serialize_datetime(dt, valtype, tz):
     return genUtils.timeToString(dt)
 
 def serialize_quantity(quantity,valtype,unit):
-    print("serializing", quantity, unit)
+    # print("serializing", quantity, unit)
     if quantity is None:
         return ""
-    print(quantity.to_value(unit))
+    # print(quantity.to_value(unit))
     return quantity.to_value(unit)
 
 gen_construction_dict = {
@@ -104,14 +104,14 @@ class BaseCandidate:
         # fuck
         # self.modules = genUtils.import_maestro_modules()
 
-        print(CandidateName, "in BaseCandidateConstructor")
+        # print(CandidateName, "in BaseCandidateConstructor")
         self.CandidateName = CandidateName
         self.CandidateType = CandidateType
 
         if 'config_schema' in self.__dict__:
             for key, schema in self.config_schema.items():
                 if key in kwargs.keys():
-                    print("aphot:",key,"set to",self.config_constructors[schema["valtype"]](kwargs[key], **schema))
+                    # print("aphot:",key,"set to",self.config_constructors[schema["valtype"]](kwargs[key], **schema))
                     self.__dict__[key] = self.config_constructors[schema["valtype"]](kwargs[key], **schema)
 
         for key, value in kwargs.items():
@@ -121,15 +121,15 @@ class BaseCandidate:
                 schema = gen_construction_schema.get(key)
                 if schema:
                     self.__dict__[key] = gen_construction_dict[schema["valtype"]](value, **schema) 
-                    print("base1:",key,"set to",gen_construction_dict[schema["valtype"]](kwargs[key], **schema))
+                    # print("base1:",key,"set to",gen_construction_dict[schema["valtype"]](kwargs[key], **schema))
                 else:
                     self.__dict__[key] = value
-                    print("base2:",key,"set to",value)
+                    # print("base2:",key,"set to",value)
             else:
                 raise ValueError(
                     "Bad argument: " + key + " is not a valid argument for candidate construction. Valid arguments are " + str(
                         validFields))
-        print("after base:", self.__dict__)
+        # print("after base:", self.__dict__)
 
     def __str__(self):
         return str(dict(self.__dict__))
@@ -151,7 +151,7 @@ class BaseCandidate:
         if 'config_schema' in self.__dict__:
             for key, schema in self.config_schema.items():
                 if key in self.__dict__:
-                    print(key,schema)
+                    # print(key,schema)
                     valtype = schema['valtype']
                     d[key] = self.config_serializers[valtype](self.__dict__[key], **schema)
 
@@ -161,11 +161,11 @@ class BaseCandidate:
             if key not in validFields:
                 continue
             if key not in d.keys():
-                print(key, gen_construction_schema.get(key))
+                # print(key, gen_construction_schema.get(key))
                 if key in gen_construction_schema.keys():
                     valtype = gen_construction_schema[key]['valtype']
-                    print("serializing:" , key, "oftype", valtype)
-                    print(val, type(val))
+                    # print("serializing:" , key, "oftype", valtype)
+                    # print(val, type(val))
                     d[key] = gen_serialization_dict[valtype](val, **gen_construction_schema[key])
                 else:
                     d[key] = val
@@ -322,7 +322,7 @@ class Candidate(BaseCandidate):
     def __init__(self, CandidateName: str, CandidateType: str, **kwargs):
         # do a switchboard-type thing 
         # print(CandidateName, CandidateType, kwargs)
-        print(CandidateName, "in CandidateConstructor")
+        # print(CandidateName, "in CandidateConstructor")
         global _modules
         if _modules is None:
             _modules = genUtils.import_maestro_modules()
@@ -334,8 +334,8 @@ class Candidate(BaseCandidate):
         # associated_module = self.modules[CandidateType]
 
         cand = associated_module.CandidateClass(CandidateName, **kwargs)
-        print("cand:", cand)
-        print(type(cand))
+        # print("cand:", cand)
+        # print(type(cand))
         self.__dict__.update(cand.__dict__)
         self.__class__ = associated_module.CandidateClass
 
