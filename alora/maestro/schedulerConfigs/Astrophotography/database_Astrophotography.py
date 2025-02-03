@@ -35,7 +35,7 @@ aConfig = aConfig["DEFAULT"]
 
 ASTROPHOTOGRAPHY_PRIORITY = aConfig.getint("priority")
 
-def evalObservability(candidates, location):
+def evalObservability(candidates: list[Candidate], location):
     sunrise, sunset = genUtils.get_sunrise_sunset()
     return [c.evaluateStaticObservability(sunset, sunrise, minHoursVisible=1, locationInfo=location) for c in
             candidates]
@@ -59,6 +59,9 @@ def update_database(_db_path):
         c.Priority = ASTROPHOTOGRAPHY_PRIORITY
         c.ApproachColor = "PURPLE"
 
+    print(type(candidates[0]))
+    print(candidates[0])
+    print("candidate:", candidates[0].__dict__)
     # ------- convert back to df, filter out non-observables
     candidateDf = Candidate.candidatesToDf(candidates)
     if "Rejected Reason" in candidateDf.columns:
