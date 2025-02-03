@@ -1,7 +1,6 @@
 import sys, os, json
 from os.path import abspath, dirname, join, pardir
 
-
 MAESTRO_PATH = abspath(join(dirname(__file__),pardir,pardir))
 module_path = abspath(dirname(__file__))
 
@@ -9,13 +8,13 @@ sys.path.append(MAESTRO_PATH)
 from scheduleLib.genUtils import generate_candidate_class
 from scheduleLib.candidateDatabase import BaseCandidate, construct_quantity, serialize_quantity
 
-aphot_field_constructors = {"quantity":construct_quantity}
-aphot_field_serializers = {"quantity":serialize_quantity}
+tess_field_constructors = {"quantity":construct_quantity}
+tess_field_serializers = {"quantity":serialize_quantity}
 
-with open(join(module_path,"aphot_schema.json"), "r") as f:
-    aphot_candidate_schema = json.load(f)
+with open(join(module_path,"tess_schema.json"), "r") as f:
+    tess_candidate_schema = json.load(f)
    
-AphotCandidate = generate_candidate_class('Astrophotography', aphot_field_constructors, aphot_field_serializers, aphot_candidate_schema)            
+TESSCandidate = generate_candidate_class('Astrophotography', tess_field_constructors, tess_field_serializers, tess_candidate_schema, BaseCandidate)            
 
 # class AphotCandidate(BaseCandidate):
 #     def __init__(self, CandidateName: str, **kwargs):

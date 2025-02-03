@@ -21,7 +21,8 @@ MAESTRO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pa
 try:
     from scheduleLib import genUtils
     from scheduleLib.sql_database import SQLDatabase
-except ImportError:
+except ImportError as e:
+    print(e)
     import genUtils
     from sql_database import SQLDatabase
 
@@ -410,7 +411,7 @@ class CandidateDatabase(SQLDatabase):
             self.logger.info("Connected to candidate database")
         return
 
-    def table_query(self, table_name, columns, condition, values, returnAsCandidates=False, unique=False):
+    def table_query(self, table_name, columns, condition, values, returnAsCandidates=False, unique=False, skip_errors=False):
         """!Query table based on condition. If no condition given, will return the whole table - if this isn't what you want, be careful!
         Parameters
         ----------
@@ -433,8 +434,18 @@ class CandidateDatabase(SQLDatabase):
         if result:
             self.logger.debug("Query: Retrieved " + str(len(result)) + " record(s) for candidates in response to query")
             if returnAsCandidates:
-                result = [Candidate.fromDictionary(row) for row in result]
-                result = [c for c in result if c]
+                if not skip_errors:
+                    results = [Candidate.fromDictionary(row) for row in result]
+                else:
+                    results = []
+                    for row in result:
+                        try:
+                            results.append(Candidate.fromDictionary(row))
+                        except Exception as e:
+                            self.logger.error("Error converting row to Candidate object: " + str(row))
+                            self.logger.error(repr(e))
+                    result = results
+                result = [c for c in results if c]
             return result
         return None
 
@@ -470,13 +481,13 @@ class CandidateDatabase(SQLDatabase):
             dictionary.pop(key)
         return dictionary
 
-    def candidatesForTimeRange(self, obsStart, obsEnd, duration, candidate_type=None):
+    def candidatesForTimeRange(self, obsStart, obsEnd, duration, candidate_type=None, skip_errors=False):
         if candidate_type is None:
             candidates = self.table_query("Candidates", "*",
-                                      "RemovedReason IS NULL AND RejectedReason IS NULL", [], returnAsCandidates=True)
+                                      "RemovedReason IS NULL AND RejectedReason IS NULL", [], returnAsCandidates=True,skip_errors=skip_errors)
         else:
             candidates = self.table_query("Candidates", "*",
-                                      "RemovedReason IS NULL AND RejectedReason IS NULL AND CandidateType IS ?", [candidate_type], returnAsCandidates=True)
+                                      "RemovedReason IS NULL AND RejectedReason IS NULL AND CandidateType IS ?", [candidate_type], returnAsCandidates=True,skip_errors=skip_errors)
 
         if candidates is None:
             return []

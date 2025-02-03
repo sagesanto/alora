@@ -650,16 +650,24 @@ def _main():
             self.tabWidget.setCurrentWidget(self.ephemsTab)
 
         def getCandidates(self):
-            if self.settings.query("showAllCandidates")[0]:
-                self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True)
-            else:
-                logger.info("Showing select")
-                try:
-                    self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01)
-                except AttributeError as e:
-                    logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
-                    self.statusBar().showMessage("ERROR: invalid database path. To show targets, choose a database under Database > Control, then press 'Request Restart'", 10000)
-                    return self
+            try:
+                if self.settings.query("showAllCandidates")[0]:
+                        self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
+                else:
+                    logger.info("Showing select")
+                    try:
+                        self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01,skip_errors=True)
+                    except AttributeError as e:
+                        logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
+                        self.statusBar().showMessage("ERROR: invalid database path. To show targets, choose a database under Database > Control, then press 'Request Restart'", 10000)
+                        self.set_candidates_icon(STATUS_ERROR)
+                        return self
+            except Exception as e:
+                exception_hook(type(e), e, e.__traceback__)
+                logger.error(f"Couldn't get candidates: {repr(e)}")
+                self.statusBar().showMessage(f"ERROR: Couldn't get candidates: {repr(e)}", 10000)
+                self.set_candidates_icon(STATUS_ERROR)
+                return self
             if not self.candidates:
                 self.resetCandidateTable()
                 if debug:

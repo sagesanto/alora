@@ -1,28 +1,14 @@
 {
-    "CVal1": {
+    "CVal6": {
         "valtype": "quantity",
-        "unit": "arcmin"
-    }
-
-    "CVal2": {
+        "unit": "minute"
+    },
+    "CVal7": {
         "valtype": "quantity",
-        "unit": "arcmin"
-    }
-    "CVal1": {
+        "unit": "minute"
+    },
+    "CVal8": {
         "valtype": "quantity",
-        "unit": "arcmin"
-    }
-    "CVal1": {
-        "valtype": "quantity",
-        "unit": "arcmin"
-    }
-    "CVal2": {
-        "valtype": "quantity",
-        "unit": "arcmin"
-    }
-    
-        "CVal1": {
-        "valtype": "quantity",
-        "unit": "arcmin"
+        "unit": "day"
     }
 }

@@ -3,6 +3,8 @@ import os
 from .database_TESS import update_database
 from .ephemeris_TESS import get_ephems
 from .schedule_TESS import getConfig
+from .candidate_TESS import TESSCandidate as CandidateClass
+
 
 module_path = os.path.dirname(os.path.realpath(__file__))
 

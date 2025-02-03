@@ -15,7 +15,7 @@ aphot_field_serializers = {"quantity":serialize_quantity}
 with open(join(module_path,"aphot_schema.json"), "r") as f:
     aphot_candidate_schema = json.load(f)
    
-AphotCandidate = generate_candidate_class('Astrophotography', aphot_field_constructors, aphot_field_serializers, aphot_candidate_schema)            
+AphotCandidate = generate_candidate_class('Astrophotography', aphot_field_constructors, aphot_field_serializers, aphot_candidate_schema, BaseCandidate)            
 
 # class AphotCandidate(BaseCandidate):
 #     def __init__(self, CandidateName: str, **kwargs):

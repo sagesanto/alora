@@ -21,8 +21,9 @@ from astropy.time import Time
 from abc import ABCMeta, abstractmethod
 import pandas as pd
 from pytz import UTC as dtUTC
+from importlib import import_module
 
-from ...astroutils.obs_constraints import ObsConstraint
+from alora.astroutils.obs_constraints import ObsConstraint
 
 tmo = ObsConstraint()
 
@@ -36,8 +37,9 @@ def get_candidate_database_path():
         settings = json.load(settingsFile)
     return settings["candidateDbPath"][0]
 
-def generate_candidate_class(config_name,config_constructors,config_serializers, config_schema):
-    class ModuleCandidate(BaseCandidate):
+def generate_candidate_class(config_name,config_constructors,config_serializers,config_schema,base_candidate_class):
+    class ModuleCandidate(base_candidate_class):
+    # class ModuleCandidate(BaseCandidate):
         def __init__(self, CandidateName: str, **kwargs):
 
             self.CandidateName = CandidateName
@@ -415,7 +417,7 @@ def toSexagesimal(angle: Angle):
     return angle.to_string()
 
 
-from ...astroutils.observing_utils import ensureAngle
+from alora.astroutils.observing_utils import ensureAngle
 
 # def ensureAngle(angle):
 #     """!
@@ -435,7 +437,7 @@ from ...astroutils.observing_utils import ensureAngle
 #     return angle
 
 
-from ...astroutils.observing_utils import ensureFloat
+from alora.astroutils.observing_utils import ensureFloat
 
 # def ensureFloat(angle):
 #     """!
@@ -468,7 +470,7 @@ def roundToTenMinutes(dt):
     return dt - timedelta(minutes=dt.minute % 10, seconds=dt.second, microseconds=dt.microsecond)
 
 
-from ...astroutils.observing_utils import angleToTimedelta
+from alora.astroutils.observing_utils import angleToTimedelta
 
 # def angleToTimedelta(angle: Angle):  # low precision
 #     """!
@@ -565,20 +567,20 @@ observation_viable = tmo.observation_viable
 #         return window[0] < dt < window[1]
 
 
-from ...astroutils.observing_utils import current_dt_utc
+from alora.astroutils.observing_utils import current_dt_utc
 
 # def current_dt_utc():
     # return datetime.utcnow().replace(tzinfo=dtUTC)
 
 
 
-from ...astroutils.observing_utils import get_current_sidereal_time
+from alora.astroutils.observing_utils import get_current_sidereal_time
 
 # def get_current_sidereal_time(locationInfo):
 #     now = current_dt_utc().replace(second=0, microsecond=0)
 #     return Time(now).sidereal_time('mean', longitude=locationInfo.longitude)
 
-from ...astroutils.observing_utils import find_transit_time
+from alora.astroutils.observing_utils import find_transit_time
 
 # def find_transit_time(rightAscension: Angle, location):
 #     """!Calculate the transit time of an object at the given location.
