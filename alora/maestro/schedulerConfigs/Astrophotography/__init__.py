@@ -3,7 +3,7 @@ import os
 from .database_Astrophotography import update_database
 from .ephemeris_Astrophotography import get_ephems
 from .schedule_Astrophotography import getConfig
-from .candidate_Astrophotography import AphotCandidate as ClassCandidate
+from .candidate_Astrophotography import AphotCandidate as CandidateClass
 
 module_path = os.path.dirname(os.path.realpath(__file__))
 

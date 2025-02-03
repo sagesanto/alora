@@ -43,6 +43,7 @@ def generateID(candidateName, candidateType, author):
 def construct_datetime(tstring, valtype, tz:str):
     if not tstring or tstring == " ":
         return None
+    print(tstring)
     return genUtils.stringToTime(tstring).replace(tzinfo=pytz.timezone(tz))
 
 def construct_quantity(value, valtype, unit: str):
@@ -53,17 +54,20 @@ def construct_quantity(value, valtype, unit: str):
     return None
 
 def serialize_datetime(dt, valtype, tz):
-    if not dt:
+    if dt is None:
         return ""
     try:
         dt = dt.astimezone(pytz.timezone(tz))
-    except:
+    except Exception as e:
+        print(e)
         dt = pytz.timezone(tz).localize(dt)
     return genUtils.timeToString(dt)
 
 def serialize_quantity(quantity,valtype,unit):
-    if not quantity:
+    print("serializing", quantity, unit)
+    if quantity is None:
         return ""
+    print(quantity.to_value(unit))
     return quantity.to_value(unit)
 
 gen_construction_dict = {
@@ -98,12 +102,16 @@ class BaseCandidate:
         
         # fuck
         # self.modules = genUtils.import_maestro_modules()
-        global _modules
-        if _modules is None:
-            _modules = genUtils.import_maestro_modules()
 
+        print(CandidateName, "in BaseCandidateConstructor")
         self.CandidateName = CandidateName
         self.CandidateType = CandidateType
+
+        if 'config_schema' in self.__dict__:
+            for key, schema in self.config_schema.items():
+                if key in kwargs.keys():
+                    print("aphot:",key,"set to",self.config_constructors[schema["valtype"]](kwargs[key], **schema))
+                    self.__dict__[key] = self.config_constructors[schema["valtype"]](kwargs[key], **schema)
 
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
@@ -112,12 +120,15 @@ class BaseCandidate:
                 schema = gen_construction_schema.get(key)
                 if schema:
                     self.__dict__[key] = gen_construction_dict[schema["valtype"]](value, **schema) 
+                    print("base1:",key,"set to",gen_construction_dict[schema["valtype"]](kwargs[key], **schema))
                 else:
                     self.__dict__[key] = value
+                    print("base2:",key,"set to",value)
             else:
                 raise ValueError(
                     "Bad argument: " + key + " is not a valid argument for candidate construction. Valid arguments are " + str(
                         validFields))
+        print("after base:", self.__dict__)
 
     def __str__(self):
         return str(dict(self.__dict__))
@@ -134,12 +145,27 @@ class BaseCandidate:
 
 
     def asDict(self,start_dict=None):
-        # subclasses should implement their own asDict() and call this __super__ with their dict as the last thing they do
+
         d = start_dict or {}
+        if 'config_schema' in self.__dict__:
+            for key, schema in self.config_schema.items():
+                if key in self.__dict__:
+                    print(key,schema)
+                    valtype = schema['valtype']
+                    d[key] = self.config_serializers[valtype](self.__dict__[key], **schema)
+
+
+        # subclasses should implement their own asDict() and call this __super__ with their dict as the last thing they do
         for key, val in self.__dict__.items():
+            if key not in validFields:
+                continue
             if key not in d.keys():
-                if key in gen_serialization_dict:
-                    d[key] = gen_serialization_dict[key](val, **gen_construction_schema[key])
+                print(key, gen_construction_schema.get(key))
+                if key in gen_construction_schema.keys():
+                    valtype = gen_construction_schema[key]['valtype']
+                    print("serializing:" , key, "oftype", valtype)
+                    print(val, type(val))
+                    d[key] = gen_serialization_dict[valtype](val, **gen_construction_schema[key])
                 else:
                     d[key] = val
         return d
@@ -179,7 +205,8 @@ class BaseCandidate:
             return cls(CandidateName, CandidateType, **entry)  # splat
         except Exception as e:
             print(f"Error constructing candidate from dictionary {entry}: {e}")
-            return
+            # return 
+            raise e
 
     @staticmethod
     def candidatesToDf(candidateList: list):
@@ -243,7 +270,7 @@ class BaseCandidate:
             if window[1] < datetime.now(tz=pytz.UTC):
                 window[0] += siderealDay
                 window[1] += siderealDay
-            self.StartObservability, self.EndObservability = [genUtils.timeToString(a) for a in window]
+            self.StartObservability, self.EndObservability = window
         else:
             self.RejectedReason = "Observability"
         if not self.isObservableBetween(start, end, minHoursVisible):
@@ -266,12 +293,11 @@ class BaseCandidate:
         @param duration: hours, float
         @return: bool
         """
-        start, end = genUtils.stringToTime(start).replace(tzinfo=pytz.UTC), genUtils.stringToTime(
-            end).replace(tzinfo=pytz.UTC)  # ensure we have datetime object
+        start, end = start.replace(tzinfo=pytz.UTC), end.replace(tzinfo=pytz.UTC)  # ensure we have datetime object
 
         if self.hasField("StartObservability") and self.hasField("EndObservability"):
-            startObs = genUtils.stringToTime(self.StartObservability).replace(tzinfo=pytz.UTC)
-            endObs = genUtils.stringToTime(self.EndObservability).replace(tzinfo=pytz.UTC)
+            startObs = self.StartObservability.replace(tzinfo=pytz.UTC)
+            endObs = self.EndObservability.replace(tzinfo=pytz.UTC)
             # print(start, end)
             # print(startObs, endObs)
             if start < endObs <= end or start < startObs <= end:  # the windows do overlap
@@ -294,13 +320,23 @@ class BaseCandidate:
 class Candidate(BaseCandidate):
     def __init__(self, CandidateName: str, CandidateType: str, **kwargs):
         # do a switchboard-type thing 
+        # print(CandidateName, CandidateType, kwargs)
+        print(CandidateName, "in CandidateConstructor")
+        global _modules
+        if _modules is None:
+            _modules = genUtils.import_maestro_modules()
+        
         if CandidateType not in _modules.keys():
         # if CandidateType not in self.modules.keys():
             raise ValueError(f"{CandidateType} is not a known candidate module. Did you spell it correctly?")
         associated_module = _modules[CandidateType]
         # associated_module = self.modules[CandidateType]
 
-        self = associated_module.CandidateClass(CandidateName, CandidateType, **kwargs)
+        cand = associated_module.CandidateClass(CandidateName, **kwargs)
+        print("cand:", cand)
+        print(type(cand))
+        self.__dict__.update(cand.__dict__)
+        self.__class__ = associated_module.CandidateClass
 
 
 class CandidateDatabase(SQLDatabase):
