@@ -28,6 +28,7 @@ def _main():
     import time
     from pathlib import Path
     import pandas as pd
+    import numpy as np
     import pytz
     import astroplan
 
@@ -39,7 +40,7 @@ def _main():
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
     from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
     from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel
@@ -559,14 +560,20 @@ def _main():
 
         def whitelistSelectedCandidates(self):
             candidates = [self.candidateDict[d] for d in getSelectedFromTable(self.candidateView, self.indexOfNameColumn)]
+            print("selected candidates for whitelist: ", candidates)
             for candidate in candidates:
                 if candidate not in self.whitelistModel._data:
                     self.blacklistModel.removeItem(candidate)
+                    print(type(candidate))
                     self.whitelistModel.addItem(candidate)
+                    print("whitelisted candidate: ", candidate)
 
         def resetCandidateTable(self):
+            oldModel = self.candidateTable
             self.candidateTable = CandidateTableModel(pd.DataFrame())
             self.candidateView.setModel(self.candidateTable)
+            oldModel.beginResetModel()
+            oldModel.endResetModel()
 
         def requestDbCycle(self):
             logger.debug("Requesting")
@@ -682,8 +689,16 @@ def _main():
                     self.blacklistModel.removeItem(candidate)
                     self.whitelistModel.addItem(candidate)
             self.candidateDf = Candidate.candidatesToDf(self.candidates)
+
+            # order the df columns by the order of the validFields list
+            numbered_fields = dict(zip(validFields,np.arange(len(validFields))))
+            c = list(self.candidateDf.columns)
+            c.sort(key = lambda x: numbered_fields[x])
+            self.candidateDf = self.candidateDf.reindex(columns=c)
+            
             self.candidatesByID = {c.ID: c for c in self.candidates}
             self.candidateDict = {c.CandidateName: c for c in self.candidates}
+            print(self.candidateDf.columns)
             self.indexOfIDColumn = self.candidateDf.columns.get_loc("ID")
             self.indexOfNameColumn = self.candidateDf.columns.get_loc("CandidateName")
 

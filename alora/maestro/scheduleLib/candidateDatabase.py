@@ -26,12 +26,12 @@ except ImportError as e:
     import genUtils
     from sql_database import SQLDatabase
 
-validFields = ["CandidateName", "CandidateType", "ID", "Author", "DateAdded", "DateLastEdited", "RemovedDt",
+validFields = ["CandidateName", "CandidateType", "Author", "DateAdded", "DateLastEdited", "RemovedDt",
                "RemovedReason", "RejectedReason", 'Night',
                'Updated', 'StartObservability', 'EndObservability', 'TransitTime', 'RA', 'Dec', 'dRA', 'dDec',
                'Magnitude', 'RMSE_RA',
                'RMSE_Dec', "Score", "nObs", 'ApproachColor', 'NumExposures', 'ExposureTime', 'Scheduled', 'Observed',
-               'Processed', 'Submitted', 'Notes', 'Priority', 'Filter', 'Guide',
+               'Processed', 'Submitted', 'Notes', 'Priority', 'Filter', 'Guide', "ID",
                'CVal1', 'CVal2', 'CVal3', 'CVal4', 'CVal5', 'CVal6', 'CVal7', 'CVal8', 'CVal9', 'CVal10']
 
 logger = logging.getLogger(__name__)

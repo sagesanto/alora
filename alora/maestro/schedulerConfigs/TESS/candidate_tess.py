@@ -14,7 +14,7 @@ tess_field_serializers = {"quantity":serialize_quantity}
 with open(join(module_path,"tess_schema.json"), "r") as f:
     tess_candidate_schema = json.load(f)
    
-TESSCandidate = generate_candidate_class('Astrophotography', tess_field_constructors, tess_field_serializers, tess_candidate_schema, BaseCandidate)            
+TESSCandidate = generate_candidate_class('TESS', tess_field_constructors, tess_field_serializers, tess_candidate_schema, BaseCandidate)            
 
 # class AphotCandidate(BaseCandidate):
 #     def __init__(self, CandidateName: str, **kwargs):

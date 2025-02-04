@@ -34,7 +34,7 @@ def main():
     from astroplan.target import get_skycoord
     from astropy.coordinates import EarthLocation
     from astropy.coordinates import SkyCoord
-    from astropy.time import Time
+    from astropy.time import Time, TimeDelta
     import matplotlib
     # matplotlib.use('TKAgg')  # very important
     from matplotlib import pyplot as plt
@@ -187,7 +187,7 @@ def main():
         targetNames = [t for t in targetNames if t != "Focus"]
 
         x = np.arange(scoreArray.shape[1])  # create x-axis values based on the number of columns
-        colors = plt.cm.get_cmap('tab20', len(scoreArray))  # generate a colormap with enough colors
+        colors = plt.get_cmap('tab20', len(scoreArray))  # generate a colormap with enough colors
 
         plt.figure()
 
@@ -412,7 +412,8 @@ def main():
                 # scheduledNames = [b.target.name.split("_")[0] for b in self.schedule.observing_blocks]
                 scheduledDict = {}
                 scheduledNames = []
-                while currentTime < self.schedule.end_time:
+
+                while self.schedule.end_time - currentTime > self.time_resolution:
                     loops += 1
                     # print(schedArr)
                     prospectiveDict = {}
@@ -421,7 +422,7 @@ def main():
                     # print([b.target.name for b in blocks])
                     # print([b.target.name for b in self.schedule.observing_blocks])
                     currentIdx = int((currentTime - start) / self.time_resolution)
-
+                    # print(currentTime, currentIdx, self.schedule.end_time,self.schedule.end_time-currentTime,type(self.schedule.end_time-currentTime), type(currentTime), type(self.schedule.end_time))
                     if schedArr[currentIdx]:  # higher-priority object already here
                         currentTime += self.gap_time
                         continue
@@ -544,8 +545,9 @@ def main():
             for l in allBlocks.values():
                 allBlocksList.extend(l)
             # NOTE: this function call only "works" because the Astrophotography targets come last in the array - that's why we can cut them from the list
-            plotScores(recordArray, [b.target.name for b in allBlocksList if b.configuration["type"] != "Astrophotography"],
-                    times, "All Targets", savepath)
+            non_aphot_blocks = [b.target.name for b in allBlocksList if b.configuration["type"] != "Astrophotography"]
+            if len(non_aphot_blocks):
+                plotScores(recordArray, non_aphot_blocks, times, "All Targets", savepath)
             return self.schedule
 
 

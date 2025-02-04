@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QDateTime, QAbstractTableModel
 
-from scheduleLib.candidateDatabase import Candidate
+from scheduleLib.candidateDatabase import Candidate, BaseCandidate
 
 
 class FlexibleListModel(QAbstractListModel):
@@ -17,7 +17,7 @@ class FlexibleListModel(QAbstractListModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             dat = self._data[index.row()]
-            return dat.CandidateName if isinstance(dat, Candidate) else dat
+            return dat.CandidateName if isinstance(dat, BaseCandidate) else dat
 
         return None
 
