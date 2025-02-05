@@ -55,19 +55,19 @@ def main():
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from scheduleLib.module_loader import ModuleManager
 
-        genConfig = configparser.ConfigParser()
-        genConfig.read(join(dirname(__file__), "files", "configs", "config.txt"))
+        genConfig = genUtils.Config(join(dirname(__file__), "files", "configs", "config.toml"))
 
     except ImportError:
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from scheduleLib.module_loader import ModuleManager
 
-        genConfig = configparser.ConfigParser()
-        genConfig.read(join("files", "configs", "config.txt"))
+        genConfig = genUtils.Config(join("files", "configs", "config.toml"))
 
-    genConfig = genConfig["DEFAULT"]
+    
     utc = pytz.UTC
 
     # and the flags are all dead at the tops of their poles
@@ -81,7 +81,7 @@ def main():
 
     logger = configure_logger("Scheduler")
 
-    focusLoopLenSeconds = genConfig.getint("focus_loop_duration")
+    focusLoopLenSeconds = genConfig["focus_loop_duration"]
 
 
     def generateRandomRow(temperature):
@@ -680,20 +680,26 @@ def main():
 
         configDict = {}
 
+        modules = ModuleManager().load_active_modules()
+        for k, mod in modules.items():
+            typeName, conf = mod.getConfig(observer)  # modules must have this function
+            configDict[typeName] = conf 
+        
         # import configurations from python files placed in the schedulerConfigs folder
-        root = "schedulerConfigs"
-        root_directory = PATH_TO("schedulerConfigs")
-        module_names = []
-        for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
-            module_names.append(dir)
-        for m in module_names:
-            try:
-                module = import_module(m, "schedulerConfigs")
-                typeName, conf = module.getConfig(observer)  # modules must have this function
-                configDict[typeName] = conf
-            except Exception as e:
-                logger.error(f"Can't import config module {m}: {e}. Fix and try again.")
-                raise e
+
+        # root = "schedulerConfigs"
+        # root_directory = PATH_TO("schedulerConfigs")
+        # module_names = []
+        # for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
+        #     module_names.append(dir)
+        # for m in module_names:
+        #     try:
+        #         module = import_module(m, "schedulerConfigs")
+        #         typeName, conf = module.getConfig(observer)  # modules must have this function
+        #         configDict[typeName] = conf
+        #     except Exception as e:
+        #         logger.error(f"Can't import config module {m}: {e}. Fix and try again.")
+        #         raise e
 
         # turn the lists of candidates into one list
         candidates = [candidate for candidateList in

@@ -1,6 +1,7 @@
 import configparser
 from datetime import datetime as datetime, timedelta
 import os, sys, glob
+from os.path import join, dirname, pardir, abspath
 import astropy.units as u
 from astropy.coordinates import Angle
 import pandas as pd
@@ -10,34 +11,29 @@ import pytz
 import logging
 
 try:
-    grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+    grandparentDir = abspath(join(dirname(__file__), pardir, pardir))
     sys.path.append(grandparentDir)
     from scheduleLib import genUtils, candidateDatabase
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, overlapping_time_windows
 
     sys.path.remove(grandparentDir)
-    genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join(grandparentDir, "files", "configs", "config.txt"))
-    tConfig = configparser.ConfigParser()
-    tConfig.read(os.path.join(grandparentDir, "files", "configs", "tess_config.txt"))
+    genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
+    tConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
+
 
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, overlapping_time_windows
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join("files", "configs", "config.txt"))
-    tConfig = configparser.ConfigParser()
-    tConfig.read(os.path.join("files", "configs", "tess_config.txt"))
+    genConfig = genUtils.Config(join("files", "configs", "config.toml"))
+    tConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
-genConfig = genConfig["DEFAULT"]
-tConfig = tConfig["DEFAULT"]
 
 location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                        latitude=genConfig.getfloat("obs_lat"),
-                        longitude=genConfig.getfloat("obs_lon"))
+                        latitude=genConfig["obs_lat"],
+                        longitude=genConfig["obs_lon"])
 
 logger = logging.getLogger("TESS Database Agent")
 
@@ -71,7 +67,7 @@ def make_csv_candidates(csv_names):
     master_df = master_df.rename(columns={"TOI": "CandidateName", "Vmag": "Magnitude"})
     master_df["CandidateName"] = master_df["CandidateName"].apply(lambda v: f"{'TOI' if len(v)<=7 else 'TIC'} {v}")
     # calculate ingress or egress time +- obs_buffer into new column "obs_window"
-    obs_buffer = tConfig.getint("obs_buffer")
+    obs_buffer = tConfig["obs_buffer"]
 
     jd_to_dt = np.vectorize(genUtils.jd_to_dt)
     tts = np.vectorize(genUtils.timeToString)
@@ -128,8 +124,8 @@ def make_csv_candidates(csv_names):
                 logger.error(f"Problem row: {row}")
                 raise ValueError(f"Candidate {row['CandidateName']} has EndObservability after egress. This should not happen.")
 
-    master_df["ExposureTime"] = [tConfig.getfloat("EXPTIME")] * len(master_df.index)
-    master_df["NumExposures"] = master_df.apply(lambda row: calc_num_frames(row.StartObservability,row.EndObservability,tConfig.getfloat("EXPTIME")), axis=1) # need to subtract off for scheduler reasons
+    master_df["ExposureTime"] = [tConfig[master_df.index]]
+    master_df["NumExposures"] = master_df.apply(lambda row: calc_num_frames(row.StartObservability,row.EndObservability,tConfig["EXPTIME"]), axis=1) # need to subtract off for scheduler reasons
     master_df["Filter"] = [tConfig.get("FILTER")] * len(master_df.index)
     master_df.rename(columns=colToCVal, inplace=True)
     master_df.drop(
@@ -203,8 +199,8 @@ def update_and_insert(csv_candidates, dbConnection):
 
 def update_database(dbPath):
     write_out("Updating TESS targets")
-    dirname = os.path.dirname(__file__)
-    csv_names = [os.path.join(dirname, f) for f in [F for F in os.listdir(dirname) if F.endswith(".csv")]]
+    dname = dirname(__file__)
+    csv_names = [join(dname, f) for f in [F for F in os.listdir(dname) if F.endswith(".csv")]]
     if csv_names:
         dbConnection = CandidateDatabase(dbPath, "TESS Database Agent")
         write_out(f"{len(csv_names)} TESS CSV(s) found:")

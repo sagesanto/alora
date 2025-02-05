@@ -1,5 +1,6 @@
 import configparser
 import sys, os, pandas as pd
+from os.path import join, dirname, pardir, abspath
 
 from astral import LocationInfo
 from astroquery.simbad import Simbad
@@ -11,28 +12,20 @@ try:
     from scheduleLib.candidateDatabase import Candidate
 
     sys.path.remove(grandparentDir)
-    aConfig = configparser.ConfigParser()
-    genConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join(grandparentDir, "files", "configs", "aphot_config.txt"))
-    genConfig.read(os.path.join(grandparentDir, "files", "configs", "config.txt"))
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
+    genConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "config.toml"))
 
 
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.candidateDatabase import Candidate
 
-    aConfig = configparser.ConfigParser()
-    genConfig = configparser.ConfigParser()
-
-    aConfig.read(os.path.join("files", "configs", "aphot_config.txt"))
-    genConfig.read(os.path.join("files", "configs", "config.txt"))
-
-aConfig = aConfig["DEFAULT"]
-genConfig = genConfig["DEFAULT"]
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
+    genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
 
 obs = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                   latitude=genConfig.getfloat("obs_lat"),
-                   longitude=genConfig.getfloat("obs_lon"))
+                   latitude=genConfig["obs_lat"],
+                   longitude=genConfig["obs_lon"])
 
 
 def getData():

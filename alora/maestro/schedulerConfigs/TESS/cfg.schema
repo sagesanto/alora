@@ -1,0 +1,40 @@
+{
+    "EXPTIME": {
+      "Key": "EXPTIME",
+      "DefaultValue": 10,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "Single-frame exposure time",
+      "Units": "seconds"
+    },
+    "downtime_after_obs": {
+      "Key": "downtime_after_obs",
+      "DefaultValue": 3,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "minutes after observation that the telescope is considered occupied",
+      "Units": "minutes"
+    },
+    "bin2fits": {
+      "Key": "bin2fits",
+      "DefaultValue": false,
+      "ValDisplayType": "bool",
+      "Description": "do bin2fits conversion - TMO-specific",
+      "Units": ""
+    },
+    "max_minutes_without_focus": {
+      "Key": "max_minutes_without_focus",
+      "DefaultValue": 10000,
+      "ValDisplayType": "int",
+      "Description": "arbitrarily large, no refocusing during TESS observations",
+      "Units": "minutes"
+    },
+    "obs_buffer": {
+      "Key": "obs_buffer",
+      "DefaultValue": 60,
+      "Step": 5,
+      "ValDisplayType": "float",
+      "Description": "buffer time before ingress and after egress that we'd want to start observing",
+      "Units": "minutes"
+    }
+  }

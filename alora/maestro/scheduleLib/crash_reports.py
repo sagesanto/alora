@@ -2,11 +2,10 @@ import traceback, sys, os
 import datetime, pytz
 import configparser
 from os.path import join, exists
-
+import tomlkit
 dirname = os.path.abspath(join(os.path.dirname(__file__),os.pardir))
-config = configparser.ConfigParser()
-config.read(join(dirname, 'files','configs','config.txt'))
-config = config['DEFAULT']
+with open(join(dirname, 'files','configs','config.toml'),"rb") as f:
+    config = tomlkit.load(f)
 
 BASE_CRASH_DIR = join(dirname,config['BASE_CRASH_DIR'])
 

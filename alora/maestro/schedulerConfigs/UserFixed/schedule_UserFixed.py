@@ -58,7 +58,7 @@ class User_Fixed_Config(TypeConfiguration):
         return None  # do we want stuff here?
 
     def generateTransitionDict(self):
-        objTransitionDict = {'default': uConfig.getfloat("downtime_after_obs") * 60 * u.second}
+        objTransitionDict = {'default': uConfig["downtime_after_obs"] * 60 * u.second}
         for d in self.designations:
             objTransitionDict[("Focus", d)] = 0 * u.second
             objTransitionDict[("Unused Time", d)] = 0 * u.second

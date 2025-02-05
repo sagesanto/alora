@@ -1,0 +1,3 @@
+name = "Astrophotography"
+description = "The astrophotography (\"aphot\") module presents photogenic astronomical objects as targets of last resort. These targets are not populated in the database."
+author = "Sage Santomenna (mstp2022@mymail.pomona.edu)"

@@ -13,13 +13,13 @@ from genUtils import overlapping_time_windows, get_current_sidereal_time, find_t
 genConfig = ConfigParser()
 files_path = os.path.join(os.path.dirname(__file__),os.pardir,"files")
 genConfig.read(os.path.join(files_path, "configs", "config.txt"))
-genConfig = genConfig["DEFAULT"]
+
 
 class TestGenUtils(unittest.TestCase):
     def setUp(self):
         self.location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                        latitude=genConfig.getfloat("obs_lat"),
-                        longitude=genConfig.getfloat("obs_lon"))
+                        latitude=genConfig["obs_lat"],
+                        longitude=genConfig["obs_lon")]
 
     def test_overlapping_time_windows(self):
         # test 1: time windows that do overlap

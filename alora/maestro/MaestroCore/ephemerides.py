@@ -9,22 +9,25 @@ from scheduleLib.crash_reports import run_with_crash_writing
 def main():
     import json
     import subprocess
-    from importlib import import_module
+    # from importlib import import_module
 
     from scheduleLib.genUtils import write_out
-    # import all modules in schedulerConfigs
-    root = "schedulerConfigs"
-    root_directory = f"./{root}"
-    module_names = []
-    for dir in [f"{root}."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
-        module_names.append(dir)
-    modules = {}
-    for m in module_names:
-        try:
-            modules[m.replace("_"," ").replace(f"{root}.","")] = import_module(m, "schedulerConfigs")
-        except Exception as e:
-            write_out(f"Can't import config module {m}: {e}. Fix and try again.")
-            raise e
+    from scheduleLib.module_loader import ModuleManager
+    manager = ModuleManager(write_out=write_out)
+    modules = manager.load_active_modules()
+    # # import all modules in schedulerConfigs
+    # root = "schedulerConfigs"
+    # root_directory = f"./{root}"
+    # module_names = []
+    # for dir in [f"{root}."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
+    #     module_names.append(dir)
+    # modules = {}
+    # for m in module_names:
+    #     try:
+    #         modules[m.replace("_"," ").replace(f"{root}.","")] = import_module(m, "schedulerConfigs")
+    #     except Exception as e:
+    #         write_out(f"Can't import config module {m}: {e}. Fix and try again.")
+    #         raise e
 
     targetsDict = json.loads(sys.argv[1])
     settingsJstr = sys.argv[2]

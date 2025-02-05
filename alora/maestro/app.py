@@ -23,7 +23,7 @@ def _main():
     import pathlib
     import random
     import re
-    import sys, os
+    import sys, os, traceback
     PYTHON_PATH = sys.executable
     import time
     from pathlib import Path
@@ -34,8 +34,11 @@ def _main():
 
     from PyQt6 import QtGui, QtCore
     from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
-        QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, QPushButton, QMessageBox
+        QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, \
+              QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
+                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox
     from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel
+    import PyQt6.QtWidgets as QtWidgets
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
@@ -43,13 +46,23 @@ def _main():
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
-    from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel
+    from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel, ModuleListEntry
     from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton
+    from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
     from datetime import datetime, timedelta
     from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
     import astropy.units as u
 
-    from scheduleLib.genUtils import inputToAngle
+    from scheduleLib.genUtils import inputToAngle, Config
+    from scheduleLib.module_loader import ModuleManager
+
+    # VAL_DISPLAY_TYPES = {
+    #     "float":QLineEdit,
+    #     "int":QSpinBox,
+    #     "str":QLineEdit,
+    #     "bool":QCheckBox,
+    #     "longstr":QTextEdit
+    # }
 
     # set up logger
     try:
@@ -84,6 +97,15 @@ def _main():
 
     def test_error():
         raise ValueError("Test error")
+    
+    def clear_layout(layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                clear_layout(item.layout())
 
     class Settings:
         def __init__(self, settingsFilePath):
@@ -146,6 +168,58 @@ def _main():
         def asDict(self):
             return {k: v for k, [v, _] in self._settings.items()}
 
+    class TOMLSettings:
+        def __init__(self, fpath):
+            self.path = fpath
+            self._settings = {}
+            self._linkBacks = []  # (settingName, writeFunction) tuples
+            self.cfg = None
+
+        def loadSettings(self):
+            self.cfg = Config(self.path)
+
+        def saveSettings(self):
+            self.cfg.save()
+
+        def query(self, key):
+            """!
+            Get the (value, type) pair associated with the setting with name key if such a pair exists, else None
+            @param key:
+            @return: tuple(value of setting,type of setting (string))
+            """
+            return self.cfg.get(key)
+
+        def add(self, key, value):
+            self.cfg.add(key, value)
+            self.saveSettings()
+
+        def linkWatch(self, signal, key, valueSource, linkBack, datatype):
+            """!
+            Link function signal to setting key such that setting key is set to the value from valueSource (can be a function) when signal is triggered
+            @param signal: Qt signal
+            @param key: string, name of existing setting
+            @param valueSource: function or value
+
+            """
+            signal.connect(lambda: self.set(key, valueSource, datatype))
+            self._linkBacks.append((key, (linkBack, datatype)))
+
+        def update(self):
+            for key, (func, datatype) in self._linkBacks:
+                func(datatype(self.cfg[key]))
+
+        def set(self, key, value, datatype):
+            if callable(value):
+                value = value()
+            if self.cfg.get(key) is not None:
+                self.cfg[key] = datatype(value)
+                self.saveSettings()
+                return
+            raise ValueError(f"No such setting {key}")
+
+        def asDict(self):
+            return {k: v for k, [v, _] in self.cfg.items()}
+
 
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
@@ -163,6 +237,7 @@ def _main():
             self.set_candidates_icon(STATUS_IDLE)
             self.set_database_icon(STATUS_IDLE)
             self.set_ephemeris_icon(STATUS_IDLE)
+            self.set_modules_icon(STATUS_IDLE)
             self.set_processes_icon(QtGui.QIcon(LOGO_PATH("system-monitor")))
             self.toggleRejectButton.setIcon(QtGui.QIcon(LOGO_PATH("cross")))
             self.removeToggleButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-circle-frame")))
@@ -236,6 +311,17 @@ def _main():
             self.excludeEndEdit.setDateTime(self.scheduleEndTimeEdit.dateTime())
 
             self.candidatesTabIndex = self.tabWidget.indexOf(self.candidatesTab)
+            
+            self.cfg_display_types = {
+                "float":self.add_float_cfg,
+                "int":self.add_int_cfg,
+                "str":self.add_str_cfg,
+                "bool":self.add_bool_cfg,
+                "longstr":self.add_longstr_cfg
+            }
+
+            self.module_manager = ModuleManager()
+            self.set_up_modules()
 
         def set_sunrise_sunset(self):
             self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset()
@@ -368,6 +454,232 @@ def _main():
                                     self.tempSpinbox.value, self.tempSpinbox.setValue,
                                     int)
             self.settings.update()
+            self.reloadModulesButton.clicked.connect(self.set_up_modules)
+
+        def write_default_module_settings(self,mod_dir):
+            if not os.path.exists(join(mod_dir,"cfg.schema")):
+                return
+            with open(join(mod_dir,"cfg.schema"),"r") as f:
+                cfg_schema = json.load(f)
+            Path(join(mod_dir,"config.toml")).touch()
+            cfg = Config(join(mod_dir,"config.toml"))
+            for k,v in cfg_schema.items():
+                cfg.set(k,v["DefaultValue"])
+            cfg.save()
+
+        def set_up_modules(self):
+            self.module_manager.update_modules()
+            self.mod_info = self.module_manager.list_modules()
+            # clear the mod list 
+            self.moduleList.clear()
+            self.module_entries = {}
+            nerrors = 0
+            for name, info in self.mod_info.items():
+                mod = None
+                if not os.path.exists(join(info["dir"],"config.json")):
+                    self.write_default_module_settings(info["dir"])
+                # icon = None
+                if info["active"]:
+                    mod = self.module_manager.load_module(name)
+                    if mod is not None:
+                        icon_path = STATUS_DONE
+                        tooltip = "Module is active"
+                    else:
+                        icon_path = STATUS_ERROR
+                        tooltip = "Module failed to load"
+                        nerrors += 1
+                else:
+                    icon_path = STATUS_IDLE
+                    tooltip = "Module is inactive"
+
+                module_entry = ModuleListEntry(name,info["active"],icon_path)
+                module_entry.checkbox.stateChanged.connect(lambda state,n=name: self.handle_module_change(state,n))
+                module_entry.checkbox.setToolTip("Activate/deactivate module")
+                self.module_entries[name] = module_entry
+                item = QListWidgetItem(self.moduleList)
+                item.setSizeHint(module_entry.sizeHint())
+                self.moduleList.addItem(item)
+                self.moduleList.setItemWidget(item,module_entry)
+                self.module_entries[name].change_icon_tooltip(tooltip)
+
+            if nerrors > 0:
+                self.statusBar().showMessage(f"{nerrors} modules failed to load. Check the logs for more information.",10000)
+                self.set_modules_icon(STATUS_ERROR)
+            else:
+                self.set_modules_icon(STATUS_DONE)
+                self.statusBar().showMessage("Modules loaded successfully.",2000)
+            self.moduleList.itemClicked.connect(lambda item: self.display_module(self.moduleList.itemWidget(item).name))
+            self.display_module(list(self.mod_info.keys())[0])
+            self.moduleList.setCurrentRow(0)
+
+        def handle_module_change(self,state,name):
+            if state == 2:
+                print(f"activating {name}")
+                self.module_manager.activate_module(name)
+                mod = self.module_manager.load_module(name)
+                if mod is not None:
+                    icon = STATUS_DONE
+                    tooltip = "Module is active"
+                else:
+                    icon = STATUS_ERROR
+                    tooltip = "Module failed to load"
+            else:
+                print(f"deactivating {name}")
+                icon = STATUS_IDLE
+                tooltip = "Module is inactive"
+                self.module_manager.deactivate_module(name)
+            self.module_entries[name].change_icon(icon)
+            self.module_entries[name].change_icon_tooltip(tooltip)
+
+        def add_float_cfg(self,name,item,modulecfg):
+            spin = NoScrollQDoubleSpinBox()
+            current_val = modulecfg.query(name)
+            if "Min" in item:
+                spin.setMinimum(item["Min"])
+            elif current_val < spin.minimum():
+                spin.setMinimum(current_val*2)
+            if "Max" in item:
+                spin.setMaximum(item["Max"])
+            elif current_val > spin.maximum():
+                spin.setMaximum(current_val*2)
+            if "Step" in item:
+                spin.setSingleStep(item["Step"])
+            spin.setValue(current_val)
+            modulecfg.linkWatch(spin.valueChanged, name, spin.value, spin.setValue, float)
+            return spin
+        
+        def add_int_cfg(self,name,item,modulecfg):
+            spin = NoScrollQSpinBox()
+            current_val = modulecfg.query(name)
+            if "Min" in item:
+                spin.setMinimum(item["Min"])
+            elif current_val < spin.minimum():
+                spin.setMinimum(current_val*2)
+            if "Max" in item:
+                spin.setMaximum(item["Max"])
+            elif current_val > spin.maximum():
+                spin.setMaximum(current_val*2)
+            if "Step" in item:
+                spin.setSingleStep(item["Step"])
+            spin.setValue(current_val)
+            modulecfg.linkWatch(spin.valueChanged, name, spin.value, spin.setValue, int)
+            return spin
+        
+        def add_str_cfg(self,name,item,modulecfg):
+            line_edit = QLineEdit()
+            current_val = modulecfg.query(name)
+            line_edit.setText(current_val)
+            modulecfg.linkWatch(line_edit.textChanged, name, line_edit.text, line_edit.setText, str)
+            return line_edit
+        
+        def add_bool_cfg(self,name,item,modulecfg):
+            check_box = QCheckBox()
+            current_val = modulecfg.query(name)
+            check_box.setChecked(current_val)
+            modulecfg.linkWatch(check_box.stateChanged, name, check_box.isChecked, check_box.setChecked, bool)
+            return check_box
+        
+        def add_longstr_cfg(self,name,item,modulecfg):
+            text_edit = QTextEdit()
+            current_val = modulecfg.query(name)
+            text_edit.setText(current_val)
+            modulecfg.linkWatch(text_edit.textChanged, name, text_edit.toPlainText, text_edit.setText, str)
+            return text_edit
+    
+
+        def display_module(self,name):
+            # clear the module display
+            # print("displaying",name)
+            # w = self.moduleContentScroll.widget()
+            self.moduleContentScroll.setWidget(QWidget())
+            # w.deleteLater()
+            # print("deleted children")
+            content = QWidget()
+            clayout = QVBoxLayout()
+            clayout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            # add a little vertical space at the top
+            clayout.addSpacing(10)
+            title = QLabel(name)
+            title.setFont(QtGui.QFont("Segoe UI", 20,weight=QtGui.QFont.Weight.Bold))  # ok so the rest of the app is probably in Sego UI but i like Segoe UI
+            title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            title.setWordWrap(True)
+            clayout.addWidget(title)
+            content.setLayout(clayout)
+
+            author = QLabel(f"Author(s): {self.mod_info[name]['author']}")
+            author.setFont(QtGui.QFont("Segoe UI", 12, italic=True))
+            author.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            author.setWordWrap(True)
+            clayout.addWidget(author)
+
+            description = QLabel(f"{self.mod_info[name]['description']}")
+            description.setFont(QtGui.QFont("Segoe UI", 12))
+            description.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            description.setWordWrap(True)
+            clayout.addWidget(description)
+
+            clayout.addSpacing(10)
+            cfg_title = QLabel("Configuration")
+            cfg_title.setFont(QtGui.QFont("Segoe UI", 16,weight=QtGui.QFont.Weight.Bold))
+            clayout.addWidget(cfg_title)
+
+            # this isnt actually the config but instead the description of the config
+            cfg_desc_path = join(self.mod_info[name]["dir"],"cfg.schema")
+            try:
+                with open(cfg_desc_path,"r") as f:
+                    cfg_desc = json.load(f)
+                cfg = TOMLSettings(join(self.mod_info[name]["dir"],"config.toml"))
+                cfg.loadSettings()
+
+                for k,v in cfg_desc.items():
+                    if v.get("Hidden",False):
+                        continue
+                    item_widget = QWidget()
+                    item_layout = QVBoxLayout()
+                    item_label = QLabel(k)
+                    item_label.setFont(QtGui.QFont("Segoe UI", 14, weight=QtGui.QFont.Weight.Bold))
+                    item_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                    item_label.setWordWrap(True)
+                    item_layout.addWidget(item_label)
+
+                    item_description = QLabel(v["Description"])
+                    item_description.setFont(QtGui.QFont("Segoe UI", 12, italic=True))
+                    item_description.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                    item_description.setWordWrap(True)
+                    item_layout.addWidget(item_description)
+
+                    edit_layout = QHBoxLayout()
+                    edit_box = self.cfg_display_types[v["ValDisplayType"]](k,v,cfg)
+                    edit_box.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+                    edit_box.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+                    edit_layout.addWidget(edit_box)
+                    if v["Units"]:
+                        unit_label = QLabel(v["Units"])
+                        unit_label.setFont(QtGui.QFont("Segoe UI", 12))
+                        unit_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+                        edit_layout.addWidget(unit_label)
+                    if v["ValDisplayType"] != "longstr":
+                        edit_layout.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Minimum))
+
+                    item_layout.addLayout(edit_layout)
+                    item_widget.setLayout(item_layout)
+                    clayout.addWidget(item_widget)
+
+            except FileNotFoundError as e:
+                cfg_label = QLabel(f"No configuration file found.")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+            except Exception as e:
+                cfg_label = QLabel(f"Error loading configuration:")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+                err_label = QLabel(traceback.format_exc())
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                clayout.addWidget(err_label)
+
+            # print("adding content to scroll")
+            self.moduleContentScroll.setWidget(content)
+            # print("added")
 
         def closeEvent(self, a0: QtGui.QCloseEvent):
             logger.info("----------- Closing Maestro -----------------")
@@ -386,8 +698,11 @@ def _main():
         def set_ephemeris_icon(self,img_path):
             self.tabWidget.setTabIcon(3,QtGui.QIcon(img_path))
         
-        def set_processes_icon(self,img_path):
+        def set_modules_icon(self,img_path):
             self.tabWidget.setTabIcon(4,QtGui.QIcon(img_path))
+        
+        def set_processes_icon(self,img_path):
+            self.tabWidget.setTabIcon(5,QtGui.QIcon(img_path))
 
 
         def updateTables(self, index):

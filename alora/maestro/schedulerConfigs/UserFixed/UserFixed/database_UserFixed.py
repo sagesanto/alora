@@ -13,7 +13,8 @@ try:
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
 
     sys.path.remove(grandparentDir)
-    genConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "config.toml"))
+    genConfig = configparser.ConfigParser()
+    genConfig.read(os.path.join(grandparentDir, "files", "configs", "config.txt"))
     uConfig = configparser.ConfigParser()
     uConfig.read(os.path.join(grandparentDir, "files", "configs", "userFixed_config.txt"))
 
@@ -22,13 +23,17 @@ except ImportError:
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
-    genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
+    genConfig = configparser.ConfigParser()
+    genConfig.read(os.path.join("files", "configs", "config.txt"))
     uConfig = configparser.ConfigParser()
     uConfig.read(os.path.join("files", "configs", "userFixed_config.txt"))
 
+genConfig = genConfig["DEFAULT"]
+uConfig = uConfig["DEFAULT"]
+
 location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                        latitude=genConfig["obs_lat"],
-                        longitude=genConfig["obs_lon"])
+                        latitude=genConfig.getfloat("obs_lat"),
+                        longitude=genConfig.getfloat("obs_lon"))
 
 
 def updateCandidate(candidate: Candidate, dbConnection: CandidateDatabase):

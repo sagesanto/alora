@@ -1,0 +1,3 @@
+name = "TESS"
+description = "The TESS module is designed for observations of CSV-specified exoplanet-candidate transits. It does NOT support general-purpose TESS observations." 
+author = "Sage Santomenna (mstp2022@mymail.pomona.edu), Pei Qin (pqaa2018@pomona.edu)"
