@@ -48,7 +48,6 @@ PyQt6-sip
 pytest
 python-dateutil
 pytz
-pywin32-ctypes
 PyYAML
 requests
 seaborn
