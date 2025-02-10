@@ -702,11 +702,8 @@ def main():
         #         raise e
 
         # turn the lists of candidates into one list
-        candidates = [candidate for candidateList in
-                    [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
-                    for candidate in
-                    candidateList if
-                    candidate.CandidateName not in blacklist]
+        candidates = [candidate for candidateList in [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
+                        for candidate in candidateList if candidate.CandidateName not in blacklist]
 
         if len(candidates) == 0:
             logger.warning("No candidates provided - nothing to schedule. Exiting.")
@@ -745,7 +742,7 @@ def main():
         # --- create the blocks ---
         blocks = {}  # dictionary that stores targets grouped by priority level
         for c in candidates:
-            exposureDuration = float(c.NumExposures) * float(c.ExposureTime)  # calculate block duration
+            exposureDuration = c.NumExposures * c.ExposureTime.to_value("second")  # calculate block duration
             name = c.CandidateName
             specConstraints = typeSpecificConstraints[
                 c.CandidateType]  # get constraints that should apply to targets of this type

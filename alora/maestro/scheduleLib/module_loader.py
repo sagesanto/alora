@@ -11,6 +11,7 @@ import sqlite3
 import glob
 import tomlkit
 from importlib import import_module
+import traceback
 
 from .genUtils import query_to_dict, MAESTRO_DIR
 
@@ -22,7 +23,7 @@ class ModuleManager:
         self.module_db.row_factory = sqlite3.Row
 
     def update_modules(self):
-        self.module_db.cursor().execute('CREATE TABLE IF NOT EXISTS "modules" ("name" TEXT PRIMARY KEY, "active" BOOLEAN, "description" TEXT, "author" TEXT, "dir" TEXT)')
+        self.module_db.cursor().execute('CREATE TABLE IF NOT EXISTS "modules" ("name" TEXT PRIMARY KEY, "modname" TEXT UNIQUE, "active" BOOLEAN, "description" TEXT, "author" TEXT, "dir" TEXT)')
         self.module_db.commit()
         existing_names = [row[0] for row in self.module_db.cursor().execute("SELECT name FROM modules").fetchall()]
         root = "schedulerConfigs"
@@ -38,11 +39,14 @@ class ModuleManager:
                 mod_info = tomlkit.load(f)
             try:
                 name, description, author = mod_info["name"], mod_info["description"], mod_info["author"]
+                # allow the module author to specify a different modname (used to locate and load the module) than the user-displayed name
+                modname = mod_info.get("modname",name)
+                # targets in the database will refer to the module's friendly name, not the modname
             except KeyError as e:
                 self.write_out(f"Error reading module.toml in {dir}: missing key {e}. Skipping.")
                 continue
             if name not in existing_names:
-                self.module_db.cursor().execute(f"INSERT INTO modules (name, active, description, author, dir) VALUES (?,?,?,?,?)", (name, True, description, author, abspath(dir)))
+                self.module_db.cursor().execute(f"INSERT INTO modules (name, modname, active, description, author, dir) VALUES (?,?,?,?,?,?)", (name, modname, True, description, author, abspath(dir)))
             else:
                 self.module_db.cursor().execute(f"UPDATE modules SET description = ?, author = ?, dir = ? WHERE name = ?", (description, author, abspath(dir), name))
             self.module_db.commit()
@@ -65,7 +69,7 @@ class ModuleManager:
             m[n] = d
         return m
     
-    def load_module(self, name):
+    def load_module(self, name, return_trace = False):
         mod_info = self.get_module_info(name)
         if not mod_info:
             self.write_out(f"Module {name} not found.")
@@ -73,16 +77,28 @@ class ModuleManager:
         if not mod_info["active"]:
             self.write_out(f"Module {name} is not active.")
             return None
+        modname = mod_info["modname"]
         try:
-            return import_module(f"schedulerConfigs.{name}", "schedulerConfigs")
+            if return_trace:
+                return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs"), None
+            return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs")
         except Exception as e:
             self.write_out(f"Error loading module {name}: {e}")
+            if return_trace:
+                return None, traceback.format_exc()
             return None
         
-    def load_active_modules(self):
+    def load_active_modules(self, include_failed = False):
         # this does two db queries when only one is necessary, but it's not a big deal
         active_modules = [k for k,mod in self.list_modules().items() if mod["active"]]
-        return {mod: self.load_module(mod) for mod in active_modules}
-
+        if include_failed:
+            return {mod: self.load_module(mod) for mod in active_modules}
+        d = {}
+        for mod in active_modules:
+            m = self.load_module(mod)
+            if m:
+                d[mod] = m
+        return d
+            
     def load_all_modules(self):
         return {k: self.load_module(k) for k in self.list_modules()}

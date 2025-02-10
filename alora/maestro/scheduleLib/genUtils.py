@@ -544,7 +544,8 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
     @return: converted time or None
     @rtype: datetime
     """
-
+    if isinstance(timeString, datetime):
+        return timeString
     try:
         return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S")
     except:
@@ -553,7 +554,7 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
         except Exception as e:
             print(repr(e))
             if logger:
-                logger.error("Unable to coerce time from " + timeString)
+                logger.error(f"Unable to coerce time from {timeString} (type {type(timeString)}): {e}")
     return None
 
 

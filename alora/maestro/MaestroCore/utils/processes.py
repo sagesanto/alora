@@ -1,8 +1,10 @@
-# Sage Santomenna 2023
+# Sage Santomenna 2023-2025
 # For use in asynchronous computing
 # Process(QProcess) - represents one asynchronous process. manages Process status and communication.
 # ProcessModel(QAbstractItemModel) - stores Processes and information about them in a tree-like form
 # TreeItem - node of the ProcessModel tree model
+
+# this is probably the sketchiest part of the whole system. unfortunate, considering its pretty important
 
 import logging
 import os
@@ -108,6 +110,7 @@ class Process(QProcess):
     deleted = pyqtSignal()
     logged = pyqtSignal(str)
     errorSignal = pyqtSignal(str) # emitted whenever an error occurs
+    failed = pyqtSignal(str) # emitted whenever the process finishes with an error
     msg = pyqtSignal(str)
     lastLog = pyqtSignal(str)
     paused = pyqtSignal()
@@ -177,19 +180,21 @@ class Process(QProcess):
             self.logger.error(self.fullName + " experienced a fatal error")
             return  # handle in onErrorOccurred
         if not exitCode:  # good state
-            self.logger.info(
-                "Good state: {} finished with error code {} and error message {}".format(self.fullName, exitCode,
-                                                                                         self.error() or ""))
+            self.logger.info(f"Good state: {self.fullName} finished with error code {exitCode}")
             self.clear_error()
             self.lastLog.emit(self.log[-1] if len(self.log) else "No message")
             self.ended.emit("Finished")
             self.succeeded.emit("Finished")
             return
-        partialString = "Partial failure: finished with error " + self.error().name
-        self.ended.emit(partialString)
-        self.errorSignal.emit(partialString) # nightmare. this error signal sets the error message in the model
-        self.logger.error(self.fullName + " got a non-zero exit code with error " + self.error().name + ".")
-        self.logger.error(decodeStdErr(self))
+        else:
+            # self.onErrorOcurred(exitStatus)
+            partialString = f"Error: finished with error {self.error().name} and exit code {exitCode}"
+            self.ended.emit(partialString)
+            self.errorSignal.emit(partialString) # nightmare. this error signal sets the error message in the model
+            self.failed.emit("\n\n".join(self.errorLog))
+            # self.failed.emit(partialString)
+            self.logger.error(self.fullName + " got a non-zero exit code with error " + self.error().name + ".")
+            self.logger.error(decodeStdErr(self))
 
     def onErrorOcurred(self, exitStatus: QProcess.ProcessError):
         self.errored = True
@@ -203,10 +208,11 @@ class Process(QProcess):
         self.logger.error(
             "Error occurred:" + self.fullName + " got " + self.errorString() + " with error reason " + processErrorReason)
         self.logger.error(decodeStdErr(self))
+        self.failed.emit(f"Error occurred in {self.fullName:} "+self.errorString())
         self.ended.emit("Error")
 
     def __del__(self):
-        logger.info(f"Deleting process {self.name}, with PID, {self.processId()}")
+        logger.info(f"Deleting process {self.name} with PID {self.processId()}")
         self.ended.emit("Deleted")
         self.kill()
         del self

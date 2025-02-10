@@ -20,10 +20,12 @@ MAESTRO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pa
 
 try:
     from scheduleLib import genUtils
+    from scheduleLib.module_loader import ModuleManager
     from scheduleLib.sql_database import SQLDatabase
 except ImportError as e:
     print(e)
     import genUtils
+    from module_loader import ModuleManager
     from sql_database import SQLDatabase
 
 validFields = ["CandidateName", "CandidateType", "Author", "DateAdded", "DateLastEdited", "RemovedDt",
@@ -85,6 +87,8 @@ with open(os.path.join(MODULE_PATH, "candidate_schema.json"), "r") as f:
     gen_construction_schema = json.load(f)
 
 _modules = None
+mod_manager = ModuleManager()
+
 # _modules = genUtils.import_maestro_modules()
 # noinspection PyUnresolvedReferences
 class BaseCandidate:
@@ -137,16 +141,32 @@ class BaseCandidate:
     def __repr__(self):
         return f"Candidate {self.CandidateName} ({self.CandidateType})"
 
-    def set_field(self, field, value):
-        if field not in validFields:
-            raise ValueError(
-                "Bad argument: " + field + " is not a valid argument for candidate construction. Valid arguments are " + str(
-                    validFields))
-        self.__dict__[field] = value
-
+    # def set_field(self, field, value):
+    #     if field not in validFields:
+    #         raise ValueError(
+    #             "Bad argument: " + field + " is not a valid argument for candidate construction. Valid arguments are " + str(
+    #                 validFields))
+    #     self.__dict__[field] = value
+    
+    # lol enforce strict typing in a dynamically typed language
+    def __setattr__(self, name: str, value) -> None:
+        # print("setting attribute", name, "to", value)
+        mega_schema = gen_construction_schema.copy()
+        mega_serializers = gen_serialization_dict.copy()
+        if 'config_schema' in self.__dict__:
+            mega_schema.update(self.config_schema)
+        if 'config_serializers' in self.__dict__:
+            mega_serializers.update(self.config_serializers)
+        if name in mega_schema.keys():
+            schema = mega_schema[name]
+            test_serializer = mega_serializers[schema['valtype']]
+            try:
+                _ = test_serializer(value,**schema)
+            except Exception as e:
+                raise AttributeError(f"{self.CandidateType} candidate cannot set attribute {name} to {value}: {e}. If you're seeing this, it's likely because the author of the '{self.CandidateType}' module has improperly set a candidate attribute somewhere in the code. Please let them know! If you are the module author: this is likely happening because the configured serializer for the field you are trying to set cannot parse the value you're trying to give it. If this is the issue, you could rewrite your serializer or ensure that the value is of the correct type.")
+        super().__setattr__(name, value)
 
     def asDict(self,start_dict=None):
-
         d = start_dict or {}
         if 'config_schema' in self.__dict__:
             for key, schema in self.config_schema.items():
@@ -232,7 +252,7 @@ class BaseCandidate:
         return Candidate.dfToCandidates(df)
 
     def hasField(self, field):
-        return field in self.__dict__.keys() and field # so that setting the RemovedReason of a candidate to '' means it is not removed
+        return field in self.__dict__.keys() and self.__dict__[field] is not None# so that setting the RemovedReason of a candidate to '' means it is not removed
 
     def isAfterStart(self, dt: datetime):
         """!
@@ -325,7 +345,8 @@ class Candidate(BaseCandidate):
         # print(CandidateName, "in CandidateConstructor")
         global _modules
         if _modules is None:
-            _modules = genUtils.import_maestro_modules()
+            _modules = mod_manager.load_active_modules()
+            # _modules = genUtils.import_maestro_modules()
         
         if CandidateType not in _modules.keys():
         # if CandidateType not in self.modules.keys():
@@ -346,6 +367,9 @@ class CandidateDatabase(SQLDatabase):
         self.logger = logger
         self.db_path = dbPath
         self.__author = author
+        self.logger.info("Connecting to candidate database at " + dbPath)
+        if not os.path.exists(self.db_path):
+            raise FileNotFoundError("Database file not found")
         self.open(dbPath)
         if self.isConnected:
             self.logger.info("Connection confirmed")
@@ -456,7 +480,7 @@ class CandidateDatabase(SQLDatabase):
         id = generateID(candidate["CandidateName"], candidate["CandidateType"], self.__author)
         candidate["ID"] = id
         try:
-            self.insert_records("Candidates", candidate)
+            self.insert_record("Candidates", candidate)
         except Exception as e:
             self.logger.error("Can't insert " + str(candidate) + ". PBCAK Error")
             self.logger.error(repr(e))
@@ -578,7 +602,7 @@ class CandidateDatabase(SQLDatabase):
         updateDict = self.removeInvalidFields(updateDict)
         if len(updateDict):
             updateDict["DateLastEdited"] = CandidateDatabase.timestamp()
-            self.table_update("Candidates", updateDict, "ID = " + str(ID))
+            self.table_update("Candidates", list(updateDict.keys()), list(updateDict.values()), "ID = " + str(ID))
 
     def _releaseDatabase(self):
         self.db_connection.commit()
@@ -622,7 +646,7 @@ class CandidateDatabase(SQLDatabase):
             reason = self.__author + ": " + reason
             updateDict = {"RemovedDt": CandidateDatabase.timestamp(), "RemovedReason": reason,
                           "DateLastEdited": CandidateDatabase.timestamp()}
-            self.table_update("Candidates", updateDict, "ID = " + str(ID))
+            self.table_update("Candidates", list(updateDict.keys()), list(updateDict.values()), "ID = " + str(ID))
             self.logger.info("Removed candidate " + candidate.CandidateName + " for reason " + reason)
             print("Removed candidate " + candidate.CandidateName + " for reason " + reason)
             self.db_connection.commit()
@@ -638,7 +662,7 @@ class CandidateDatabase(SQLDatabase):
             reason = self.__author + ": " + reason
             updateDict = {"RejectedReason": reason,
                           "DateLastEdited": CandidateDatabase.timestamp()}
-            self.table_update("Candidates", updateDict, "ID = " + str(ID))
+            self.table_update("Candidates", list(updateDict.keys()), list(updateDict.values()), "ID = " + str(ID))
             self.logger.info("Rejected candidate " + candidate.CandidateName + " for reason " + reason)
             print("Rejected candidate " + candidate.CandidateName + " for reason " + reason)
             self.db_connection.commit()

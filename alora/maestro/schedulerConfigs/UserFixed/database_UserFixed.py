@@ -3,6 +3,7 @@ from datetime import datetime as datetime, timedelta
 import os, sys
 import astropy.units as u
 import pandas as pd
+from os.path import join, dirname
 from astral import LocationInfo
 
 try:
@@ -10,26 +11,23 @@ try:
     sys.path.append(grandparentDir)
     from scheduleLib import genUtils, candidateDatabase
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, Config
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "config.toml"))
-    uConfig = configparser.ConfigParser()
-    uConfig.read(os.path.join(grandparentDir, "files", "configs", "userFixed_config.txt"))
 
 except ImportError:
     from scheduleLib import genUtils
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, Config
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
     genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
-    uConfig = configparser.ConfigParser()
-    uConfig.read(os.path.join("files", "configs", "userFixed_config.txt"))
 
 location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
                         latitude=genConfig["obs_lat"],
                         longitude=genConfig["obs_lon"])
 
+uConfig = Config(join(dirname(__file__), "config.toml"))
 
 def updateCandidate(candidate: Candidate, dbConnection: CandidateDatabase):
     dbConnection.editCandidateByID(candidate.ID, candidate.asDict())

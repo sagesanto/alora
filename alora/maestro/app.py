@@ -36,8 +36,8 @@ def _main():
     from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
         QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, \
               QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
-                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox
-    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel
+                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox, QScrollArea
+    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel, QTimer
     import PyQt6.QtWidgets as QtWidgets
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
@@ -49,6 +49,7 @@ def _main():
     from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel, ModuleListEntry
     from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton
     from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
+    from MaestroCore.utils.windows import ScrollMessageBox
     from datetime import datetime, timedelta
     from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
     import astropy.units as u
@@ -66,7 +67,7 @@ def _main():
 
     # set up logger
     try:
-        with open(os.path.abspath("logging.json"), 'r') as log_cfg:
+        with open(PATH_TO("logging.json"), 'r') as log_cfg:
             logging.config.dictConfig(json.load(log_cfg))
         logger = logging.getLogger(__name__)
         # set the out logfile to a new path
@@ -106,6 +107,18 @@ def _main():
                 widget.deleteLater()
             else:
                 clear_layout(item.layout())
+
+    def copy_button(text_to_copy):
+        def copy_to_clipboard():
+            clipboard = QApplication.clipboard()
+            clipboard.setText(text_to_copy)
+
+        button = QPushButton()
+        button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard--plus.png")))
+        button.clicked.connect(copy_to_clipboard)
+        button.clicked.connect(lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard-task.png"))))
+        button.clicked.connect(lambda: QTimer.singleShot(1000, lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard--plus.png")))))
+        return button
 
     class Settings:
         def __init__(self, settingsFilePath):
@@ -227,6 +240,7 @@ def _main():
             self.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))  # ----
             self.setupUi(self)
 
+            self.warnings_to_show_after_load = []
             # self.blacklistLabel.setMinimumWidth(self.blacklistView.width())
 
             with open(PATH_TO("version.txt"), "r") as f:
@@ -285,25 +299,21 @@ def _main():
             self.scheduleDf = None
             self.dbConnection = None
 
+
             # call setup functions
             self.settings.loadSettings()
-            if os.path.exists(self.settings.query("candidateDbPath")[0]):
-                try:
-                    self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath")[0], "Maestro")
-                    self.set_database_icon(STATUS_DONE)
-                except Exception as e:
-                    logger.error(f"Unable to start database coordinator: {repr(e)}")
-                    self.statusBar().showMessage(f"Unable to start database coordinator: {repr(e)}", 10000)
-                    self.set_database_icon(STATUS_ERROR)
-                else:
-                    self.startDbUpdater()
-                    self.startDbOperator()
+            
+            if self.connect_db():
+                self.startDbUpdater()
+                self.startDbOperator()
 
             self.processesTreeView.setModel(self.processModel)
             self.ephemListView.setModel(self.ephemListModel)
             self.blacklistView.setModel(self.blacklistModel)
             self.whitelistView.setModel(self.whitelistModel)
             self.excludeListView.setModel(self.excludeListModel)
+
+            self.current_module_index = 0
 
             self.setConnections()
 
@@ -317,11 +327,40 @@ def _main():
                 "int":self.add_int_cfg,
                 "str":self.add_str_cfg,
                 "bool":self.add_bool_cfg,
-                "longstr":self.add_longstr_cfg
+                "longstr":self.add_longstr_cfg,
+                "choice":self.add_choice_cfg
             }
 
             self.module_manager = ModuleManager()
             self.set_up_modules()
+            QTimer.singleShot(0, self.show_load_errors)
+
+        def connect_db(self):
+            try:
+                self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath")[0], "Maestro")
+                self.set_database_icon(STATUS_DONE)
+                return True
+            except FileNotFoundError:
+                self.set_database_icon(STATUS_ERROR)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warnings_to_show_after_load.append(("Database Not Found",emsg))
+                self.statusBar().showMessage(emsg, 10000)
+                return False
+            except Exception as e:
+                emsg = f"Unable to start database coordinator: {repr(e)}"
+                logger.error(emsg)
+                self.warnings_to_show_after_load.append(("Database Error",emsg))
+                self.statusBar().showMessage(emsg, 10000)
+                self.set_database_icon(STATUS_ERROR)
+                return False
+        
+        def show_load_errors(self):
+            if len(self.warnings_to_show_after_load):
+                title, msg = self.warnings_to_show_after_load.pop()
+                msg = self.warning_popup(title, msg,return_box=True)
+                # connect a timer to show the next warning to the msg ok button
+                msg.finished.connect(lambda: QTimer.singleShot(0, self.show_load_errors))
+                msg.exec()
 
         def set_sunrise_sunset(self):
             self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset()
@@ -395,9 +434,12 @@ def _main():
             # self.scheduleEndTimeEdit.dateTimeChanged.connect(
             #     lambda Qdt: self.scheduleStartTimeEdit.setMaximumDateTime(Qdt))  # so start is always < end
 
-            # # scheduler exclude time range limits
-            # # exclude start must be before exclude end:
+            # scheduler exclude time range limits
+            # exclude start must be before exclude end:
             # self.excludeEndEdit.dateTimeChanged.connect(lambda Qdt: self.excludeStartEdit.setMaximumDateTime(Qdt))
+
+            # retry our db connection after the user chooses a new db file
+            self.databasePathChooseButton.chosen.connect(lambda: QTimer.singleShot(100,self.connect_db))
 
             # misc
             self.debugInfoButton.clicked.connect(self.displayInfo)
@@ -456,23 +498,42 @@ def _main():
             self.settings.update()
             self.reloadModulesButton.clicked.connect(self.set_up_modules)
 
+        def warning_popup(self, title, msg, return_box=False):
+            msgBox = QMessageBox()
+            # msgBox = ScrollMessageBox(title,msg,None)
+            msgBox.setWindowTitle(title)
+            msgBox.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))
+            msgBox.setIcon(QMessageBox.Icon.Warning)
+            # scroll.setWidget(QLabel(msg))
+            msgBox.setText(msg)
+            if return_box:
+                return msgBox
+            msgBox.exec()
+
         def write_default_module_settings(self,mod_dir):
-            if not os.path.exists(join(mod_dir,"cfg.schema")):
-                return
-            with open(join(mod_dir,"cfg.schema"),"r") as f:
-                cfg_schema = json.load(f)
-            Path(join(mod_dir,"config.toml")).touch()
-            cfg = Config(join(mod_dir,"config.toml"))
-            for k,v in cfg_schema.items():
-                cfg.set(k,v["DefaultValue"])
-            cfg.save()
+            try:
+                if not os.path.exists(join(mod_dir,"cfg.schema")):
+                    return
+                with open(join(mod_dir,"cfg.schema"),"r") as f:
+                    cfg_schema = json.load(f)
+                Path(join(mod_dir,"config.toml")).touch()
+                cfg = Config(join(mod_dir,"config.toml"))
+                for k,v in cfg_schema.items():
+                    cfg.set(k,v["DefaultValue"])
+                cfg.save()
+            except Exception as e:
+                # trigger a crash report but dont crash
+                exception_hook(type(e), e, e.__traceback__)
 
         def set_up_modules(self):
             self.module_manager.update_modules()
             self.mod_info = self.module_manager.list_modules()
             # clear the mod list 
+            if self.moduleList.count() > 0:
+                self.current_module_index = self.moduleList.currentRow()
             self.moduleList.clear()
             self.module_entries = {}
+            self.module_exceptions = {}
             nerrors = 0
             for name, info in self.mod_info.items():
                 mod = None
@@ -480,7 +541,7 @@ def _main():
                     self.write_default_module_settings(info["dir"])
                 # icon = None
                 if info["active"]:
-                    mod = self.module_manager.load_module(name)
+                    mod, self.module_exceptions[name] = self.module_manager.load_module(name, return_trace=True)
                     if mod is not None:
                         icon_path = STATUS_DONE
                         tooltip = "Module is active"
@@ -503,24 +564,29 @@ def _main():
                 self.module_entries[name].change_icon_tooltip(tooltip)
 
             if nerrors > 0:
-                self.statusBar().showMessage(f"{nerrors} modules failed to load. Check the logs for more information.",10000)
+                err_msg = f"{nerrors} module{'s' if nerrors>1 else ''} failed to load. Check the Modules tab for more information."
+                # self.warning_popup(err_msg)
+                self.warnings_to_show_after_load.append(("Module Failed to Load", err_msg))
+                self.statusBar().showMessage(err_msg,10000)
                 self.set_modules_icon(STATUS_ERROR)
             else:
                 self.set_modules_icon(STATUS_DONE)
                 self.statusBar().showMessage("Modules loaded successfully.",2000)
             self.moduleList.itemClicked.connect(lambda item: self.display_module(self.moduleList.itemWidget(item).name))
-            self.display_module(list(self.mod_info.keys())[0])
-            self.moduleList.setCurrentRow(0)
+            self.display_module(list(self.mod_info.keys())[self.current_module_index])
+            self.moduleList.setCurrentRow(self.current_module_index)
 
         def handle_module_change(self,state,name):
+            self.module_exceptions[name] = None
             if state == 2:
                 print(f"activating {name}")
                 self.module_manager.activate_module(name)
-                mod = self.module_manager.load_module(name)
+                mod, exc = self.module_manager.load_module(name,return_trace=True)
                 if mod is not None:
                     icon = STATUS_DONE
                     tooltip = "Module is active"
                 else:
+                    self.module_exceptions[name] = exc
                     icon = STATUS_ERROR
                     tooltip = "Module failed to load"
             else:
@@ -530,6 +596,9 @@ def _main():
                 self.module_manager.deactivate_module(name)
             self.module_entries[name].change_icon(icon)
             self.module_entries[name].change_icon_tooltip(tooltip)
+            self.display_module(name)
+            modidx = dict(zip(self.module_entries.keys(),range(len(self.module_entries))))[name]
+            self.moduleList.setCurrentRow(modidx)
 
         def add_float_cfg(self,name,item,modulecfg):
             spin = NoScrollQDoubleSpinBox()
@@ -585,7 +654,16 @@ def _main():
             text_edit.setText(current_val)
             modulecfg.linkWatch(text_edit.textChanged, name, text_edit.toPlainText, text_edit.setText, str)
             return text_edit
-    
+        
+        def add_choice_cfg(self,name,item,modulecfg):
+            combo = NoScrollQComboBox()
+            current_val = modulecfg.query(name)
+            combo.addItems(item["Choices"])
+            combo.setCurrentText(current_val)
+            modulecfg.linkWatch(self.intervalComboBox.currentTextChanged, name,
+                                    lambda: comboValToIndex(self.intervalComboBox, self.intervalComboBox.currentText),
+                                    self.intervalComboBox.setCurrentIndex, int)
+            return combo
 
         def display_module(self,name):
             # clear the module display
@@ -618,6 +696,30 @@ def _main():
             description.setWordWrap(True)
             clayout.addWidget(description)
 
+            # if the module failed to load, include an error message here
+            exc = self.module_exceptions.get(name)
+            if exc:
+                err_widget = QWidget()
+                err_widget.setAutoFillBackground(True)
+                palette = err_widget.palette()
+                palette.setColor(err_widget.backgroundRole(), QtGui.QColor('lightcoral'))
+                err_widget.setPalette(palette)
+                err_layout = QVBoxLayout()
+                err_h_layout = QHBoxLayout()
+                err_label = QLabel(f"Module Failed to Load")
+                err_label.setFont(QtGui.QFont("Segoe UI", 14,weight=QtGui.QFont.Weight.Bold))
+                err_h_layout.addWidget(err_label)
+                err_h_layout.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Minimum))
+                err_h_layout.addWidget(copy_button(str(exc)))
+                err_layout.addLayout(err_h_layout)
+                err_label = QLabel(exc)
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                err_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                err_label.setWordWrap(True)
+                err_layout.addWidget(err_label)
+                err_widget.setLayout(err_layout)
+                clayout.addWidget(err_widget)
+            
             clayout.addSpacing(10)
             cfg_title = QLabel("Configuration")
             cfg_title.setFont(QtGui.QFont("Segoe UI", 16,weight=QtGui.QFont.Weight.Bold))
@@ -714,9 +816,9 @@ def _main():
         # start the database update process
         def startDbUpdater(self):
             if not os.path.exists(self.settings.query("candidateDbPath")[0]):
-                self.statusBar().showMessage(
-                    "To run database coordination, choose a database in the Database tab, then press 'Request Restart'",
-                    10000)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg,10000)
                 return
             if self.databaseProcess is not None:
                 if self.databaseProcess.isActive:  # run a restart
@@ -785,6 +887,12 @@ def _main():
             self.sched_error_occurred = val
 
         def runScheduler(self):
+            if not self.settings.query("scheduleSaveDir")[0]:
+                self.warning_popup("No Save Directory Selected", "Please choose a save directory for the schedule using the button in the Schedule tab.")
+                return
+            if self.dbConnection is None:
+                self.warning_popup("No Database Connection", "Please ensure the database is connected and try again.")
+                return
             self.genScheduleButton.setDisabled(True)
             self.genScheduleButton.setText("Generating")
 
@@ -806,8 +914,10 @@ def _main():
             self.sched_error_occurred = False
             self.scheduleProcess.ended.connect(lambda: self.genScheduleButton.setDisabled(False))
             self.scheduleProcess.ended.connect(lambda: self.genScheduleButton.setText("Generate Schedule"))
-            self.scheduleProcess.errorOccurred.connect(lambda: self.setSchedError(True))
-            self.scheduleProcess.errorOccurred.connect(lambda: self.set_scheduler_icon(STATUS_ERROR))
+            self.scheduleProcess.failed.connect(lambda: self.setSchedError(True))
+            self.scheduleProcess.failed.connect(lambda: self.set_scheduler_icon(STATUS_ERROR))
+            self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m))
+            # self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m) if self.sched_error_occurred else None)
             self.scheduleProcess.ended.connect(lambda: self.set_scheduler_icon(STATUS_DONE if not self.sched_error_occurred else STATUS_ERROR))
             self.scheduleProcess.triggered.connect(self.displaySchedule)
             self.scheduleProcess.triggered.connect(lambda: self.genScheduleButton.setText("Writing text file"))
@@ -891,6 +1001,9 @@ def _main():
             oldModel.endResetModel()
 
         def requestDbCycle(self):
+            if self.databaseProcess is None:
+                self.startDbUpdater()
+                return
             logger.debug("Requesting")
             self.databaseProcess.write("DbUpdater: Cycle\n")
 
@@ -974,16 +1087,17 @@ def _main():
         def getCandidates(self):
             try:
                 if self.settings.query("showAllCandidates")[0]:
-                        self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
+                    self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
                 else:
                     logger.info("Showing select")
-                    try:
-                        self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01,skip_errors=True)
-                    except AttributeError as e:
-                        logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
-                        self.statusBar().showMessage("ERROR: invalid database path. To show targets, choose a database under Database > Control, then press 'Request Restart'", 10000)
-                        self.set_candidates_icon(STATUS_ERROR)
-                        return self
+                    self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01,skip_errors=True)
+            except AttributeError as e:
+                logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg, 10000)
+                self.set_candidates_icon(STATUS_ERROR)
+                return self
             except Exception as e:
                 exception_hook(type(e), e, e.__traceback__)
                 logger.error(f"Couldn't get candidates: {repr(e)}")
@@ -1177,9 +1291,9 @@ def _main():
 
         def startDbOperator(self):
             if not os.path.exists(self.settings.query("candidateDbPath")[0]):
-                self.statusBar().showMessage(
-                    "To run database operations, choose a database under Database > Control, then press 'Request Restart'",
-                    10000)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg,10000)
                 return
             if self.dbOperatorProcess is not None and self.dbOperatorProcess.isActive:
                 logger.info("Restarting database operator.")

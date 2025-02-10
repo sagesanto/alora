@@ -1,0 +1,253 @@
+{"obsCode": {
+      "Key": "obsCode",
+      "DefaultValue": "654",
+      "ValDisplayType": "str",
+      "Description": "Minor Planet Center observatory code to perform target selection around",
+      "Units": ""
+    },
+"priority": {
+      "Key": "priority",
+      "DefaultValue": 2,
+      "ValDisplayType": "int",
+      "Description": "Priority that targets of this type will be given during scheduling (lower is better)",
+      "Units": ""
+    },
+"ephem_lookahead_hours": {
+      "Key": "ephem_lookahead_hours",
+      "DefaultValue": 24,
+      "ValDisplayType": "int",
+      "Description": "How far into the future to pull ephemeris for. Ephems are used for target selection and observability calculations",
+      "Units": "hours"
+    },
+"EPHEM_LIFETIME_MINUTES": {
+    "Key": "EPHEM_LIFETIME_MINUTES",
+    "DefaultValue": 180,
+    "ValDisplayType": "int",
+    "Step": 5,
+    "Description": "duration for which ephems are valid, minutes. ephems older than this time will be re-fetched from the internet",
+    "Units": "minutes"
+},
+"UNCERT_LIFETIME_MINUTES": {
+    "Key": "UNCERT_LIFETIME_MINUTES",
+    "DefaultValue": 60,
+    "ValDisplayType": "int",
+    "Step": 5,
+    "Description": "duration for which uncertainties are valid, minutes. uncertainties older than this time will be re-fetched from the internet",
+    "Units": "minutes"
+},
+"logUncertainties": {
+    "Key": "logUncertainties",
+    "DefaultValue": true,
+    "ValDisplayType": "bool",
+    "Description": "deprecated and not used?",
+    "Hidden": true,
+    "Units": ""
+},
+"raMaxRMSE": {
+      "Key": "raMaxRMSE",
+      "DefaultValue": 500,
+      "ValDisplayType": "float",
+      "Step": 10,
+      "Description": "The maximum allowed Right Ascension RMSE (uncertainty) for viable targets",
+      "Units": "arcsec"
+},
+"decMaxRMSE": {
+      "Key": "decMaxRMSE",
+      "DefaultValue": 500,
+      "ValDisplayType": "float",
+      "Step": 10,
+      "Description": "The maximum allowed Declination RMSE (uncertainty) for viable targets",
+      "Units": "arcsec"
+},
+"nObsMax": {
+      "Key": "nObsMax",
+      "DefaultValue": 1600,
+      "ValDisplayType": "int",
+      "Step": 10,
+      "Description": "The maximum number of times that viable targets can have already been observed by other observatories",
+      "Units": ""
+},
+"vMagMax": {
+      "Key": "vMagMax",
+      "DefaultValue": 21.5,
+      "ValDisplayType": "float",
+      "Step": 0.1,
+      "Description": "The maximum visual magnitude of viable targets",
+      "Units": ""
+},
+"scoreMin": {
+      "Key": "scoreMin",
+      "DefaultValue": 0,
+      "ValDisplayType": "int",
+      "Step": 1,
+      "Description": "The minimum MPC score of viable targets (deprecated and not used!)",
+      "Units": "",
+      "Hidden": true
+},
+"decMax": {
+      "Key": "decMax",
+      "DefaultValue": 65,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The maximum declination of viable targets (will be further refined by bounding box)",
+      "Units": "degree"
+},
+"decMin": {
+      "Key": "decMin",
+      "DefaultValue": -25,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The minimum declination of viable targets (will be further refined by bounding box)",
+      "Units": "degree"
+},
+"dRA_min": {
+      "Key": "dRA_min",
+      "DefaultValue": 1,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The minimum Right Ascension proper motion of viable targets",
+      "Units": "arcsec/minute"
+},
+"dRA_max": {
+      "Key": "dRA_max",
+      "DefaultValue": 1000,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The maximum Right Ascension proper motion of viable targets",
+      "Units": "arcsec/minute"
+},
+"dDec_min": {
+      "Key": "dDec_min",
+      "DefaultValue": 1,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The minimum Declination proper motion of viable targets",
+      "Units": "arcsec/minute"
+},
+"dDec_max": {
+      "Key": "dDec_max",
+      "DefaultValue": 1000,
+      "ValDisplayType": "float",
+      "Step": 0.5,
+      "Description": "The maxmimum Declination proper motion of viable targets",
+      "Units": "arcsec/minute"
+},
+"altitudeLimit": {
+      "Key": "altitudeLimit",
+      "DefaultValue": 0,
+      "ValDisplayType": "float",
+      "Step": 5,
+      "Description": "minimum altitude to query mpc ephemeris for (leave this at 0 unless you know exactly what you're doing)",
+      "Units": "degree",
+      "Hidden": "true"
+},
+"minutes_after_obs": {
+    "Key": "minutes_after_obs",
+    "DefaultValue": 4,
+    "Step": 0.5,
+    "ValDisplayType": "float",
+    "Description": "Downtime after a multi-filter observation is completed before any other observation can start",
+    "Units": "minutes"
+},
+"max_minutes_without_focus": {
+    "Key": "max_minutes_without_focus",
+    "DefaultValue": 70,
+    "ValDisplayType": "int",
+    "Step":5,
+    "Description": "Maximum minutes since focus any part of an observation can be for it to be considered viable",
+    "Units": "minutes"
+},
+"num_obs": {
+    "Key": "num_obs",
+    "DefaultValue": 2,
+    "ValDisplayType": "int",
+    "Description": "Number of times to observe each object in a single night",
+    "Units": ""
+},
+"min_minutes_between_obs": {
+    "Key": "min_minutes_between_obs",
+    "DefaultValue": 35,
+    "ValDisplayType": "float",
+    "Step": 5,
+    "Description": "Minimum minutes between observations of the same object",
+    "Units": "minutes"
+},
+"repeat_obs_slope_coefficient": {
+    "Key": "repeat_obs_slope_coefficient",
+    "DefaultValue": 2,
+    "ValDisplayType": "float",
+    "Step": 0.1,
+    "Description": "increase this coefficient to increase the chance that the scheduler will schedule an object more than once (increase if targets are not being observed enough times)",
+    "Units": ""
+},
+"mag_coeff": {
+    "Key": "mag_coeff",
+    "DefaultValue": 1.5,
+    "ValDisplayType": "float",
+    "Step": 0.1,
+    "Description": "increase this coefficient to increase the preference given to brighter targets",
+    "Units": ""
+},
+"ROI_start_x": {
+    "Key": "ROI_start_x",
+    "DefaultValue": 1.5,
+    "ValDisplayType": "float",
+    "Step": 0.1,
+    "Description": "increase this coefficient to increase the preference given to brighter targets",
+    "Units": ""
+},
+"ROI_start_x": {
+    "Key": "ROI_start_x",
+    "DefaultValue": 0,
+    "ValDisplayType": "int",
+    "Step": 1,
+    "Description": "starting x pos of the observation ROI. written to schedule",
+    "Units": "px"
+},
+"ROI_start_y": {
+    "Key": "ROI_start_y",
+    "DefaultValue": 0,
+    "ValDisplayType": "int",
+    "Step": 1,
+    "Description": "starting y pos of the observation ROI. written to schedule",
+    "Units": "px"
+},
+"ROI_height": {
+    "Key": "ROI_height",
+    "DefaultValue": 6144,
+    "ValDisplayType": "int",
+    "Step": 5,
+    "Description": "height of the observation ROI. written to schedule",
+    "Units": "px"
+},
+"ROI_width": {
+    "Key": "ROI_width",
+    "DefaultValue": 6144,
+    "ValDisplayType": "int",
+    "Step": 5,
+    "Description": "width of the observation ROI. written to schedule",
+    "Units": "px"
+},
+"lookback": {
+    "Key": "lookback",
+    "DefaultValue": 120,
+    "ValDisplayType": "float",
+    "Step": 1,
+    "Description": "when new information comes in, edit MPC targets that were added to the database within the last [lookback] hours, add a duplicate for older",
+    "Units": "hours"
+},
+"binning":{
+    "Key": "binning",
+    "DefaultValue": "2x2",
+    "ValDisplayType": "choice",
+    "Choices": ["1x1","2x2","4x4"],
+    "Description": "what level of binning to do when observing.",
+    "Units": "px"
+},
+"FILTER":{
+    "Key": "FILTER",
+    "DefaultValue": "CLEAR",
+    "ValDisplayType": "str",
+    "Description": "filter in which observations should be taken",
+    "Units":""
+}}

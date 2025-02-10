@@ -21,7 +21,7 @@ setup(
     author_email='sage.santomenna@gmail.com',
     packages=find_packages(include=['alora', 'alora.*']),
     package_data={"alora":["config/config.toml","config/logging.json","config/horizon_box.json"]},
-    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'flask', 'rpyc', 'keyring', 'python_tsp', 'astroquery', 'photutils','scikit-image'],
+    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'flask', 'rpyc', 'keyring', 'python_tsp', 'astroquery', 'photutils','scikit-image','python-socketio'],
     entry_points={
         'console_scripts': [
             'emergency_open = alora.observatory.dome.bin.emergency_open:main',

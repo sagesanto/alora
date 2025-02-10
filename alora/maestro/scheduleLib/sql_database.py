@@ -54,19 +54,27 @@ class SQLDatabase:
         self.open(path,check_same_thread,**kwargs)  # reopen according to self.open
 
     def table_query(self, table_name, colnames, condition=None, vals=None):
+        if isinstance(colnames,str):
+            colnames = [colnames]
         if condition is not None:
             if not isinstance(vals, Iterable):
                 raise ValueError(f"SQL query vals must be an iterable, not {vals} ({type(vals)})")
-            if isinstance(colnames,str):
-                colnames = [colnames]
             colnames = ','.join(colnames)
             self.db_cursor.execute(f"SELECT {colnames} FROM {table_name} WHERE {condition}", vals)
             return self.db_cursor.fetchall()
         if condition is None:
             self.db_cursor.execute(f"SELECT {colnames} FROM {table_name}")
             return self.db_cursor.fetchall()
-
         return None
+
+    def table_update(self, table_name, colnames, vals, condition):
+        if not isinstance(vals, Iterable):
+            raise ValueError(f"SQL query vals must be an iterable, not {vals} ({type(vals)})")
+        if isinstance(colnames,str):
+            colnames = [colnames]
+        stmt = f"UPDATE {table_name} SET {', '.join([f'{col} = ?' for col in colnames])} WHERE {condition}"
+        self.db_cursor.execute(stmt, vals)
+        self.commit()
 
     def insert_record(self,table_name,record):
         """Insert single record into table
@@ -77,7 +85,7 @@ class SQLDatabase:
         """
         colnames = ", ".join(record.keys())
         vals = ", ".join(['?']*len(record))
-        stmt = f"INSERT INTO {table_name} ({colnames}) {vals}"
+        stmt = f"INSERT INTO {table_name} ({colnames}) VALUES ({vals})"
         self.db_connection.execute(stmt,list(record.values()))
         self.commit()
 

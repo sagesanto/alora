@@ -33,7 +33,7 @@ INDIVIDUAL_DATASET_NUMEXP = aConfig["individual_dataset_numexp"]
 
 
 def findExposure(magnitude, str=True):
-    return 1, 3 * INDIVIDUAL_DATASET_NUMEXP * INDIVIDUAL_DATASET_EXPTIME + 2 * 60 * MINUTES_BETWEEN_DATASETS  # otherwise, it's asking for the full exposure time
+    return 1*u.second, 3 * INDIVIDUAL_DATASET_NUMEXP * INDIVIDUAL_DATASET_EXPTIME + 2 * 60 * MINUTES_BETWEEN_DATASETS  # otherwise, it's asking for the full exposure time
 
 
 class AstrophotographyConfig(TypeConfiguration):
@@ -57,7 +57,7 @@ class AstrophotographyConfig(TypeConfiguration):
 
     def generateSchedulerLine(self, row, targetName, candidateDict, spath):
         c = candidateDict[targetName]
-        c.ExposureTime = INDIVIDUAL_DATASET_EXPTIME
+        c.ExposureTime = INDIVIDUAL_DATASET_EXPTIME*u.second
         c.NumExposures = INDIVIDUAL_DATASET_NUMEXP
         individualDuration = timedelta(seconds=INDIVIDUAL_DATASET_EXPTIME * INDIVIDUAL_DATASET_NUMEXP)
         firstStartDt = stringToTime(row["Start Time (UTC)"])

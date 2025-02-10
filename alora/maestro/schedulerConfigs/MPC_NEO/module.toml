@@ -1,0 +1,4 @@
+name = "MPC NEO"
+modname = "MPC_NEO"
+description = "The MPC NEO module facilitates observations for the Minor Planet Center (MPC)'s Near-Earth Objects (NEO) follow up program."
+author = "Sage Santomenna (mstp2022@mymail.pomona.edu)"

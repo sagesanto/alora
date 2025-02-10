@@ -1,0 +1,3 @@
+name = "UserFixed"
+description = "The UserFixed module is designed to be an easy default for observations of user-specified static targets. Targets added by CSV with the CandidateType 'UserFixed' will be governed by this module." 
+author = "Sage Santomenna (mstp2022@mymail.pomona.edu)"
