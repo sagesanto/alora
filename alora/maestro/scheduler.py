@@ -79,6 +79,10 @@ def main():
     ORANGE = [255, 191, 0]
     PURPLE = [221, 160, 221]
 
+    import logging
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('matplotlib.font_manager').disabled = True
+
     logger = configure_logger("Scheduler")
 
     focusLoopLenSeconds = genConfig["focus_loop_duration"]

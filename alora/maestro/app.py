@@ -119,6 +119,17 @@ def _main():
         button.clicked.connect(lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard-task.png"))))
         button.clicked.connect(lambda: QTimer.singleShot(1000, lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard--plus.png")))))
         return button
+    
+    def log_button_press(e):
+        print("Button Pressed:", e.text()) 
+        logger.debug(f"Button Pressed: {e.text()}")
+    
+    def log_tab_change(e):
+        print(e.__dict__)
+        print(e)
+        if e.isVisible():
+            print("Tab Changed:", e.windowTitle())
+            logger.debug(f"Tab Changed: {e.windowTitle()}")
 
     class Settings:
         def __init__(self, settingsFilePath):
@@ -331,8 +342,15 @@ def _main():
                 "choice":self.add_choice_cfg
             }
 
+            # begin usage logging
+            for i in self.__dict__.values():
+                if isinstance(i, QPushButton):
+                    i.clicked.connect(lambda _, x=i: log_button_press(x))
+            self.tabWidget.currentChanged.connect(lambda x: log_tab_change(self.tabWidget.currentWidget()))
+
             self.module_manager = ModuleManager()
             self.set_up_modules()
+            # schedule load errors to be displayed at the end of loading
             QTimer.singleShot(0, self.show_load_errors)
 
         def connect_db(self):
