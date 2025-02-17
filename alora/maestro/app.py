@@ -394,7 +394,7 @@ def _main():
             self.processModel.add(p)
             p.errorSignal.connect(lambda msg: self.reportError(name, msg))
             return p
-
+# important 
         def setConnections(self):
             self.refreshCandButton.clicked.connect(lambda: self.getCandidates().displayCandidates())
 
@@ -742,7 +742,7 @@ def _main():
             cfg_title = QLabel("Configuration")
             cfg_title.setFont(QtGui.QFont("Segoe UI", 16,weight=QtGui.QFont.Weight.Bold))
             clayout.addWidget(cfg_title)
-
+        # important 
             # this isnt actually the config but instead the description of the config
             cfg_desc_path = join(self.mod_info[name]["dir"],"cfg.schema")
             try:
@@ -973,17 +973,55 @@ def _main():
                 self.scheduleTable.resizeColumnsToContents()
                 self.scheduleTable.resizeRowsToContents()
                 self.scheduleTable.update()
-            if os.path.isfile(imgPath):
-                imgProfile = QtGui.QImage(imgPath)  # QImage object
-                imgProfile = imgProfile.scaled(self.scheduleImageDisplay.width(), self.scheduleImageDisplay.height(),
-                                            aspectRatioMode=QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-                                            transformMode=QtCore.Qt.TransformationMode.SmoothTransformation)
-                self.scheduleImageDisplay.setPixmap(QtGui.QPixmap.fromImage(imgProfile))
-                self.schedTabWidget.setCurrentWidget(self.schedViewTab)
+
             else:
                 self.statusbar.showMessage(
-                    "Can't find saved scheduler image. If and only if it reports that it ran correctly, please report this.")
-                logger.error("Can't find saved scheduler image. *If and only if* the scheduler reports that it ran correctly, please report this.")
+                    "Can't find saved scheduler csv. If and only if it reports that it ran correctly, please report this.")
+                logger.error("Can't find saved scheduler csv. *If and only if* the scheduler reports that it ran correctly, please report this.")
+                return # should we clear the schedule?
+
+            # Schedule Editor will go here (for now)
+            # TO-DO
+            t_content = QSizePolicy()
+            t_content.setHorizontalStretch(70)
+            t_content.setHorizontalPolicy(QSizePolicy.Policy.Preferred)
+            t_content.setVerticalPolicy(QSizePolicy.Policy.Preferred)
+            self.scheduleTable.setSizePolicy(t_content)
+        
+            content = QWidget()
+            scroll = QScrollArea()
+
+            clayout = QVBoxLayout()
+            for i, row in self.scheduleDf.iterrows():
+                if row["Target"] not in ["Focus", "Unused Time"]:
+
+                    l = QLabel(row["Target"])
+                else:
+                    l = QLabel()
+                clayout.addWidget(l)
+            content.setLayout(clayout)
+
+
+            # p_content = QSizePolicy()
+            # p_content.setHorizontalStretch(30)
+            # p_content.setHorizontalPolicy(QSizePolicy.Policy.Preferred)
+            # p_content.setVerticalPolicy(QSizePolicy.Policy.Preferred)
+            # self.schedule_display_container.setSizePolicy(p_content)
+            scroll.setWidget(content)
+            c_layout = QVBoxLayout()
+            c_layout.addWidget(scroll)
+            self.schedule_display_container.setLayout(c_layout)
+            # add blocks
+            # center them
+            # scale heights so they are proportional to the length of observatin
+                # set the vertical stretch (give them a size policy) to be the duration of observation 
+                    # dont set a fixed size, set a stretch factor
+                    # color boxes if necessary
+
+
+            # put this new schedule where 
+
+
 
         def autoSetSchedulerTimes(self, run=True):
             if run:
