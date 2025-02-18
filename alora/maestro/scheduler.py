@@ -80,10 +80,9 @@ def main():
     PURPLE = [221, 160, 221]
 
     import logging
+    logger = configure_logger("Scheduler")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     logging.getLogger('matplotlib.font_manager').disabled = True
-
-    logger = configure_logger("Scheduler")
 
     focusLoopLenSeconds = genConfig["focus_loop_duration"]
 

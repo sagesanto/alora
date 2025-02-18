@@ -573,7 +573,7 @@ class UncertainEphemFriend:
             if eph is None:
                 self.logger.error(f"UncertainEphemFriend failed to get any ephems! {len(need_to_fetch)} ephems were needed at {ephem_time} but none were fetched.")
                 return ephems
-            self.logger.debug("eph: "+str(eph))
+            # self.logger.debug("eph: "+str(eph))
             for desig in need_to_fetch:
                 if eph is None or desig not in eph.keys() or eph[desig] is None:
                     self.logger.error(f"UncertainEphemFriend failed to get ephem for {desig} at {ephem_time}")
