@@ -121,16 +121,10 @@ def _main():
         return button
     
     def log_button_press(e):
-        print(f"Button Pressed: {e}")
-        # print(e)
-        # print(e.__dict__) 
-        # print("Button Pressed:", e.text()) 
-
         logger.debug(f"Button Pressed: {e}")
     
     def log_tab_change(e,title):
         if e.isVisible():
-            print("Tab Changed:", title)
             logger.debug(f"Tab Changed: {title}")
 
     class Settings:
@@ -347,10 +341,8 @@ def _main():
             # begin usage logging
             for i in self.__dict__.values():
                 if isinstance(i, QPushButton):
-                    print(i.text())
                     i.clicked.connect(lambda _, x=i.text(): log_button_press(x))
             self.tabWidget.currentChanged.connect(lambda: log_tab_change(self.tabWidget.currentWidget(), self.tabWidget.currentIndex()))
-            print(self.tabWidget.currentWidget().__dict__)
             self.module_manager = ModuleManager()
             self.set_up_modules()
             # schedule load errors to be displayed at the end of loading
