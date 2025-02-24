@@ -12,6 +12,7 @@ CLOSED_LOOP_TOLERANCE = 1  # arcmin
 IMAGE_EXTENSION = "fit"
 
 # choir: slack
+# im not accidentally leaking things, i swear
 SLACK_WHISPERS = ["U03VA46UGSJ","W01148Y9LHM"]
 SLACK_CHANNELS = ["C07P35WNX4G"]
 

@@ -1,9 +1,0 @@
-priority = 5
-minutes_between_datasets = 2
-individual_dataset_exptime = 20.0
-individual_dataset_numexp = 18
-minutes_after_obs = 5
-max_minutes_without_focus = 30
-num_obs = 1
-min_minutes_between_obs = 0.0
-simbad_query = "dec > -30 & dec < 60 & ((cat = M) | otype = 'Galaxy' ) & dimmajor < 20 & Vmag < 16 & dimmajor > 5"

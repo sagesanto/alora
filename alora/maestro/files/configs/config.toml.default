@@ -1,0 +1,17 @@
+# observatory configuration
+# time it takes to focus, seconds
+focus_loop_duration = 300
+obs_name = "TMO"
+# The region of the observatory. Must be a valid initializer for astral.LocationInfo.region
+obs_region = "CA, USA"
+# The timezone of the observatory. Must be a valid initializer for ``astral.LocationInfo.timezone``
+obs_timezone = "UTC"
+# The latitude of the observatory. Must be a valid initializer for ``astral.LocationInfo.latitude``
+obs_lat = 34.36
+# The longitude of the observatory. Must be a valid intializer for ``astral.LocationInfo.longitude``
+obs_lon = -117.63
+
+# crash report directory
+BASE_CRASH_DIR = "files\\outputs\\crash_reports"
+
+# module-specific settings can be found in the module's file in [root]/files/config/

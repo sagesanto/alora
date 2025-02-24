@@ -116,14 +116,17 @@ class Config:
         self._defaults = _read_config(filepath)
         self._default_path = filepath
 
-    def write(self,fpath):
+    def write(self,fpath,trim=True):
         """Writes the whole config loaded from file (not just the profile, and not including the defaults) into the given file"""
         with open(fpath,"w") as f:
-            f.write(tomlkit.dumps(self._cfg))
+            outstr = tomlkit.dumps(self._cfg)
+            if trim:
+                outstr = outstr.replace("\r\n","\n")
+            f.write(outstr)
     
-    def save(self):
+    def save(self,trim=True):
         """Saves the whole config loaded from file (not just the profile, and not including the defaults) into the file it was loaded from"""
-        self.write(self._filepath)
+        self.write(self._filepath,trim=trim)
 
     @property
     def has_defaults(self):

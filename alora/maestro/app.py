@@ -199,7 +199,7 @@ def _main():
             self.cfg = Config(self.path)
 
         def saveSettings(self):
-            self.cfg.save()
+            self.cfg.save(trim=True)
 
         def query(self, key):
             """!
@@ -375,8 +375,8 @@ def _main():
                 msg.finished.connect(lambda: QTimer.singleShot(0, self.show_load_errors))
                 msg.exec()
 
-        def set_sunrise_sunset(self):
-            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset()
+        def set_sunrise_sunset(self,dt=None):
+            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset(dt=dt, verbose=True)
             self.sunriseUTC, self.sunsetUTC = genUtils.roundToTenMinutes(self.sunriseUTC), genUtils.roundToTenMinutes(
                 self.sunsetUTC)
 
@@ -533,7 +533,7 @@ def _main():
                 cfg = Config(join(mod_dir,"config.toml"))
                 for k,v in cfg_schema.items():
                     cfg.set(k,v["DefaultValue"])
-                cfg.save()
+                cfg.save(trim=True)
             except Exception as e:
                 # trigger a crash report but dont crash
                 exception_hook(type(e), e, e.__traceback__)
@@ -982,9 +982,15 @@ def _main():
 
         def autoSetSchedulerTimes(self, run=True):
             if run:
-                self.set_sunrise_sunset()
+                self.set_sunrise_sunset(dt=None)
+                if self.sunriseUTC - timedelta(hours=1) < datetime.now(pytz.utc):
+                    # print("It's after end time for tonight. moving to tomorrow.")
+                    self.set_sunrise_sunset(dt=datetime.now(pytz.utc)+timedelta(days=1))
+                # print("Auto setting scheduler times. Sunrise: ", self.sunriseUTC, " Sunset: ", self.sunsetUTC," current UTC: ",datetime.now(pytz.utc))
                 start = datetimeToQDateTime(max(self.sunsetUTC, datetime.now(pytz.utc)))
+                # print(f"Setting start to the max of sunset ({self.sunsetUTC}) and current time ({datetime.now(pytz.utc)}): {max(self.sunsetUTC, datetime.now(pytz.utc))}")
                 end = datetimeToQDateTime(self.sunriseUTC-timedelta(hours=1))
+                # print(f"Setting end to sunrise - 1 hour: {self.sunriseUTC-timedelta(hours=1)}")
 
                 self.scheduleStartTimeEdit.setDateTime(start)
                 self.scheduleEndTimeEdit.setDateTime(end)

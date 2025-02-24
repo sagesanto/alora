@@ -20,7 +20,6 @@ from photometrics.mpc_neo_confirm import MPCNeoConfirm as mpc, MPC_GET_URL, MPC_
 from dataclasses import dataclass
 from astropy import units as u
 import asyncio 
-import configparser
 import matplotlib.pyplot as plt
 from numpy import sqrt
 
@@ -33,15 +32,15 @@ try:
     from scheduleLib.genUtils import angleToHMSString, angleToDMSString
 
     sys.path.remove(grandparentDir)
-    aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join(grandparentDir, "files", "configs", "async_config.txt"))
+    aConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "async_config.toml"))
+
 except:
     from scheduleLib import asyncUtils
     from scheduleLib import genUtils
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
     from scheduleLib.genUtils import angleToHMSString, angleToDMSString
-    aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join("files", "configs", "async_config.txt"))
+    aConfig = genUtils.Config(os.path.join("files", "configs", "async_config.toml"))
+
 
 mConfig = genUtils.Config(join(dirname(__file__),"config.toml"))
 
@@ -51,10 +50,9 @@ UNCERT_LIFETIME_MINUTES = mConfig["UNCERT_LIFETIME_MINUTES"]
 mpcInst = mpc()
 mpcInst.int = 3
 
-aConfig = aConfig["DEFAULT"]
-HEAVY_LOGGING = aConfig.getboolean("HEAVY_LOGGING")
-MAX_SIMULTANEOUS_REQUESTS = aConfig.getint("MAX_SIMULTANEOUS_REQUESTS")
-ASYNC_REQUEST_DELAY_S = aConfig.getfloat("ASYNC_REQUEST_DELAY_S")
+HEAVY_LOGGING = aConfig["HEAVY_LOGGING"]
+MAX_SIMULTANEOUS_REQUESTS = aConfig["MAX_SIMULTANEOUS_REQUESTS"]
+ASYNC_REQUEST_DELAY_S = aConfig["ASYNC_REQUEST_DELAY_S"]
 _asyncHelper = asyncUtils.AsyncHelper(followRedirects=True, max_simultaneous_requests=MAX_SIMULTANEOUS_REQUESTS, time_between_batches=ASYNC_REQUEST_DELAY_S, do_heavy_logging=HEAVY_LOGGING)
 
 # for the uncertainty plots lol

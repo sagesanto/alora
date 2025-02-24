@@ -1,5 +1,4 @@
-# Sage Santomenna 2023
-import configparser
+# Sage Santomenna 2023-2025
 from datetime import datetime, timezone, timedelta
 import sys, os
 from os.path import join, dirname
@@ -31,23 +30,19 @@ try:
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join(grandparentDir, "files", "configs", "async_config.txt"))
+    aConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "async_config.toml"))
 
 except ImportError:
     from scheduleLib import genUtils, asyncUtils
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(os.path.join("files", "configs", "async_config.txt"))
+    aConfig = genUtils.Config(os.path.join("files", "configs", "async_config.toml"))
 
 mConfig = genUtils.Config(join(dirname(__file__),"config.toml"))
 
-aConfig = aConfig["DEFAULT"]
-
-HEAVY_LOGGING = aConfig.getboolean("HEAVY_LOGGING")
-MAX_SIMULTANEOUS_REQUESTS = aConfig.getint("MAX_SIMULTANEOUS_REQUESTS")
-ASYNC_REQUEST_DELAY_S = aConfig.getfloat("ASYNC_REQUEST_DELAY_S")
+HEAVY_LOGGING = aConfig["HEAVY_LOGGING"]
+MAX_SIMULTANEOUS_REQUESTS = aConfig["MAX_SIMULTANEOUS_REQUESTS"]
+ASYNC_REQUEST_DELAY_S = aConfig["ASYNC_REQUEST_DELAY_S"]
 
 utc = pytz.UTC
 
