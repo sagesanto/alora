@@ -105,14 +105,14 @@ class ObsConstraint:
         return [t + a for a in time_window]
         # HA = ST - RA -> ST = HA + RA
 
-    def get_sunrise_sunset(self, dt=None, jd=False):
+    def get_sunrise_sunset(self, dt=None, jd=False,verbose=False):
         """!
         get sunrise and sunset for TMO
         @return: sunriseUTC, sunsetUTC
         @rtype: datetime.datetime
         """
         dt = dt or current_dt_utc()
-        return get_sunrise_sunset(self.locationInfo, dt=dt, jd=jd)
+        return get_sunrise_sunset(self.locationInfo, dt=dt, jd=jd, verbose=False)
     
     def get_RA_window(self, target_dt, dec, ra=None, current_sidereal_time=None):
         # get the bounding RA coordinates of the TMO observability window for time target_dt for targets at declination dec. Optionally, input an RA to also get out that RA, adjusted for box-shifting
