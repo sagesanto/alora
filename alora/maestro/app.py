@@ -673,9 +673,9 @@ def _main():
             current_val = modulecfg.query(name)
             combo.addItems(item["Choices"])
             combo.setCurrentText(current_val)
-            modulecfg.linkWatch(self.intervalComboBox.currentTextChanged, name,
-                                    lambda: comboValToIndex(self.intervalComboBox, self.intervalComboBox.currentText),
-                                    self.intervalComboBox.setCurrentIndex, int)
+            modulecfg.linkWatch(combo.currentTextChanged, name,
+                                    lambda c=item["Choices"]: c[comboValToIndex(combo, combo.currentText)],
+                                    combo.setCurrentText, str)
             return combo
 
         def display_module(self,name):
