@@ -37,3 +37,4 @@ latex
 *ipynb
 arrayDf.csv
 schedulerConfigs/**/config.toml
+**/**.db-journal

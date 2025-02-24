@@ -550,7 +550,7 @@ def _main():
             nerrors = 0
             for name, info in self.mod_info.items():
                 mod = None
-                if not os.path.exists(join(info["dir"],"config.json")):
+                if not os.path.exists(join(info["dir"],"config.toml")):
                     self.write_default_module_settings(info["dir"])
                 # icon = None
                 if info["active"]:
