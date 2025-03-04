@@ -1,4 +1,4 @@
-# Sage Santomenna 2024
+# Sage Santomenna 2024, 2025
 # utilities for observing. many of these are poorly written - it's mostly just a collection of functions that i've found useful in the past.
 
 import math

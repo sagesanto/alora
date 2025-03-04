@@ -619,7 +619,7 @@ def _main():
             if "Min" in item:
                 spin.setMinimum(item["Min"])
             elif current_val < spin.minimum():
-                spin.setMinimum(current_val*2)
+                spin.setMinimum(current_val/2)
             if "Max" in item:
                 spin.setMaximum(item["Max"])
             elif current_val > spin.maximum():
@@ -633,6 +633,7 @@ def _main():
         def add_int_cfg(self,name,item,modulecfg):
             spin = NoScrollQSpinBox()
             current_val = modulecfg.query(name)
+            print(name,current_val)
             if "Min" in item:
                 spin.setMinimum(item["Min"])
             elif current_val < spin.minimum():

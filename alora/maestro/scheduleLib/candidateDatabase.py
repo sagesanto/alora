@@ -51,7 +51,7 @@ def construct_datetime(tstring, valtype, tz:str):
 
 def construct_quantity(value, valtype, unit: str):
     if isinstance(value, u.Quantity):
-        return value.astype(unit)
+        return value.to(unit)
     if value:
         return u.Quantity(value, unit=unit)
     return None
