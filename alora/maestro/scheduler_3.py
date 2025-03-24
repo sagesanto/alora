@@ -54,8 +54,7 @@ try:
     from scheduleLib import sCoreCondensed
     from scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join(os.path.dirname(__file__), "files", "configs", "config.txt"))
+    genConfig = genUtils.Config(os.path.join(os.path.dirname(__file__), "files", "configs", "config.toml"))
 
     sys.path.remove(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 except ImportError:
@@ -63,10 +62,9 @@ except ImportError:
     from scheduleLib import sCoreCondensed
     from scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(os.path.join("files", "configs", "config.txt"))
+    genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
 
-genConfig = genConfig["DEFAULT"]
+
 utc = pytz.UTC
 
 

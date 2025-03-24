@@ -1,6 +1,7 @@
 import configparser
 from datetime import datetime as datetime, timedelta
 import os, sys
+from os.path import join, dirname
 import astropy.units as u
 import pandas as pd
 
@@ -13,19 +14,14 @@ try:
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
 
     sys.path.remove(grandparentDir)
-    uConfig = configparser.ConfigParser()
-    uConfig.read(os.path.join(grandparentDir, "files", "configs", "userFixed_config.txt"))
 
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
-    uConfig = configparser.ConfigParser()
-    uConfig.read(os.path.join("files", "configs", "userFixed_config.txt"))
 
-
-uConfig = uConfig["DEFAULT"]
+uConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
 
 class User_Fixed_Config(TypeConfiguration):
@@ -58,7 +54,7 @@ class User_Fixed_Config(TypeConfiguration):
         return None  # do we want stuff here?
 
     def generateTransitionDict(self):
-        objTransitionDict = {'default': uConfig.getfloat("downtime_after_obs") * 60 * u.second}
+        objTransitionDict = {'default': uConfig["downtime_after_obs"] * 60 * u.second}
         for d in self.designations:
             objTransitionDict[("Focus", d)] = 0 * u.second
             objTransitionDict[("Unused Time", d)] = 0 * u.second
@@ -71,5 +67,4 @@ class User_Fixed_Config(TypeConfiguration):
 def getConfig(observer):
     # returns a TypeConfiguration object for targets of type "UserFixed"
     # this config will only apply to candidates with CandidateType "UserFixed"
-    return "UserFixed", User_Fixed_Config(None, observer, maxMinutesWithoutFocus=uConfig.getint(
-        "max_minutes_without_focus"))
+    return "UserFixed", User_Fixed_Config(None, observer, maxMinutesWithoutFocus=uConfig["max_minutes_without_focus"])

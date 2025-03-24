@@ -1,0 +1,46 @@
+{
+    "DateAdded": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "DateModified": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "DateLastEdited": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "StartObservability": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "EndObservability": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "TransitTime": {
+        "valtype": "datetime",
+        "tz": "UTC"
+    },
+    "RA": {
+        "valtype": "quantity",
+        "unit": "deg"
+    },
+    "Dec": {
+        "valtype": "quantity",
+        "unit": "deg"
+    },
+    "dRA":{
+        "valtype": "quantity",
+        "unit": "arcmin/minute"
+    },
+    "dDec":{
+        "valtype": "quantity",
+        "unit": "arcmin/minute"
+    },
+    "ExposureTime":{ 
+        "valtype": "quantity",
+        "unit": "s"
+    }
+}

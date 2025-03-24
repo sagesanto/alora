@@ -19,36 +19,40 @@ def main():
         from datetime import datetime, timedelta
         import pytz
         import concurrent.futures
-        from importlib import import_module
+        # from importlib import import_module
 
         from scheduleLib import genUtils
         from scheduleLib.genUtils import write_out as _write_out
+        from scheduleLib.module_loader import ModuleManager
 
         logger = genUtils.configure_logger("DbUpdater")
 
         def write_out(*args):
-            # logger.info(" ".join([str(a) for a in args]))
             _write_out(*args)
+            # logger.info(" ".join([str(a) for a in args]))
+        write_out("Starting to update database.")
+
+        manager = ModuleManager(write_out=_write_out)
+        modules = manager.load_active_modules()
 
         def generateNextRunTimestampString(delay):
             return (datetime.now() + timedelta(minutes=delay)).strftime("%m/%d %H:%M") + " local / " + (
                     datetime.now(pytz.UTC) + timedelta(minutes=delay)).strftime(
                 "%m/%d %H:%M") + " UTC"
 
-        write_out("Starting to update database.")
 
-        # import all modules in schedulerConfigs
-        root_directory = PATH_TO("schedulerConfigs")
-        module_names = []
-        for dir in ["schedulerConfigs."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
-            module_names.append(dir)
-        modules = {}
-        for m in module_names:
-            try:
-                modules[m] = import_module(m, "schedulerConfigs")
-            except Exception as e:
-                write_out(f"Can't import config module {m}: {e}. Fix and try again.")
-                raise e
+        # # import all modules in schedulerConfigs
+        # root_directory = PATH_TO("schedulerConfigs")
+        # module_names = []
+        # for dir in ["schedulerConfigs."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
+        #     module_names.append(dir)
+        # modules = {}
+        # for m in module_names:
+        #     try:
+        #         modules[m] = import_module(m, "schedulerConfigs")
+        #     except Exception as e:
+        #         write_out(f"Can't import config module {m}: {e}. Fix and try again.")
+        #         raise e
 
         settingsJstr = sys.argv[1]
         settings = json.loads(settingsJstr)

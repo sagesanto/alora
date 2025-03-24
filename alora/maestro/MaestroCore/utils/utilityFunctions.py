@@ -86,6 +86,7 @@ def onlyEnableWhenItemsSelected(button, sourceView):
     # these two lines should allow the buttons to become attached to the new TableModel
     sourceView.model().modelAboutToBeReset.connect(lambda: onlyEnableWhenItemsSelected(button, sourceView))
     sourceView.model().modelAboutToBeReset.connect(lambda: button.setEnabled(False))
+    # sourceView.model().modelAboutToBeReset.connect(lambda: print("modelAboutToBeReset"))
 
     sourceView.selectionModel().selectionChanged.connect(
         lambda: button.setEnabled(

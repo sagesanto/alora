@@ -15,20 +15,18 @@ try:
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
     sys.path.remove(grandparentDir)
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join(grandparentDir, "files", "configs", "config.txt"))
+    genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
     with open(join(grandparentDir, "files", "configs", "sattest.toml"),"rb") as f:
         s_config = tomli.load(f)
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join("files", "configs", "config.txt"))
+    genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     with open(join("files", "configs", "sattest.toml"),"rb") as f:
         s_config = tomli.load(f)
 
-genConfig = genConfig["DEFAULT"]
+
 
 PRIORITY = s_config["PRIORITY"]
 
@@ -46,8 +44,8 @@ def update_database(dbPath):
     logger = genUtils.configure_logger("SatTest")
     logger.info("Beginning update for SatTest")
     location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                            latitude=genConfig.getfloat("obs_lat"),
-                            longitude=genConfig.getfloat("obs_lon"))
+                            latitude=genConfig["obs_lat"],
+                            longitude=genConfig["obs_lon")]
     synodicStart = datetime.now(tz=pytz.UTC)
 
     dbConnection = CandidateDatabase(dbPath, "SatTest Database Agent")

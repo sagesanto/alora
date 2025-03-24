@@ -1,0 +1,14 @@
+{
+    "CVal6": {
+        "valtype": "quantity",
+        "unit": "minute"
+    },
+    "CVal7": {
+        "valtype": "quantity",
+        "unit": "minute"
+    },
+    "CVal8": {
+        "valtype": "quantity",
+        "unit": "day"
+    }
+}

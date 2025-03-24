@@ -1,9 +1,8 @@
 import os.path
 
 from PyQt6.QtCore import pyqtSignal, QAbstractListModel
-from PyQt6.QtWidgets import QPushButton, QFileDialog, QListView, QAbstractItemView
+from PyQt6.QtWidgets import QPushButton, QFileDialog, QListView, QAbstractItemView, QApplication
 from MaestroCore.utils.utilityFunctions import onlyEnableWhenItemsSelected
-
 
 def getSelectedFromTable(table, colIndex):
     selected = []

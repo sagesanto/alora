@@ -1,0 +1,104 @@
+{
+    "priority": {
+      "Key": "priority",
+      "DefaultValue": 1,
+      "ValDisplayType": "int",
+      "Description": "Scheduler priority",
+      "Units": ""
+    },
+    "individual_dataset_exptime": {
+      "Key": "individual_dataset_exptime",
+      "DefaultValue": 20.0,
+      "ValDisplayType": "float",
+      "Step": 1,
+      "Description": "exposure time for a single frame in a single dataset in a single filter",
+      "Units": "seconds"
+    },
+    "individual_dataset_numexp": {
+      "Key": "individual_dataset_numexp",
+      "DefaultValue": 18,
+      "ValDisplayType": "int",
+      "Description": "Number of frames in a single dataset in a single filter",
+      "Units": ""
+    },
+    "minutes_after_obs": {
+      "Key": "minutes_after_obs",
+      "DefaultValue": 5,
+      "Step": 0.5,
+      "ValDisplayType": "float",
+      "Description": "Downtime after a multi-filter observation is completed before any other observation can start",
+      "Units": "minutes"
+    },
+    "max_minutes_without_focus": {
+      "Key": "max_minutes_without_focus",
+      "DefaultValue": 30,
+      "ValDisplayType": "int",
+      "Step":5,
+      "Description": "Maximum minutes since focus any part of an observation can be for it to be considered viable",
+      "Units": "minutes"
+    },
+    "num_obs": {
+      "Key": "num_obs",
+      "DefaultValue": 1,
+      "ValDisplayType": "int",
+      "Description": "Number of times to observe each object",
+      "Units": ""
+    },
+    "min_minutes_between_obs": {
+      "Key": "min_minutes_between_obs",
+      "DefaultValue": 0.0,
+      "ValDisplayType": "float",
+      "Step": 5,
+      "Description": "Minimum minutes between observations of the same object",
+      "Units": "minutes"
+    },
+    "sentry_endpoint": {
+      "Key": "sentry_endpoint",
+      "DefaultValue": "https://ssd-api.jpl.nasa.gov/sentry.api",
+      "ValDisplayType": "str",
+      "Description": "Endpoint for Sentry integration",
+      "Units": ""
+    },
+    "mag_limit": {
+      "Key": "mag_limit",
+      "DefaultValue": 22.0,
+      "ValDisplayType": "float",
+      "Description": "Maximum magnitude limit for viable targets",
+      "Units": ""
+    },
+    "ephem_lookahead_hours": {
+      "Key": "ephem_lookahead_hours",
+      "DefaultValue": 24,
+      "ValDisplayType": "int",
+      "Description": "Fetch ephemeris this many hours into the future",
+      "Units": "hours"
+    },
+    "ephem_timestep_minutes": {
+      "Key": "ephem_timestep_minutes",
+      "DefaultValue": 1,
+      "ValDisplayType": "int",
+      "Description": "Resolution in minutes for ephemeris",
+      "Units": "minutes"
+    },
+    "horizons_location": {
+      "Key": "horizons_location",
+      "DefaultValue": 654,
+      "ValDisplayType": "str",
+      "Description": "Horizons-recognized location string of observatory",
+      "Units": ""
+    },
+    "ephem_cache_lifetime_minutes": {
+      "Key": "ephem_cache_lifetime_minutes",
+      "DefaultValue": 180,
+      "ValDisplayType": "int",
+      "Description": "Lifetime of ephemeris cache in minutes",
+      "Units": "minutes"
+    },
+    "min_impact_prob": {
+      "Key": "min_impact_prob",
+      "DefaultValue": 1e-3,
+      "ValDisplayType": "float",
+      "Description": "Minimum impact probability for targets",
+      "Units": ""
+    }
+  }

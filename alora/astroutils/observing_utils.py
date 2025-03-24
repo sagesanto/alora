@@ -1,4 +1,4 @@
-# Sage Santomenna 2024
+# Sage Santomenna 2024, 2025
 # utilities for observing. many of these are poorly written - it's mostly just a collection of functions that i've found useful in the past.
 
 import math, time
@@ -45,7 +45,7 @@ def get_current_sidereal_time(locationInfo,kind="mean"):
     now = current_dt_utc().replace(second=0, microsecond=0)
     return Time(now).sidereal_time(longitude=locationInfo.longitude,kind=kind)
 
-def get_sunrise_sunset(locationInfo, dt=current_dt_utc(), jd=False):
+def get_sunrise_sunset(locationInfo, dt=current_dt_utc(), jd=False, verbose=False):
     """!
     get sunrise and sunset for given location at given time
     @return: sunriseUTC, sunsetUTC
@@ -56,15 +56,24 @@ def get_sunrise_sunset(locationInfo, dt=current_dt_utc(), jd=False):
     sunriseUTC = s["sunrise"]
     sunsetUTC = sun.time_at_elevation(locationInfo.observer, -10, direction=sun.SunDirection.SETTING, date=dt)
 
+    def printv(*args):
+        if verbose:
+            print(*args)
+
+    printv(f"Raw: sunset {sunsetUTC}, sunrise {sunriseUTC}, current {dt}")
     # TODO: make this less questionable - it probably doesn't do exactly what i want it to when run at certain times of the day:
     if sunriseUTC < dt:  # if the sunrise we found is earlier than the current time, add one day to it (approximation ofc)
         sunriseUTC = sunriseUTC + timedelta(days=1)
 
+        printv(f"sunriseUTC less than current time. adding one day: sunset {sunsetUTC}, sunrise {sunriseUTC}")
+
     if sunsetUTC > sunriseUTC:
         sunsetUTC = sunsetUTC - timedelta(days=1)
+        printv(f"sunsetUTC greater than sunset. subtracting one day: sunset {sunsetUTC}, sunrise {sunriseUTC}")
 
     if jd:
         sunriseUTC, sunsetUTC = dt_to_jd(sunriseUTC), dt_to_jd(sunsetUTC)
+    printv(f"Calculation finished. sunset {sunsetUTC}, sunrise {sunriseUTC}")
     return sunriseUTC, sunsetUTC
 
 # tmo observability functions (from maestro)

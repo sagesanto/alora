@@ -1,0 +1,8 @@
+# config for asynchronous web requests
+
+# whether to do intensive logging
+HEAVY_LOGGING = false
+# maximum allowed simultaneous requests 
+MAX_SIMULTANEOUS_REQUESTS = 10
+# time between batches of simultaneous requests, s
+ASYNC_REQUEST_DELAY_S = 0.5

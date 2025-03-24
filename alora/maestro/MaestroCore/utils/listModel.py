@@ -1,6 +1,10 @@
 from PyQt6.QtCore import Qt, QAbstractListModel, QModelIndex, QDateTime, QAbstractTableModel
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox, QListWidget, QListWidgetItem, QFrame, QSpacerItem
+from PyQt6.QtGui import QPixmap
+import PyQt6.QtWidgets as QtWidgets
 
-from scheduleLib.candidateDatabase import Candidate
+
+from scheduleLib.candidateDatabase import Candidate, BaseCandidate
 
 
 class FlexibleListModel(QAbstractListModel):
@@ -17,7 +21,7 @@ class FlexibleListModel(QAbstractListModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
             dat = self._data[index.row()]
-            return dat.CandidateName if isinstance(dat, Candidate) else dat
+            return dat.CandidateName if isinstance(dat, BaseCandidate) else dat
 
         return None
 
@@ -68,3 +72,43 @@ class DateTimeRangeListModel(FlexibleListModel):
 
     def addItem(self, startTime: QDateTime, endTime: QDateTime, timeDisplayFormat="MM/dd/yyyy hh:mm"):
         super().addItem((startTime, endTime, timeDisplayFormat))
+
+
+class ModuleListEntry(QWidget):
+    def __init__(self, name, active, icon_path, parent=None):
+        super().__init__(parent)
+        self.name = name
+        layout = QVBoxLayout(self)
+        content_layout = QHBoxLayout()
+        # self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.checkbox = QCheckBox()
+        self.checkbox.setChecked(active)
+        # checkbox.stateChanged.connect(lambda state,n=name: self.module_manager.activate_module(n) if state == Qt.CheckState.Checked else self.module_manager.deactivate_module(n))
+        # self.checkbox.stateChanged.connect(lambda state,n=name: self.handle_module_change(state,n))
+        # checkbox.stateChanged.connect(lambda state,n=name: self.module_manager.activate_module(n) if state == Qt.CheckState.Checked else self.module_manager.deactivate_module(n))
+        content_layout.addWidget(self.checkbox)
+        label = QLabel()
+        label.setText(name)
+        content_layout.addWidget(label)
+        # add spacer to push icon to the right
+        spacer = QSpacerItem(1, 1, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        content_layout.addItem(spacer)
+        self.icon_label = QLabel()
+        pixmap = QPixmap(icon_path)
+        self.icon_label.setPixmap(pixmap)
+        content_layout.addWidget(self.icon_label)
+        layout.addLayout(content_layout)
+
+        line = QFrame(self)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        layout.addWidget(line)
+
+        self.setLayout(layout)
+    
+    def change_icon(self, icon_path):
+        pixmap = QPixmap(icon_path)
+        self.icon_label.setPixmap(pixmap)
+    
+    def change_icon_tooltip(self, tooltip):
+        self.icon_label.setToolTip(tooltip)

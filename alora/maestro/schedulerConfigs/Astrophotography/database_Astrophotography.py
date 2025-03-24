@@ -1,6 +1,7 @@
 import configparser
 import sys, os, pandas as pd
 from datetime import datetime
+from os.path import join, dirname, pardir, abspath
 
 from astral import LocationInfo
 from astropy.time import Time
@@ -17,33 +18,27 @@ try:
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
     # sys.path.remove(grandparentDir)
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join(MODULE_PATH, "files", "configs", "config.txt"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(join(MODULE_PATH, "files", "configs", "aphot_config.txt"))
+    genConfig = genUtils.Config(join(MODULE_PATH, "files", "configs", "config.toml"))
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
+
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join("files", "configs", "config.txt"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(join("files", "configs", "aphot_config.txt"))
+    genConfig = genUtils.Config(join("files", "configs", "config.toml"))
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
-genConfig = genConfig["DEFAULT"]
-aConfig = aConfig["DEFAULT"]
+ASTROPHOTOGRAPHY_PRIORITY = aConfig["priority"]
 
-ASTROPHOTOGRAPHY_PRIORITY = aConfig.getint("priority")
-
-def evalObservability(candidates, location):
+def evalObservability(candidates: list[Candidate], location):
     sunrise, sunset = genUtils.get_sunrise_sunset()
     return [c.evaluateStaticObservability(sunset, sunrise, minHoursVisible=1, locationInfo=location) for c in
             candidates]
 
 def update_database(_db_path):
     location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                            latitude=genConfig.getfloat("obs_lat"),
-                            longitude=genConfig.getfloat("obs_lon"))
+                            latitude=genConfig["obs_lat"],
+                            longitude=genConfig["obs_lon"])
     synodicStart = datetime.now(tz=pytz.UTC)
 
     # program:
@@ -59,6 +54,9 @@ def update_database(_db_path):
         c.Priority = ASTROPHOTOGRAPHY_PRIORITY
         c.ApproachColor = "PURPLE"
 
+    print(type(candidates[0]))
+    print(candidates[0])
+    print("candidate:", candidates[0].__dict__)
     # ------- convert back to df, filter out non-observables
     candidateDf = Candidate.candidatesToDf(candidates)
     if "Rejected Reason" in candidateDf.columns:

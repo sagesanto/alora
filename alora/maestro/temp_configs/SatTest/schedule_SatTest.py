@@ -14,19 +14,17 @@ try:
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
 
     sys.path.remove(grandparentDir)
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join(grandparentDir, "files", "configs", "config.txt"))
+    genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
     with open(join(grandparentDir, "files", "configs", "sattest.toml"),"rb") as f:
         s_config = tomli.load(f)
 except ImportError:
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join("files", "configs", "config.txt"))
+    genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     with open(join("files", "configs", "sattest.toml"),"rb") as f:
         s_config = tomli.load(f)
 
-genConfig = genConfig["DEFAULT"]
+
 
 minutesAfterObs = s_config["DOWNTIME_MINUTES"]
 

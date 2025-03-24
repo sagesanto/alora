@@ -34,7 +34,7 @@ def main():
     from astroplan.target import get_skycoord
     from astropy.coordinates import EarthLocation
     from astropy.coordinates import SkyCoord
-    from astropy.time import Time
+    from astropy.time import Time, TimeDelta
     import matplotlib
     # matplotlib.use('TKAgg')  # very important
     from matplotlib import pyplot as plt
@@ -55,19 +55,19 @@ def main():
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from scheduleLib.module_loader import ModuleManager
 
-        genConfig = configparser.ConfigParser()
-        genConfig.read(join(dirname(__file__), "files", "configs", "config.txt"))
+        genConfig = genUtils.Config(join(dirname(__file__), "files", "configs", "config.toml"))
 
     except ImportError:
         from scheduleLib import genUtils
         from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from scheduleLib.module_loader import ModuleManager
 
-        genConfig = configparser.ConfigParser()
-        genConfig.read(join("files", "configs", "config.txt"))
+        genConfig = genUtils.Config(join("files", "configs", "config.toml"))
 
-    genConfig = genConfig["DEFAULT"]
+    
     utc = pytz.UTC
 
     # and the flags are all dead at the tops of their poles
@@ -79,9 +79,12 @@ def main():
     ORANGE = [255, 191, 0]
     PURPLE = [221, 160, 221]
 
+    import logging
     logger = configure_logger("Scheduler")
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('matplotlib.font_manager').disabled = True
 
-    focusLoopLenSeconds = genConfig.getint("focus_loop_duration")
+    focusLoopLenSeconds = genConfig["focus_loop_duration"]
 
 
     def generateRandomRow(temperature):
@@ -187,7 +190,7 @@ def main():
         targetNames = [t for t in targetNames if t != "Focus"]
 
         x = np.arange(scoreArray.shape[1])  # create x-axis values based on the number of columns
-        colors = plt.cm.get_cmap('tab20', len(scoreArray))  # generate a colormap with enough colors
+        colors = plt.get_cmap('tab20', len(scoreArray))  # generate a colormap with enough colors
 
         plt.figure()
 
@@ -412,7 +415,8 @@ def main():
                 # scheduledNames = [b.target.name.split("_")[0] for b in self.schedule.observing_blocks]
                 scheduledDict = {}
                 scheduledNames = []
-                while currentTime < self.schedule.end_time:
+
+                while self.schedule.end_time - currentTime > self.time_resolution:
                     loops += 1
                     # print(schedArr)
                     prospectiveDict = {}
@@ -421,7 +425,7 @@ def main():
                     # print([b.target.name for b in blocks])
                     # print([b.target.name for b in self.schedule.observing_blocks])
                     currentIdx = int((currentTime - start) / self.time_resolution)
-
+                    # print(currentTime, currentIdx, self.schedule.end_time,self.schedule.end_time-currentTime,type(self.schedule.end_time-currentTime), type(currentTime), type(self.schedule.end_time))
                     if schedArr[currentIdx]:  # higher-priority object already here
                         currentTime += self.gap_time
                         continue
@@ -544,8 +548,9 @@ def main():
             for l in allBlocks.values():
                 allBlocksList.extend(l)
             # NOTE: this function call only "works" because the Astrophotography targets come last in the array - that's why we can cut them from the list
-            plotScores(recordArray, [b.target.name for b in allBlocksList if b.configuration["type"] != "Astrophotography"],
-                    times, "All Targets", savepath)
+            non_aphot_blocks = [b.target.name for b in allBlocksList if b.configuration["type"] != "Astrophotography"]
+            if len(non_aphot_blocks):
+                plotScores(recordArray, non_aphot_blocks, times, "All Targets", savepath)
             return self.schedule
 
 
@@ -678,27 +683,30 @@ def main():
 
         configDict = {}
 
+        modules = ModuleManager().load_active_modules()
+        for k, mod in modules.items():
+            typeName, conf = mod.getConfig(observer)  # modules must have this function
+            configDict[typeName] = conf 
+        
         # import configurations from python files placed in the schedulerConfigs folder
-        root = "schedulerConfigs"
-        root_directory = PATH_TO("schedulerConfigs")
-        module_names = []
-        for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
-            module_names.append(dir)
-        for m in module_names:
-            try:
-                module = import_module(m, "schedulerConfigs")
-                typeName, conf = module.getConfig(observer)  # modules must have this function
-                configDict[typeName] = conf
-            except Exception as e:
-                logger.error(f"Can't import config module {m}: {e}. Fix and try again.")
-                raise e
+
+        # root = "schedulerConfigs"
+        # root_directory = PATH_TO("schedulerConfigs")
+        # module_names = []
+        # for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
+        #     module_names.append(dir)
+        # for m in module_names:
+        #     try:
+        #         module = import_module(m, "schedulerConfigs")
+        #         typeName, conf = module.getConfig(observer)  # modules must have this function
+        #         configDict[typeName] = conf
+        #     except Exception as e:
+        #         logger.error(f"Can't import config module {m}: {e}. Fix and try again.")
+        #         raise e
 
         # turn the lists of candidates into one list
-        candidates = [candidate for candidateList in
-                    [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
-                    for candidate in
-                    candidateList if
-                    candidate.CandidateName not in blacklist]
+        candidates = [candidate for candidateList in [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
+                        for candidate in candidateList if candidate.CandidateName not in blacklist]
 
         if len(candidates) == 0:
             logger.warning("No candidates provided - nothing to schedule. Exiting.")
@@ -724,8 +732,8 @@ def main():
         #                                                     Time(stringToTime(c.EndObservability) - timedelta(
         #                                                         seconds=float(c.NumExposures) * float(c.ExposureTime))))
         #                     for c in candidates}
-        timeConstraintDict = {c.CandidateName: TimeConstraint(Time(stringToTime(c.StartObservability)),
-                                                            Time(stringToTime(c.EndObservability)))
+        timeConstraintDict = {c.CandidateName: TimeConstraint(Time(c.StartObservability),
+                                                            Time(c.EndObservability))
                             for c in candidates}
 
         # make a dict of constraints to put on all targets of a given type (specified optionally by config py file)
@@ -737,7 +745,7 @@ def main():
         # --- create the blocks ---
         blocks = {}  # dictionary that stores targets grouped by priority level
         for c in candidates:
-            exposureDuration = float(c.NumExposures) * float(c.ExposureTime)  # calculate block duration
+            exposureDuration = c.NumExposures * c.ExposureTime.to_value("second")  # calculate block duration
             name = c.CandidateName
             specConstraints = typeSpecificConstraints[
                 c.CandidateType]  # get constraints that should apply to targets of this type

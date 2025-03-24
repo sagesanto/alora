@@ -21,8 +21,10 @@ from astropy.time import Time
 from abc import ABCMeta, abstractmethod
 import pandas as pd
 from pytz import UTC as dtUTC
+from importlib import import_module
 
-from ...astroutils.obs_constraints import ObsConstraint
+
+from alora.astroutils.obs_constraints import ObsConstraint
 
 tmo = ObsConstraint()
 
@@ -30,11 +32,29 @@ _logger = logging.getLogger(__name__)
 
 MAESTRO_DIR = abspath(join(dirname(__file__), os.path.pardir))
 
+
+from alora.config.utils import Config
+
 def get_candidate_database_path():
     settings_path = join(MAESTRO_DIR, "MaestroCore","settings.txt")
     with open(settings_path, "r") as settingsFile:
         settings = json.load(settingsFile)
     return settings["candidateDbPath"][0]
+
+def generate_candidate_class(config_name,config_constructors,config_serializers,config_schema,base_candidate_class):
+    class ModuleCandidate(base_candidate_class):
+    # class ModuleCandidate(BaseCandidate):
+        def __init__(self, CandidateName: str, **kwargs):
+
+            self.CandidateName = CandidateName
+            # TODO: don't hardcode the module name here (but circular import?)
+            self.CandidateType = config_name
+            self.config_schema = config_schema
+            self.config_constructors = config_constructors
+            self.config_serializers = config_serializers
+            super().__init__(self.CandidateName, self.CandidateType, **kwargs)
+
+    return ModuleCandidate
 
 def configure_logger(name):
     # first, check if the logger has already been configured
@@ -371,7 +391,7 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
     @return: converted time or None
     @rtype: datetime
     """
-    if isinstance(timeString, datetime):  # they gave us a datetime, return it back to them
+    if isinstance(timeString, datetime):
         return timeString
     try:
         return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S")
@@ -381,7 +401,7 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
         except Exception as e:
             print(repr(e))
             if logger:
-                logger.error("Unable to coerce time from " + timeString)
+                logger.error(f"Unable to coerce time from {timeString} (type {type(timeString)}): {e}")
     return None
 
 
@@ -402,7 +422,7 @@ def toSexagesimal(angle: Angle):
     return angle.to_string()
 
 
-from ...astroutils.observing_utils import ensureAngle
+from alora.astroutils.observing_utils import ensureAngle
 
 # def ensureAngle(angle):
 #     """!
@@ -422,7 +442,7 @@ from ...astroutils.observing_utils import ensureAngle
 #     return angle
 
 
-from ...astroutils.observing_utils import ensureFloat
+from alora.astroutils.observing_utils import ensureFloat
 
 # def ensureFloat(angle):
 #     """!
@@ -455,7 +475,7 @@ def roundToTenMinutes(dt):
     return dt - timedelta(minutes=dt.minute % 10, seconds=dt.second, microseconds=dt.microsecond)
 
 
-from ...astroutils.observing_utils import angleToTimedelta
+from alora.astroutils.observing_utils import angleToTimedelta
 
 # def angleToTimedelta(angle: Angle):  # low precision
 #     """!
@@ -552,20 +572,20 @@ observation_viable = tmo.observation_viable
 #         return window[0] < dt < window[1]
 
 
-from ...astroutils.observing_utils import current_dt_utc
+from alora.astroutils.observing_utils import current_dt_utc
 
 # def current_dt_utc():
     # return datetime.utcnow().replace(tzinfo=dtUTC)
 
 
 
-from ...astroutils.observing_utils import get_current_sidereal_time
+from alora.astroutils.observing_utils import get_current_sidereal_time
 
 # def get_current_sidereal_time(locationInfo):
 #     now = current_dt_utc().replace(second=0, microsecond=0)
 #     return Time(now).sidereal_time('mean', longitude=locationInfo.longitude)
 
-from ...astroutils.observing_utils import find_transit_time
+from alora.astroutils.observing_utils import find_transit_time
 
 # def find_transit_time(rightAscension: Angle, location):
 #     """!Calculate the transit time of an object at the given location.
@@ -630,6 +650,22 @@ def localize(dt):
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     return dt
+
+def import_maestro_modules():
+    root = "schedulerConfigs"
+    root_directory = join(MAESTRO_DIR, root)
+    module_names = []
+    for dir in [f"{root}."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
+        module_names.append(dir)
+    modules = {}
+    for m in module_names:
+        try:
+            modules[m.replace("_"," ").replace(f"{root}.","")] = import_module(m, "schedulerConfigs")
+        except Exception as e:
+            write_out(f"Can't import config module {m}: {e}. Fix and try again.")
+            raise e
+    return modules
+            
 
 
 get_sunrise_sunset = tmo.get_sunrise_sunset

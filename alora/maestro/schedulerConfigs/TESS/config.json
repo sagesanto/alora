@@ -1,0 +1,1 @@
+{"EXPTIME": 10, "downtime_after_obs": 3, "bin2fits": false, "max_minutes_without_focus": 10000, "obs_buffer": 60}

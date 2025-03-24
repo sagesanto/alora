@@ -12,31 +12,28 @@ try:
     sys.path.append(MODULE_PATH)
     from scheduleLib.candidateDatabase import Candidate
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    import scheduleLib.genUtils as genUtils
 
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join(MODULE_PATH, "files", "configs", "config.txt"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(join(MODULE_PATH, "files", "configs", "aphot_config.txt"))
+    genConfig = genUtils.Config(join(MODULE_PATH, "files", "configs", "config.toml"))
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
+
 except ImportError:
     from scheduleLib.candidateDatabase import Candidate
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
-    genConfig = configparser.ConfigParser()
-    genConfig.read(join("files", "configs", "config.txt"))
-    aConfig = configparser.ConfigParser()
-    aConfig.read(join("files", "configs", "aphot_config.txt"))
+    import scheduleLib.genUtils as genUtils
 
-genConfig = genConfig["DEFAULT"]
-aConfig = aConfig["DEFAULT"]
+    genConfig = genUtils.Config(join("files", "configs", "config.toml"))
+    aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
-minutesAfterObs = aConfig.getint("minutes_after_obs")
+minutesAfterObs = aConfig["minutes_after_obs"]
 
-MINUTES_BETWEEN_DATASETS = aConfig.getint("minutes_between_datasets")
-INDIVIDUAL_DATASET_EXPTIME = aConfig.getfloat("individual_dataset_exptime")
-INDIVIDUAL_DATASET_NUMEXP = aConfig.getint("individual_dataset_numexp")
+MINUTES_BETWEEN_DATASETS = aConfig["minutes_between_datasets"]
+INDIVIDUAL_DATASET_EXPTIME = aConfig["individual_dataset_exptime"]
+INDIVIDUAL_DATASET_NUMEXP = aConfig["individual_dataset_numexp"]
 
 
 def findExposure(magnitude, str=True):
-    return 1, 3 * INDIVIDUAL_DATASET_NUMEXP * INDIVIDUAL_DATASET_EXPTIME + 2 * 60 * MINUTES_BETWEEN_DATASETS  # otherwise, it's asking for the full exposure time
+    return 1*u.second, 3 * INDIVIDUAL_DATASET_NUMEXP * INDIVIDUAL_DATASET_EXPTIME + 2 * 60 * MINUTES_BETWEEN_DATASETS  # otherwise, it's asking for the full exposure time
 
 
 class AstrophotographyConfig(TypeConfiguration):
@@ -60,7 +57,7 @@ class AstrophotographyConfig(TypeConfiguration):
 
     def generateSchedulerLine(self, row, targetName, candidateDict, spath):
         c = candidateDict[targetName]
-        c.ExposureTime = INDIVIDUAL_DATASET_EXPTIME
+        c.ExposureTime = INDIVIDUAL_DATASET_EXPTIME*u.second
         c.NumExposures = INDIVIDUAL_DATASET_NUMEXP
         individualDuration = timedelta(seconds=INDIVIDUAL_DATASET_EXPTIME * INDIVIDUAL_DATASET_NUMEXP)
         firstStartDt = stringToTime(row["Start Time (UTC)"])
@@ -95,7 +92,7 @@ class AstrophotographyConfig(TypeConfiguration):
 def getConfig(observer):
     # returns a TypeConfiguration object for targets of type "Astrophotography"
     # this config will only apply to candidates with CandidateType "Astrophotography"
-    return "Astrophotography", AstrophotographyConfig(None, observer, maxMinutesWithoutFocus=aConfig.getint("max_minutes_without_focus"),numObs=aConfig.getint("num_obs"),minMinutesBetweenObs=aConfig.getfloat("min_minutes_between_obs"))
+    return "Astrophotography", AstrophotographyConfig(None, observer, maxMinutesWithoutFocus=aConfig["max_minutes_without_focus"],numObs=aConfig["num_obs"],minMinutesBetweenObs=aConfig["min_minutes_between_obs"])
 
 
 if __name__ == "__main__":

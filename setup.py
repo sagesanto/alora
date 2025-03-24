@@ -15,13 +15,13 @@ without having to rebuild the package
 # do setup
 setup(
     name="alora",
-    version="0.0.1",
+    version="0.0.2",
     description='Software for Alora Observatory',
     author='Sage Santomenna',
     author_email='sage.santomenna@gmail.com',
     packages=find_packages(include=['alora', 'alora.*']),
     package_data={"alora":["config/config.toml","config/logging.json","config/horizon_box.json"]},
-    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit', 'astral','requests','bs4','python-dotenv','astroplan', 'PyQt6','tomli', 'seaborn', 'pywin32', 'flask', 'rpyc', 'keyring', 'python_tsp', 'astroquery', 'photutils','scikit-image'],
+    install_requires=['astropy','numpy','sqlalchemy','matplotlib','pandas','pytz','scipy','colorlog','tomlkit','requests','bs4','python-dotenv','tomli', 'seaborn', 'flask', 'python_tsp', 'astroquery','PyQt6','astroplan','astral'],
     entry_points={
         'console_scripts': [
             'emergency_open = alora.observatory.dome.bin.emergency_open:main',
@@ -35,7 +35,10 @@ setup(
             'park = alora.observatory.bin.park:main',
             'pointing_model = alora.observatory.bin.pointing_model:main',
             'imstat = alora.astroutils.bin.imstat:main',
-            'solve = alora.observatory.bin.solve:main'
+            'solve = alora.observatory.bin.solve:main',
         ]
     },
+    extras_require = {
+        "observatory": ['python-socketio','keyring','rpyc','photutils','scikit-image']
+    }
 )

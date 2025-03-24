@@ -1,4 +1,4 @@
-# Sage Santomenna 2023/2024
+# Sage Santomenna 2023-2025
 
 import sys, os, traceback
 from os.path import join, abspath, dirname
@@ -23,36 +23,51 @@ def _main():
     import pathlib
     import random
     import re
-    import sys, os
+    import sys, os, traceback
     PYTHON_PATH = sys.executable
     import time
     from pathlib import Path
     import pandas as pd
+    import numpy as np
     import pytz
     import astroplan
 
     from PyQt6 import QtGui, QtCore
     from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
-        QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, QPushButton, QMessageBox
-    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel
+        QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, \
+              QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
+                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox, QScrollArea
+    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel, QTimer
+    import PyQt6.QtWidgets as QtWidgets
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
     from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
-    from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel
+    from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel, ModuleListEntry
     from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton
+    from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
+    from MaestroCore.utils.windows import ScrollMessageBox
     from datetime import datetime, timedelta
     from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
     import astropy.units as u
 
-    from scheduleLib.genUtils import inputToAngle
+    from scheduleLib.genUtils import inputToAngle, Config
+    from scheduleLib.module_loader import ModuleManager
+
+    # VAL_DISPLAY_TYPES = {
+    #     "float":QLineEdit,
+    #     "int":QSpinBox,
+    #     "str":QLineEdit,
+    #     "bool":QCheckBox,
+    #     "longstr":QTextEdit
+    # }
 
     # set up logger
     try:
-        with open(os.path.abspath("logging.json"), 'r') as log_cfg:
+        with open(PATH_TO("logging.json"), 'r') as log_cfg:
             logging.config.dictConfig(json.load(log_cfg))
         logger = logging.getLogger(__name__)
         # set the out logfile to a new path
@@ -61,9 +76,9 @@ def _main():
         logger = logging.getLogger(__name__)
         file_handler = logging.FileHandler(os.path.abspath("main.log"),mode="a+")
         logger.addHandler(file_handler)
-    logger.setLevel(logging.INFO)
-    logger.info("--------- Starting Maestro....----------------------------")
+    logger.setLevel(logging.DEBUG)
 
+    logger.info("--------- Starting Maestro....----------------------------")
 
     defaultSettings = {}  # don't know how this should be stored/managed/updated - should submodules be able to register their own settings? probably. that's annoying
 
@@ -83,6 +98,34 @@ def _main():
 
     def test_error():
         raise ValueError("Test error")
+    
+    def clear_layout(layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                clear_layout(item.layout())
+
+    def copy_button(text_to_copy):
+        def copy_to_clipboard():
+            clipboard = QApplication.clipboard()
+            clipboard.setText(text_to_copy)
+
+        button = QPushButton()
+        button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard--plus.png")))
+        button.clicked.connect(copy_to_clipboard)
+        button.clicked.connect(lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard-task.png"))))
+        button.clicked.connect(lambda: QTimer.singleShot(1000, lambda: button.setIcon(QtGui.QIcon(LOGO_PATH("clipboard--plus.png")))))
+        return button
+    
+    def log_button_press(e):
+        logger.debug(f"Button Pressed: {e}")
+    
+    def log_tab_change(e,title):
+        if e.isVisible():
+            logger.debug(f"Tab Changed: {title}")
 
     class Settings:
         def __init__(self, settingsFilePath):
@@ -145,6 +188,58 @@ def _main():
         def asDict(self):
             return {k: v for k, [v, _] in self._settings.items()}
 
+    class TOMLSettings:
+        def __init__(self, fpath):
+            self.path = fpath
+            self._settings = {}
+            self._linkBacks = []  # (settingName, writeFunction) tuples
+            self.cfg = None
+
+        def loadSettings(self):
+            self.cfg = Config(self.path)
+
+        def saveSettings(self):
+            self.cfg.save(trim=True)
+
+        def query(self, key):
+            """!
+            Get the (value, type) pair associated with the setting with name key if such a pair exists, else None
+            @param key:
+            @return: tuple(value of setting,type of setting (string))
+            """
+            return self.cfg.get(key)
+
+        def add(self, key, value):
+            self.cfg.add(key, value)
+            self.saveSettings()
+
+        def linkWatch(self, signal, key, valueSource, linkBack, datatype):
+            """!
+            Link function signal to setting key such that setting key is set to the value from valueSource (can be a function) when signal is triggered
+            @param signal: Qt signal
+            @param key: string, name of existing setting
+            @param valueSource: function or value
+
+            """
+            signal.connect(lambda: self.set(key, valueSource, datatype))
+            self._linkBacks.append((key, (linkBack, datatype)))
+
+        def update(self):
+            for key, (func, datatype) in self._linkBacks:
+                func(datatype(self.cfg[key]))
+
+        def set(self, key, value, datatype):
+            if callable(value):
+                value = value()
+            if self.cfg.get(key) is not None:
+                self.cfg[key] = datatype(value)
+                self.saveSettings()
+                return
+            raise ValueError(f"No such setting {key}")
+
+        def asDict(self):
+            return {k: v for k, [v, _] in self.cfg.items()}
+
 
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
@@ -152,6 +247,7 @@ def _main():
             self.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))  # ----
             self.setupUi(self)
 
+            self.warnings_to_show_after_load = []
             # self.blacklistLabel.setMinimumWidth(self.blacklistView.width())
 
             with open(PATH_TO("version.txt"), "r") as f:
@@ -162,6 +258,7 @@ def _main():
             self.set_candidates_icon(STATUS_IDLE)
             self.set_database_icon(STATUS_IDLE)
             self.set_ephemeris_icon(STATUS_IDLE)
+            self.set_modules_icon(STATUS_IDLE)
             self.set_processes_icon(QtGui.QIcon(LOGO_PATH("system-monitor")))
             self.toggleRejectButton.setIcon(QtGui.QIcon(LOGO_PATH("cross")))
             self.removeToggleButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-circle-frame")))
@@ -209,19 +306,13 @@ def _main():
             self.scheduleDf = None
             self.dbConnection = None
 
+
             # call setup functions
             self.settings.loadSettings()
-            if os.path.exists(self.settings.query("candidateDbPath")[0]):
-                try:
-                    self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath")[0], "Maestro")
-                    self.set_database_icon(STATUS_DONE)
-                except Exception as e:
-                    logger.error(f"Unable to start database coordinator: {repr(e)}")
-                    self.statusBar().showMessage(f"Unable to start database coordinator: {repr(e)}", 10000)
-                    self.set_database_icon(STATUS_ERROR)
-                else:
-                    self.startDbUpdater()
-                    self.startDbOperator()
+            
+            if self.connect_db():
+                self.startDbUpdater()
+                self.startDbOperator()
 
             self.processesTreeView.setModel(self.processModel)
             self.ephemListView.setModel(self.ephemListModel)
@@ -229,15 +320,63 @@ def _main():
             self.whitelistView.setModel(self.whitelistModel)
             self.excludeListView.setModel(self.excludeListModel)
 
+            self.current_module_index = 0
+
             self.setConnections()
 
             self.excludeStartEdit.setDateTime(self.scheduleStartTimeEdit.dateTime())
             self.excludeEndEdit.setDateTime(self.scheduleEndTimeEdit.dateTime())
 
             self.candidatesTabIndex = self.tabWidget.indexOf(self.candidatesTab)
+            
+            self.cfg_display_types = {
+                "float":self.add_float_cfg,
+                "int":self.add_int_cfg,
+                "str":self.add_str_cfg,
+                "bool":self.add_bool_cfg,
+                "longstr":self.add_longstr_cfg,
+                "choice":self.add_choice_cfg
+            }
 
-        def set_sunrise_sunset(self):
-            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset()
+            # begin usage logging
+            for i in self.__dict__.values():
+                if isinstance(i, QPushButton):
+                    i.clicked.connect(lambda _, x=i.text(): log_button_press(x))
+            self.tabWidget.currentChanged.connect(lambda: log_tab_change(self.tabWidget.currentWidget(), self.tabWidget.currentIndex()))
+            self.module_manager = ModuleManager()
+            self.set_up_modules()
+            # schedule load errors to be displayed at the end of loading
+            QTimer.singleShot(0, self.show_load_errors)
+
+        def connect_db(self):
+            try:
+                self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath")[0], "Maestro")
+                self.set_database_icon(STATUS_DONE)
+                return True
+            except FileNotFoundError:
+                self.set_database_icon(STATUS_ERROR)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warnings_to_show_after_load.append(("Database Not Found",emsg))
+                self.statusBar().showMessage(emsg, 10000)
+                return False
+            except Exception as e:
+                emsg = f"Unable to start database coordinator: {repr(e)}"
+                logger.error(emsg)
+                self.warnings_to_show_after_load.append(("Database Error",emsg))
+                self.statusBar().showMessage(emsg, 10000)
+                self.set_database_icon(STATUS_ERROR)
+                return False
+        
+        def show_load_errors(self):
+            if len(self.warnings_to_show_after_load):
+                title, msg = self.warnings_to_show_after_load.pop()
+                msg = self.warning_popup(title, msg,return_box=True)
+                # connect a timer to show the next warning to the msg ok button
+                msg.finished.connect(lambda: QTimer.singleShot(0, self.show_load_errors))
+                msg.exec()
+
+        def set_sunrise_sunset(self,dt=None):
+            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset(dt=dt, verbose=True)
             self.sunriseUTC, self.sunsetUTC = genUtils.roundToTenMinutes(self.sunriseUTC), genUtils.roundToTenMinutes(
                 self.sunsetUTC)
 
@@ -308,9 +447,12 @@ def _main():
             # self.scheduleEndTimeEdit.dateTimeChanged.connect(
             #     lambda Qdt: self.scheduleStartTimeEdit.setMaximumDateTime(Qdt))  # so start is always < end
 
-            # # scheduler exclude time range limits
-            # # exclude start must be before exclude end:
+            # scheduler exclude time range limits
+            # exclude start must be before exclude end:
             # self.excludeEndEdit.dateTimeChanged.connect(lambda Qdt: self.excludeStartEdit.setMaximumDateTime(Qdt))
+
+            # retry our db connection after the user chooses a new db file
+            self.databasePathChooseButton.chosen.connect(lambda: QTimer.singleShot(100,self.connect_db))
 
             # misc
             self.debugInfoButton.clicked.connect(self.displayInfo)
@@ -367,6 +509,293 @@ def _main():
                                     self.tempSpinbox.value, self.tempSpinbox.setValue,
                                     int)
             self.settings.update()
+            self.reloadModulesButton.clicked.connect(self.set_up_modules)
+
+        def warning_popup(self, title, msg, return_box=False):
+            msgBox = QMessageBox()
+            # msgBox = ScrollMessageBox(title,msg,None)
+            msgBox.setWindowTitle(title)
+            msgBox.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))
+            msgBox.setIcon(QMessageBox.Icon.Warning)
+            # scroll.setWidget(QLabel(msg))
+            msgBox.setText(msg)
+            if return_box:
+                return msgBox
+            msgBox.exec()
+
+        def write_default_module_settings(self,mod_dir):
+            try:
+                if not os.path.exists(join(mod_dir,"cfg.schema")):
+                    return
+                with open(join(mod_dir,"cfg.schema"),"r") as f:
+                    cfg_schema = json.load(f)
+                Path(join(mod_dir,"config.toml")).touch()
+                cfg = Config(join(mod_dir,"config.toml"))
+                for k,v in cfg_schema.items():
+                    cfg.set(k,v["DefaultValue"])
+                cfg.save(trim=True)
+            except Exception as e:
+                # trigger a crash report but dont crash
+                exception_hook(type(e), e, e.__traceback__)
+
+        def set_up_modules(self):
+            self.module_manager.update_modules()
+            self.mod_info = self.module_manager.list_modules()
+            # clear the mod list 
+            if self.moduleList.count() > 0:
+                self.current_module_index = self.moduleList.currentRow()
+            self.moduleList.clear()
+            self.module_entries = {}
+            self.module_exceptions = {}
+            nerrors = 0
+            for name, info in self.mod_info.items():
+                mod = None
+                if not os.path.exists(join(info["dir"],"config.toml")):
+                    self.write_default_module_settings(info["dir"])
+                # icon = None
+                if info["active"]:
+                    mod, self.module_exceptions[name] = self.module_manager.load_module(name, return_trace=True)
+                    if mod is not None:
+                        icon_path = STATUS_DONE
+                        tooltip = "Module is active"
+                    else:
+                        icon_path = STATUS_ERROR
+                        tooltip = "Module failed to load"
+                        nerrors += 1
+                else:
+                    icon_path = STATUS_IDLE
+                    tooltip = "Module is inactive"
+
+                module_entry = ModuleListEntry(name,info["active"],icon_path)
+                module_entry.checkbox.stateChanged.connect(lambda state,n=name: self.handle_module_change(state,n))
+                module_entry.checkbox.setToolTip("Activate/deactivate module")
+                self.module_entries[name] = module_entry
+                item = QListWidgetItem(self.moduleList)
+                item.setSizeHint(module_entry.sizeHint())
+                self.moduleList.addItem(item)
+                self.moduleList.setItemWidget(item,module_entry)
+                self.module_entries[name].change_icon_tooltip(tooltip)
+
+            if nerrors > 0:
+                err_msg = f"{nerrors} module{'s' if nerrors>1 else ''} failed to load. Check the Modules tab for more information."
+                # self.warning_popup(err_msg)
+                self.warnings_to_show_after_load.append(("Module Failed to Load", err_msg))
+                self.statusBar().showMessage(err_msg,10000)
+                self.set_modules_icon(STATUS_ERROR)
+            else:
+                self.set_modules_icon(STATUS_DONE)
+                self.statusBar().showMessage("Modules loaded successfully.",2000)
+            self.moduleList.itemClicked.connect(lambda item: self.display_module(self.moduleList.itemWidget(item).name))
+            self.display_module(list(self.mod_info.keys())[self.current_module_index])
+            self.moduleList.setCurrentRow(self.current_module_index)
+
+        def handle_module_change(self,state,name):
+            self.module_exceptions[name] = None
+            if state == 2:
+                print(f"activating {name}")
+                self.module_manager.activate_module(name)
+                mod, exc = self.module_manager.load_module(name,return_trace=True)
+                if mod is not None:
+                    icon = STATUS_DONE
+                    tooltip = "Module is active"
+                else:
+                    self.module_exceptions[name] = exc
+                    icon = STATUS_ERROR
+                    tooltip = "Module failed to load"
+            else:
+                print(f"deactivating {name}")
+                icon = STATUS_IDLE
+                tooltip = "Module is inactive"
+                self.module_manager.deactivate_module(name)
+            self.module_entries[name].change_icon(icon)
+            self.module_entries[name].change_icon_tooltip(tooltip)
+            self.display_module(name)
+            modidx = dict(zip(self.module_entries.keys(),range(len(self.module_entries))))[name]
+            self.moduleList.setCurrentRow(modidx)
+
+        def add_float_cfg(self,name,item,modulecfg):
+            spin = NoScrollQDoubleSpinBox()
+            current_val = modulecfg.query(name)
+            if "Min" in item:
+                spin.setMinimum(item["Min"])
+            elif current_val < spin.minimum():
+                spin.setMinimum(current_val/2)
+            if "Max" in item:
+                spin.setMaximum(item["Max"])
+            elif current_val > spin.maximum():
+                spin.setMaximum(current_val*2)
+            if "Step" in item:
+                spin.setSingleStep(item["Step"])
+            spin.setValue(current_val)
+            modulecfg.linkWatch(spin.valueChanged, name, spin.value, spin.setValue, float)
+            return spin
+        
+        def add_int_cfg(self,name,item,modulecfg):
+            spin = NoScrollQSpinBox()
+            current_val = modulecfg.query(name)
+            print(name,current_val)
+            if "Min" in item:
+                spin.setMinimum(item["Min"])
+            elif current_val < spin.minimum():
+                spin.setMinimum(current_val*2)
+            if "Max" in item:
+                spin.setMaximum(item["Max"])
+            elif current_val > spin.maximum():
+                spin.setMaximum(current_val*2)
+            if "Step" in item:
+                spin.setSingleStep(item["Step"])
+            spin.setValue(current_val)
+            modulecfg.linkWatch(spin.valueChanged, name, spin.value, spin.setValue, int)
+            return spin
+        
+        def add_str_cfg(self,name,item,modulecfg):
+            line_edit = QLineEdit()
+            current_val = modulecfg.query(name)
+            line_edit.setText(current_val)
+            modulecfg.linkWatch(line_edit.textChanged, name, line_edit.text, line_edit.setText, str)
+            return line_edit
+        
+        def add_bool_cfg(self,name,item,modulecfg):
+            check_box = QCheckBox()
+            current_val = modulecfg.query(name)
+            check_box.setChecked(current_val)
+            modulecfg.linkWatch(check_box.stateChanged, name, check_box.isChecked, check_box.setChecked, bool)
+            return check_box
+        
+        def add_longstr_cfg(self,name,item,modulecfg):
+            text_edit = QTextEdit()
+            current_val = modulecfg.query(name)
+            text_edit.setText(current_val)
+            modulecfg.linkWatch(text_edit.textChanged, name, text_edit.toPlainText, text_edit.setText, str)
+            return text_edit
+        
+        def add_choice_cfg(self,name,item,modulecfg):
+            combo = NoScrollQComboBox()
+            current_val = modulecfg.query(name)
+            combo.addItems(item["Choices"])
+            combo.setCurrentText(current_val)
+            modulecfg.linkWatch(combo.currentTextChanged, name,
+                                    lambda c=item["Choices"]: c[comboValToIndex(combo, combo.currentText)],
+                                    combo.setCurrentText, str)
+            return combo
+
+        def display_module(self,name):
+            # clear the module display
+            # print("displaying",name)
+            # w = self.moduleContentScroll.widget()
+            self.moduleContentScroll.setWidget(QWidget())
+            # w.deleteLater()
+            # print("deleted children")
+            content = QWidget()
+            clayout = QVBoxLayout()
+            clayout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            # add a little vertical space at the top
+            clayout.addSpacing(10)
+            title = QLabel(name)
+            title.setFont(QtGui.QFont("Segoe UI", 20,weight=QtGui.QFont.Weight.Bold))  # ok so the rest of the app is probably in Sego UI but i like Segoe UI
+            title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            title.setWordWrap(True)
+            clayout.addWidget(title)
+            content.setLayout(clayout)
+
+            author = QLabel(f"Author(s): {self.mod_info[name]['author']}")
+            author.setFont(QtGui.QFont("Segoe UI", 12, italic=True))
+            author.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            author.setWordWrap(True)
+            clayout.addWidget(author)
+
+            description = QLabel(f"{self.mod_info[name]['description']}")
+            description.setFont(QtGui.QFont("Segoe UI", 12))
+            description.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            description.setWordWrap(True)
+            clayout.addWidget(description)
+
+            # if the module failed to load, include an error message here
+            exc = self.module_exceptions.get(name)
+            if exc:
+                err_widget = QWidget()
+                err_widget.setAutoFillBackground(True)
+                palette = err_widget.palette()
+                palette.setColor(err_widget.backgroundRole(), QtGui.QColor('lightcoral'))
+                err_widget.setPalette(palette)
+                err_layout = QVBoxLayout()
+                err_h_layout = QHBoxLayout()
+                err_label = QLabel(f"Module Failed to Load")
+                err_label.setFont(QtGui.QFont("Segoe UI", 14,weight=QtGui.QFont.Weight.Bold))
+                err_h_layout.addWidget(err_label)
+                err_h_layout.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Minimum))
+                err_h_layout.addWidget(copy_button(str(exc)))
+                err_layout.addLayout(err_h_layout)
+                err_label = QLabel(exc)
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                err_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                err_label.setWordWrap(True)
+                err_layout.addWidget(err_label)
+                err_widget.setLayout(err_layout)
+                clayout.addWidget(err_widget)
+            
+            clayout.addSpacing(10)
+            cfg_title = QLabel("Configuration")
+            cfg_title.setFont(QtGui.QFont("Segoe UI", 16,weight=QtGui.QFont.Weight.Bold))
+            clayout.addWidget(cfg_title)
+
+            # this isnt actually the config but instead the description of the config
+            cfg_desc_path = join(self.mod_info[name]["dir"],"cfg.schema")
+            try:
+                with open(cfg_desc_path,"r") as f:
+                    cfg_desc = json.load(f)
+                cfg = TOMLSettings(join(self.mod_info[name]["dir"],"config.toml"))
+                cfg.loadSettings()
+
+                for k,v in cfg_desc.items():
+                    if v.get("Hidden",False):
+                        continue
+                    item_widget = QWidget()
+                    item_layout = QVBoxLayout()
+                    item_label = QLabel(k)
+                    item_label.setFont(QtGui.QFont("Segoe UI", 14, weight=QtGui.QFont.Weight.Bold))
+                    item_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                    item_label.setWordWrap(True)
+                    item_layout.addWidget(item_label)
+
+                    item_description = QLabel(v["Description"])
+                    item_description.setFont(QtGui.QFont("Segoe UI", 12, italic=True))
+                    item_description.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                    item_description.setWordWrap(True)
+                    item_layout.addWidget(item_description)
+
+                    edit_layout = QHBoxLayout()
+                    edit_box = self.cfg_display_types[v["ValDisplayType"]](k,v,cfg)
+                    edit_box.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+                    edit_box.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+                    edit_layout.addWidget(edit_box)
+                    if v["Units"]:
+                        unit_label = QLabel(v["Units"])
+                        unit_label.setFont(QtGui.QFont("Segoe UI", 12))
+                        unit_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+                        edit_layout.addWidget(unit_label)
+                    if v["ValDisplayType"] != "longstr":
+                        edit_layout.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Minimum))
+
+                    item_layout.addLayout(edit_layout)
+                    item_widget.setLayout(item_layout)
+                    clayout.addWidget(item_widget)
+
+            except FileNotFoundError as e:
+                cfg_label = QLabel(f"No configuration file found.")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+            except Exception as e:
+                cfg_label = QLabel(f"Error loading configuration:")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+                err_label = QLabel(traceback.format_exc())
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                clayout.addWidget(err_label)
+
+            # print("adding content to scroll")
+            self.moduleContentScroll.setWidget(content)
+            # print("added")
 
         def closeEvent(self, a0: QtGui.QCloseEvent):
             logger.info("----------- Closing Maestro -----------------")
@@ -385,8 +814,11 @@ def _main():
         def set_ephemeris_icon(self,img_path):
             self.tabWidget.setTabIcon(3,QtGui.QIcon(img_path))
         
-        def set_processes_icon(self,img_path):
+        def set_modules_icon(self,img_path):
             self.tabWidget.setTabIcon(4,QtGui.QIcon(img_path))
+        
+        def set_processes_icon(self,img_path):
+            self.tabWidget.setTabIcon(5,QtGui.QIcon(img_path))
 
 
         def updateTables(self, index):
@@ -398,9 +830,9 @@ def _main():
         # start the database update process
         def startDbUpdater(self):
             if not os.path.exists(self.settings.query("candidateDbPath")[0]):
-                self.statusBar().showMessage(
-                    "To run database coordination, choose a database in the Database tab, then press 'Request Restart'",
-                    10000)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg,10000)
                 return
             if self.databaseProcess is not None:
                 if self.databaseProcess.isActive:  # run a restart
@@ -469,6 +901,12 @@ def _main():
             self.sched_error_occurred = val
 
         def runScheduler(self):
+            if not self.settings.query("scheduleSaveDir")[0]:
+                self.warning_popup("No Save Directory Selected", "Please choose a save directory for the schedule using the button in the Schedule tab.")
+                return
+            if self.dbConnection is None:
+                self.warning_popup("No Database Connection", "Please ensure the database is connected and try again.")
+                return
             self.genScheduleButton.setDisabled(True)
             self.genScheduleButton.setText("Generating")
 
@@ -490,8 +928,10 @@ def _main():
             self.sched_error_occurred = False
             self.scheduleProcess.ended.connect(lambda: self.genScheduleButton.setDisabled(False))
             self.scheduleProcess.ended.connect(lambda: self.genScheduleButton.setText("Generate Schedule"))
-            self.scheduleProcess.errorOccurred.connect(lambda: self.setSchedError(True))
-            self.scheduleProcess.errorOccurred.connect(lambda: self.set_scheduler_icon(STATUS_ERROR))
+            self.scheduleProcess.failed.connect(lambda: self.setSchedError(True))
+            self.scheduleProcess.failed.connect(lambda: self.set_scheduler_icon(STATUS_ERROR))
+            self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m))
+            # self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m) if self.sched_error_occurred else None)
             self.scheduleProcess.ended.connect(lambda: self.set_scheduler_icon(STATUS_DONE if not self.sched_error_occurred else STATUS_ERROR))
             self.scheduleProcess.triggered.connect(self.displaySchedule)
             self.scheduleProcess.triggered.connect(lambda: self.genScheduleButton.setText("Writing text file"))
@@ -543,9 +983,15 @@ def _main():
 
         def autoSetSchedulerTimes(self, run=True):
             if run:
-                self.set_sunrise_sunset()
+                self.set_sunrise_sunset(dt=None)
+                if self.sunriseUTC - timedelta(hours=1) < datetime.now(pytz.utc):
+                    # print("It's after end time for tonight. moving to tomorrow.")
+                    self.set_sunrise_sunset(dt=datetime.now(pytz.utc)+timedelta(days=1))
+                # print("Auto setting scheduler times. Sunrise: ", self.sunriseUTC, " Sunset: ", self.sunsetUTC," current UTC: ",datetime.now(pytz.utc))
                 start = datetimeToQDateTime(max(self.sunsetUTC, datetime.now(pytz.utc)))
+                # print(f"Setting start to the max of sunset ({self.sunsetUTC}) and current time ({datetime.now(pytz.utc)}): {max(self.sunsetUTC, datetime.now(pytz.utc))}")
                 end = datetimeToQDateTime(self.sunriseUTC-timedelta(hours=1))
+                # print(f"Setting end to sunrise - 1 hour: {self.sunriseUTC-timedelta(hours=1)}")
 
                 self.scheduleStartTimeEdit.setDateTime(start)
                 self.scheduleEndTimeEdit.setDateTime(end)
@@ -559,16 +1005,25 @@ def _main():
 
         def whitelistSelectedCandidates(self):
             candidates = [self.candidateDict[d] for d in getSelectedFromTable(self.candidateView, self.indexOfNameColumn)]
+            print("selected candidates for whitelist: ", candidates)
             for candidate in candidates:
                 if candidate not in self.whitelistModel._data:
                     self.blacklistModel.removeItem(candidate)
+                    print(type(candidate))
                     self.whitelistModel.addItem(candidate)
+                    print("whitelisted candidate: ", candidate)
 
         def resetCandidateTable(self):
+            oldModel = self.candidateTable
             self.candidateTable = CandidateTableModel(pd.DataFrame())
             self.candidateView.setModel(self.candidateTable)
+            oldModel.beginResetModel()
+            oldModel.endResetModel()
 
         def requestDbCycle(self):
+            if self.databaseProcess is None:
+                self.startDbUpdater()
+                return
             logger.debug("Requesting")
             self.databaseProcess.write("DbUpdater: Cycle\n")
 
@@ -650,16 +1105,25 @@ def _main():
             self.tabWidget.setCurrentWidget(self.ephemsTab)
 
         def getCandidates(self):
-            if self.settings.query("showAllCandidates")[0]:
-                self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True)
-            else:
-                logger.info("Showing select")
-                try:
-                    self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01)
-                except AttributeError as e:
-                    logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
-                    self.statusBar().showMessage("ERROR: invalid database path. To show targets, choose a database under Database > Control, then press 'Request Restart'", 10000)
-                    return self
+            try:
+                if self.settings.query("showAllCandidates")[0]:
+                    self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
+                else:
+                    logger.info("Showing select")
+                    self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01,skip_errors=True)
+            except AttributeError as e:
+                logger.error(f"Couldn't get candidates: {repr(e)} (probably no database)")
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg, 10000)
+                self.set_candidates_icon(STATUS_ERROR)
+                return self
+            except Exception as e:
+                exception_hook(type(e), e, e.__traceback__)
+                logger.error(f"Couldn't get candidates: {repr(e)}")
+                self.statusBar().showMessage(f"ERROR: Couldn't get candidates: {repr(e)}", 10000)
+                self.set_candidates_icon(STATUS_ERROR)
+                return self
             if not self.candidates:
                 self.resetCandidateTable()
                 if debug:
@@ -674,8 +1138,16 @@ def _main():
                     self.blacklistModel.removeItem(candidate)
                     self.whitelistModel.addItem(candidate)
             self.candidateDf = Candidate.candidatesToDf(self.candidates)
+
+            # order the df columns by the order of the validFields list
+            numbered_fields = dict(zip(validFields,np.arange(len(validFields))))
+            c = list(self.candidateDf.columns)
+            c.sort(key = lambda x: numbered_fields[x])
+            self.candidateDf = self.candidateDf.reindex(columns=c)
+            
             self.candidatesByID = {c.ID: c for c in self.candidates}
             self.candidateDict = {c.CandidateName: c for c in self.candidates}
+            print(self.candidateDf.columns)
             self.indexOfIDColumn = self.candidateDf.columns.get_loc("ID")
             self.indexOfNameColumn = self.candidateDf.columns.get_loc("CandidateName")
 
@@ -839,9 +1311,9 @@ def _main():
 
         def startDbOperator(self):
             if not os.path.exists(self.settings.query("candidateDbPath")[0]):
-                self.statusBar().showMessage(
-                    "To run database operations, choose a database under Database > Control, then press 'Request Restart'",
-                    10000)
+                emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
+                self.warning_popup("No Database", emsg)
+                self.statusBar().showMessage(emsg,10000)
                 return
             if self.dbOperatorProcess is not None and self.dbOperatorProcess.isActive:
                 logger.info("Restarting database operator.")
