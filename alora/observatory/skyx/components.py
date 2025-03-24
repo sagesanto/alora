@@ -253,8 +253,8 @@ class SkyXTelescope(Telescope):
             raise SkyXException(f"SkyX reports that stopping tracking failed. Response was {resp}")
     
     def jog(self,dRA:Angle,dDec:Angle):
-        dec_jog_dir = "N" if dDec.deg > 0 else "S"
-        ra_jog_dir = "E" if dRA.deg > 0 else "W"
+        dec_jog_dir = "N" if dDec.to_value("degree") > 0 else "S"
+        ra_jog_dir = "E" if dRA.to_value("degree") > 0 else "W"
         script = load_script("jog_telescope.js",dRA=dRA.to_value("arcmin"),dDec=dDec.to_value("arcmin"),ra_dir=ra_jog_dir,dec_dir=dec_jog_dir)
         self.conn.send(script)
         resp = self.conn.parse_response()

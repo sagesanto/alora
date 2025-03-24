@@ -1,7 +1,7 @@
 # Sage Santomenna 2024
 # utilities for observing. many of these are poorly written - it's mostly just a collection of functions that i've found useful in the past.
 
-import math
+import math, time
 from astral import sun
 from astral import LocationInfo
 
@@ -93,6 +93,12 @@ def dateToSidereal(dt: datetime, current_sidereal_time):
     # st = st.wrap_at(360 * u.deg)
     return st
 
+
+def wait_until(dt):
+    now = datetime.now(dtUTC)
+    nsecs = (dt - now).total_seconds()
+    print(f"waiting for {nsecs} s.")
+    time.sleep(nsecs)
 
 # def toDecimal(angle: Angle):
 #     """!

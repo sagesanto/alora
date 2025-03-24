@@ -76,22 +76,25 @@ class Observatory:
         except Exception as e:
             raise AloraError(f"Couldn't get watchdog status when checking whether it was safe to open the dome: {e}") from e
 
-    def slew(self, coord:SkyCoord, closed_loop=True,closed_exptime=2, epoch="J2000"):
+    def slew(self, coord:SkyCoord, closed_loop=True,closed_exptime=2, max_iters=4,epoch="J2000"):
         if epoch not in ["J2000","apparent"]:
             raise ValueError(f"Invalid epoch: {epoch}. Valid values are 'J2000' and 'apparent'.")
         if epoch == "J2000":
             # need to convert to apparent for skyx
             coord = J2000_to_apparent(coord)
         self.write_out(f"Slewing to {coord}")
-        self.telescope.slew(coord,closed_loop=closed_loop,closed_exptime=closed_exptime)
+        self.telescope.slew(coord,closed_loop=False,closed_exptime=closed_exptime)
         if closed_loop:
             closed_path = config["CLOSED_LOOP_OUTDIR"]
             offset = None
-            while offset is None or offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
+            niters = 0
+            while offset is None or offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin and niters < max_iters:
+                niters += 1
                 self.telescope.track_sidereal()
-                self.write_out("Giving telescope two seconds to start tracking...")
-                time.sleep(2) # give it some time to start tracking
-                success, fnames, status = self.camera.take_dataset(1,closed_exptime,"CLEAR",closed_path)
+                self.write_out("Giving telescope some time to start tracking...")
+                self.camera.take_dataset(5,0.1,"L","/tmp")
+                time.sleep(5) # give it some time to start tracking
+                success, fnames, status = self.camera.take_dataset(1,closed_exptime,"L",closed_path)
                 im = fnames[0]
                 status, job_id = self.plate_solver.solve(im,synchronous=True)
                 if not status:
@@ -109,5 +112,6 @@ class Observatory:
                 if offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
                     self.write_out(f"Offset is {offset}. Doing another slew loop.")
                     self.telescope.jog((coord.ra-actual_pos.ra)*np.cos(coord.dec.rad),coord.dec-actual_pos.dec)
-
+        if niters == max_iters and offset > config["CLOSED_LOOP_TOLERANCE"]*u.arcmin:
+            raise ChildProcessError("Max closed-loop iterations reached without success.")
     # def queue_observation():

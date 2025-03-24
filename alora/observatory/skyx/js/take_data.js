@@ -48,3 +48,5 @@ try{
 	out = "SkyX Camera Error during exposure: " + e;
 	throw 'c';
 }
+
+out = cam.ExposureStatus + " success"

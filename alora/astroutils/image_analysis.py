@@ -8,6 +8,7 @@ import argparse
 import glob
 import numpy as np
 from astropy.io import fits
+from astropy.wcs import WCS
 from photutils.segmentation import deblend_sources
 from astropy.convolution import Gaussian2DKernel, convolve
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -26,6 +27,16 @@ PRECISION = {
     32:np.float32,
     64:np.float64
 }
+
+def read_fits(path,frame=0,wcs=False):
+    with fits.open(path) as hdul:
+        data = hdul[frame].data + 0
+        header = hdul[frame].header
+        if wcs:
+            wcs = WCS(header)
+            return data, header, wcs
+    return data, header
+               
 
 def segmentation(data:np.ndarray, threshold:float, npixels:int, fwhm_pix=None):
     d = data

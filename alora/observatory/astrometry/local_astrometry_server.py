@@ -137,9 +137,9 @@ def solver(stop_event):
                 logger.info("Making source catalog...")
                 cat = make_source_cat(data)
                 if ".fits" in filepath:
-                    newpath = filepath.replace(".fits", "_cat.fits")
+                    newpath = filepath.replace(".fits", ".cat")
                 else:
-                    newpath = filepath.replace(".fit", "_cat.fits")
+                    newpath = filepath.replace(".fit", ".cat")
 
                 cat.write(newpath, format='fits', overwrite=True)
 

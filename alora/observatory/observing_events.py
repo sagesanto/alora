@@ -77,6 +77,8 @@ class Event(ABC):
     allowed_job_states = None
     allowed_dome_states = None
     args_template = []
+    is_cancelable=False
+    timeout=90
 
     def __init__(self,client, priority, args:dict):
         self.client = client
@@ -102,6 +104,10 @@ class Event(ABC):
         if self.allowed_dome_states is not None and observatory.dome_state not in self.allowed_dome_states:
             raise ValueError(f"Cannot execute {self.name} event when dome is in state {observatory.dome_state}. Allowed states: {self.allowed_dome_states}")
 
+    def make_next_event(self,event_cls,args=None):
+        args = args or {}
+        return event_cls(self.client,self.priority,args)
+
     @property
     def required_args(self):
         return [arg for arg in self.args_template if arg.required]
@@ -126,6 +132,13 @@ class Event(ABC):
     def _execute(self,observatory):
         pass
 
+class StateChangeEvent(Event):
+    timeout=-1
+    @abstractmethod
+    def _execute(self,observatory):
+        pass
+
+
 # --------- UTILITY EVENTS ------------
 class Wait(Event):
     # DANGER
@@ -135,12 +148,20 @@ class Wait(Event):
     allowed_job_states = ["busy","free"]
     allowed_dome_states = None
     args_template = [Arg("duration","seconds",True,"The duration to wait.")]
+    timeout=None # very dangerous lol
+    is_cancelable = True
+
+    def __init__(self,client, priority, args:dict):
+        super().__init__(client,priority,args)
+        self.timeout = self.args["duration"]
 
     def _execute(self,observatory):
         time.sleep(self.args["duration"])
 
+
+
 # --------- STATE CHANGES -----------
-class Shutdown(Event):
+class Shutdown(StateChangeEvent):
     name = "Shutdown"
     allowed_job_states = ["busy","free"]
     allowed_dome_states = ["closed"]
@@ -149,7 +170,7 @@ class Shutdown(Event):
     def _execute(self,observatory):
         observatory.job_state = "shutdown"
 
-class Reactivate(Event):
+class Reactivate(StateChangeEvent):
     name = "Reactivate"
     allowed_job_states = ["shutdown"]
     allowed_dome_states = None
@@ -158,7 +179,7 @@ class Reactivate(Event):
     def _execute(self,observatory):
         observatory.job_state = "free"
 
-class Reserve(Event):
+class Reserve(StateChangeEvent):
     name = "Reserve"
     allowed_job_states = ["free"]
     allowed_dome_states = None
@@ -167,7 +188,7 @@ class Reserve(Event):
     def _execute(self,observatory):
         observatory.job_state = "busy"
 
-class Free(Event):
+class Free(StateChangeEvent):
     name = "Free"
     allowed_job_states = ["busy"]
     allowed_dome_states = None
@@ -176,6 +197,37 @@ class Free(Event):
     def _execute(self,observatory):
         observatory.job_state = "free"
 
+class MarkDomeClosed(StateChangeEvent):
+    name = "MarkDomeClosed"
+    allowed_job_states = ["busy","free"]
+    allowed_dome_states = ["open"]
+    args_template = []
+    timeout=-1
+
+    def _execute(self,observatory):
+        observatory.dome_state = "closed"
+
+class MarkDomeClosed(StateChangeEvent):
+    name = "MarkDomeClosed"
+    allowed_job_states = ["busy","free"]
+    allowed_dome_states = ["open"]
+    args_template = []
+    timeout=-1
+
+    def _execute(self,observatory):
+        observatory.dome_state = "closed"
+
+class MarkDomeOpen(StateChangeEvent):
+    name = "MarkDomeOpen"
+    allowed_job_states = ["busy","free"]
+    allowed_dome_states = ["closed"]
+    args_template = []
+    timeout=-1
+
+
+    def _execute(self,observatory):
+        observatory.dome_state = "open"
+
 # --------- DOME/OBS EVENTS ------------
 
 class OpenSequence(Event):
@@ -183,25 +235,34 @@ class OpenSequence(Event):
     allowed_job_states = ["busy","free"]
     allowed_dome_states = ["closed"]
     args_template = [Arg("do_home","bool",False,"Whether to home the telescope after opening the dome.",default=False)]
-      
+    is_cancelable = True
+    timeout=120
+
     def _execute(self,observatory):
-        observatory.open(self.args["do_home"])
+        observatory.open(do_home=self.args["do_home"])
+        return self.make_next_event(MarkDomeOpen)
     
 class CloseSequence(Event):
     name = "CloseSequence"
     allowed_job_states = ["busy","free"]
     allowed_dome_states = ["open"]
     args_template = []
+    is_cancelable = True
+    timeout=120
 
     def _execute(self,observatory):
         observatory.close()
+        return self.make_next_event(MarkDomeOpen)
+
 
 class ForceOpenSequence(Event):
     name = "ForceOpenSequence"
     allowed_job_states = None
     allowed_dome_states = None
-    args_template = [Arg("do_home","bool",False,"Whether to home the telescope after opening the dome.")]
-    
+    args_template = [Arg("do_home","bool",False,"Whether to home the telescope after opening the dome.",default=False)]
+    is_cancelable = True
+    timeout=120
+
     def _execute(self,observatory):
         observatory.open(self.args["do_home"])
 
@@ -210,6 +271,8 @@ class ForceCloseSequence(Event):
     allowed_job_states = None
     allowed_dome_states = None
     args_template = []
+    is_cancelable = True
+    timeout=120
 
     def _execute(self,observatory):
         observatory.close()
@@ -220,6 +283,7 @@ class Home(Event):
     allowed_job_states = ["busy","free"]
     allowed_dome_states = ["open"]
     args_template = []
+    timeout=80
 
     def _execute(self,observatory):
         observatory.telescope.home()
@@ -229,7 +293,8 @@ class Park(Event):
     allowed_job_states = ["busy","free"]
     allowed_dome_states = ["open"]
     args_template = []
- 
+    timeout=90
+
     def _execute(self,observatory):
         observatory.telescope.park()
 
@@ -242,6 +307,7 @@ class Slew(Event):
                 Arg("epoch", "str", False, "The epoch of the coordinates. Valid vals: 'J2000', 'apparent'", default="J2000"),
                 Arg("closed_loop","bool",False,"Whether to perform a closed-loop slew.",default=True),
                 QArg("closed_exptime","second",False,"The exposure time for the closed-loop slew. Only used if closed_loop is True.",default=2*u.second)]
-    
+    timeout=120
+
     def _execute(self,observatory):
-        observatory.slew(SkyCoord(ra=self.args["ra"],dec=self.args["dec"]),closed_loop=self.args["closed_loop"],closed_exptime=self.args["closed_exptime"],epoch=self.args["epoch"])
+        observatory.slew(SkyCoord(ra=self.args["ra"],dec=self.args["dec"]),closed_loop=self.args["closed_loop"],closed_exptime=self.args["closed_exptime"].to_value("second"),epoch=self.args["epoch"])
