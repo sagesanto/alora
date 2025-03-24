@@ -4,10 +4,11 @@ import logging
 import keyring
 from pathlib import Path
 import logging.config
-from alora.config import logging_config_path
 from os.path import join, dirname, abspath, pardir
 import tomlkit
 from typing import List, Any
+
+from alora.config import logging_config_path
 
 def configure_logger(name, outfile_path=None):
     # first, check if the logger has already been configured

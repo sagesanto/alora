@@ -141,7 +141,7 @@
       "Units": "degree",
       "Hidden": "true"
 },
-"minutes_after_obs": {
+"downtime_after_obs": {
     "Key": "minutes_after_obs",
     "DefaultValue": 4,
     "Step": 0.5,

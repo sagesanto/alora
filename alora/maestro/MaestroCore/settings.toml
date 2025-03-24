@@ -1,0 +1,16 @@
+ephemTimeout = 120
+ephemStartDelayHrs = 0
+ephemInterval = 2
+ephemFormat = 0
+ephemsObsCode = "654"
+ephemsSavePath = ""
+candidateDbPath = "C:/Users/chell/PycharmProjects/alora/alora/maestro/files/candidate_database_test.db"
+databaseWaitTimeMinutes = 15
+scheduleStartTimeSecs = 1740708000
+scheduleEndTimeSecs = 1740747000
+scheduleSaveDir = "C:/Users/chell/PycharmProjects/alora/alora/maestro/files/out"
+showAllCandidates = true
+schedulerSaveEphems = false
+autoSetScheduleTimes = true
+schedulerRuns = 1
+temperature = 0

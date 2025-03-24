@@ -34,12 +34,11 @@ MAESTRO_DIR = abspath(join(dirname(__file__), os.path.pardir))
 
 
 from alora.config.utils import Config
+maestro_settings = Config(join(MAESTRO_DIR,"files","configs","in_maestro_settings.toml"))
 
-def get_candidate_database_path():
-    settings_path = join(MAESTRO_DIR, "MaestroCore","settings.txt")
-    with open(settings_path, "r") as settingsFile:
-        settings = json.load(settingsFile)
-    return settings["candidateDbPath"][0]
+
+def get_candidate_db_path():
+    return maestro_settings["candidateDbPath"]
 
 def generate_candidate_class(config_name,config_constructors,config_serializers,config_schema,base_candidate_class):
     class ModuleCandidate(base_candidate_class):
@@ -78,16 +77,6 @@ class LoggerFilter(logging.Filter):
         return record.levelno in [logging.INFO, logging.DEBUG, logging.WARNING]
 
 
-class ScheduleError(Exception):
-    """!Exception raised for user-facing errors in scheduling
-    @param message: explanation of the error
-    """
-
-    def __init__(self, message="No candidates are visible tonight"):
-        self.message = message
-        super().__init__(self.message)
-
-
 class TypeConfiguration(metaclass=ABCMeta):
     """!
     The TypeConfiguration class is a class subclassed by each Config module. Must be constructed and returned by the
@@ -96,7 +85,7 @@ class TypeConfiguration(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, scorer: astroplan.Scorer, maxMinutesWithoutFocus=60, numObs=1,
-                 minMinutesBetweenObs=None):
+                 minMinutesBetweenObs=None, downtimeMinutesAfterObs=0):
         """!
 
         @param scorer:
@@ -108,6 +97,7 @@ class TypeConfiguration(metaclass=ABCMeta):
         self.maxMinutesWithoutFocus = maxMinutesWithoutFocus  #
         self.numObs = numObs
         self.minMinutesBetweenObs = minMinutesBetweenObs  #
+        self.downtimeMinutesAfterObs = downtimeMinutesAfterObs * u.minute
 
     @abstractmethod
     def generateSchedulerLine(self, row, targetName, candidateDict, spath):
@@ -173,84 +163,6 @@ def jd_to_dt(hjd):
 def dt_to_jd(dt):
     return Time(dt).jd
 
-class AutoFocus:
-    def __init__(self, desiredStartTime):
-        """!
-        Create an AutoFocus line for the scheduler
-        @param desiredStartTime:
-        """
-        self.startTime = ensureDatetime(desiredStartTime)
-        self.endTime = self.startTime + timedelta(minutes=5)
-
-    def genLine(self):
-        return "\n"+genericScheduleLine(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, move=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
-        # return "\n" + timeToString(self.startTime, scheduler=True) + "|1|Focus|0|0|0|0|0|CLEAR|0|0|0|0|0|0|0|0|'Refocusing'\n"
-
-    @classmethod
-    def fromLine(cls, line):
-        time = line.split('|')[0]
-        time = stringToTime(time)
-        return cls(time)
-
-SCHEDULE_SCHEMA_PATH = join(MAESTRO_DIR, dirname(__file__),"schedule_schema.json")
-
-with open(SCHEDULE_SCHEMA_PATH,"r") as f:
-    schedule_schema = json.loads(f.read())
-
-def scheduleHeader():
-    """!
-    Return the (static) header for the scheduler line
-    """
-    return "|".join(list(schedule_schema.keys()))
-    # return "DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|Offset|CandidateID|ROIHeight|ROIWidth|ROIStartX|ROIStartY|BinningSize|Description"
-
-def fill_schedule_line(arg_dict:dict):
-    """Make a schedule line from a dictionary of field:value pairs, filling in default values for missing ones (where possible)
-
-    :param arg_dict: dictionary that specifies `field`:`value`, where `field` exactly matches a key in the schedule schema. If a `field`'s `value` is `None`, it will be replaced with the default `value` for that `field`, if one exists. If no default `value` exists for a `field` and its `value` is not provided, an error will be raised 
-    :type arg_dict: _type_
-    :raises ScheduleError: raised if `field`s are provided that do not match the schedule schema
-    :raises ScheduleError: raised if `arg_dict`'s keys is missing fields that have no default value specified in the schedule schema
-    :rtype: str
-    """
-
-    # make blank line
-    line_dict = {k:schedule_schema[k].get("default") for k in schedule_schema.keys()}
-    
-    bad_keys = []
-    # copy over provided info
-    for k,v in arg_dict.items():
-        if k not in line_dict.keys():
-            bad_keys.append(k)
-            continue
-        if arg_dict[k] is not None:
-            line_dict[k]=v
-    if bad_keys:
-        raise ScheduleError(f"Requested schedule line contained illegal keys {bad_keys}. To allow new keys in the schedule, modify {SCHEDULE_SCHEMA_PATH}")
-    
-    missing_keys = []
-    # fill in with unfilled slots with defaults
-    for k,v in line_dict.items():
-        if v is None:
-            missing_keys.append(k)
-    if missing_keys:
-        raise ScheduleError(f"Tried to make schedule line but no value provided for field(s) {missing_keys} in args {arg_dict}. To allow field(s) to be blank, add a 'default' key to the field in {SCHEDULE_SCHEMA_PATH}.")
-    
-    line_vals = [str(line_dict[k]) for k in schedule_schema.keys()]  # double check that our keys are in the correct order
-
-    return "|".join(line_vals)
-
-
-def findCenterTime(startTime: datetime, duration: timedelta):
-    """!
-    Find the nearest ten minute interval to the center of the time window {start, start+duration}
-    @param startTime: datetime object representing the start of the window
-    @param duration: timedelta representing the length of the window
-    @return: datetime representing the center of the window, rounded to the nearest ten minutes
-    """
-    center = startTime + (duration / 2)
-    return roundToTenMinutes(center)
-
 
 def angleToDMSString(angle, format="colonSep"):
     """!
@@ -285,57 +197,6 @@ def angleToHMSString(angle, format="colonSep"):
         return f"{sign}{hours:02d}:{minutes:02d}:{seconds:05.2f}"
     if format == "hmsdms":
         return f"{sign}{hours:02d}h{minutes:02d}m{seconds:05.2f}s"
-
-
-def genericScheduleLine(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, move=None, bin2fits=None,
-                        guiding=None, offset=None, ROI_height=None,ROI_width=None,ROI_start_x=None, ROI_start_y=None, binning_size=None, CandidateID=None):
-    """!
-    Generate a generic schedule line. If optional arguments are left as `None`, they will be set to the default value for that field
-    @param RA: right ascension of the target, as Angle or in degrees
-    @type RA: Angle|float|str
-    @param filterName: name of filterwheel filter to use
-    @param startDt: datetime at start of observation
-    @param name: name of candidate as it should appear in the schedule
-    @param description: description for schedule
-    @param exposureTime: Seconds per exposure.
-    @type exposureTime: float|int|str
-    @param exposures: Number of exposures
-    @type exposures: int|str
-    @param move: should the telescope move from its previous location to this one before observing?
-    @type move: bool
-    @param bin2fits: should the telescope convert binary files to fits files
-    @type bin2fits: bool
-    @param guiding: should the telescope guide during this observation?
-    @type guiding: bool
-    @return: line to insert into schedule text file
-    @rtype: str
-    """
-    for arg in [move,bin2fits,guiding,offset]:
-        if isinstance(arg,bool):
-            arg = "1" if arg else "0"
-
-    line_dict = {}
-    line_dict["DateTime"] = timeToString(startDt, scheduler=True)
-    line_dict["Occupied"] = "1"
-    line_dict["Target"] = name
-    line_dict["Move"] = "1" if move else "0"
-    line_dict["RA"] = str(ensureFloat(RA))
-    line_dict["Dec"] = str(ensureFloat(Dec))
-    line_dict["ExposureTime"] = str(exposureTime)
-    line_dict["#Exposure"] = str(exposures)
-    line_dict["Filter"] = filterName
-    line_dict["Bin2Fits"] = "1" if bin2fits else "0"
-    line_dict["Guiding"] = "1" if guiding else "0"
-    line_dict["Offset"] = "1" if offset else "0"
-    line_dict["CandidateID"] = str(CandidateID)
-    line_dict["ROIHeight"] = ROI_height
-    line_dict["ROIWidth"] = ROI_width
-    line_dict["ROIStartX"] = ROI_start_x
-    line_dict["ROIStartY"] = ROI_start_y
-    line_dict["BinningSize"] = binning_size
-    line_dict["Description"] = "\"" + description + "\""
-
-    return fill_schedule_line(line_dict)
 
 
 def inputToAngle(text, hms=True):
@@ -393,16 +254,12 @@ def stringToTime(timeString, logger=_logger, scheduler=False):
     """
     if isinstance(timeString, datetime):
         return timeString
+    if scheduler:
+        return datetime.strptime(timeString, "%Y-%m-%dT%H:%M:%S.%f")
     try:
         return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S")
     except:
-        try:
-            return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S.%f")
-        except Exception as e:
-            print(repr(e))
-            if logger:
-                logger.error(f"Unable to coerce time from {timeString} (type {type(timeString)}): {e}")
-    return None
+        return datetime.strptime(timeString, "%Y-%m-%d %H:%M:%S.%f")
 
 
 # def toDecimal(angle: Angle):

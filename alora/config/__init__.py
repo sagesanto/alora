@@ -10,7 +10,7 @@ horizon_box_path = join(dir, "horizon_box.json")
 logging_dir = abspath(join(dir,pardir,"logs"))
 os.makedirs(logging_dir,exist_ok=True)
 
-maestro_cfg_dir = abspath(join(dir,pardir,"maestro","files","configs"))
+maestro_cfg_dir = abspath(join(dir,pardir,"maestro","files","configs","config.toml"))
 config_dirs = [dir, maestro_cfg_dir]
 
 # recursively search for dirs containing ".default" files

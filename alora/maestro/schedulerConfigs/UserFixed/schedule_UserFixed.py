@@ -11,13 +11,15 @@ try:
     sys.path.append(grandparentDir)
     from scheduleLib import genUtils, candidateDatabase
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from scheduleLib.schedule import generic_schedule_line
 
     sys.path.remove(grandparentDir)
 
 except ImportError:
     from scheduleLib import genUtils
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from scheduleLib.schedule import generic_schedule_line
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
 
@@ -25,14 +27,12 @@ uConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
 
 class User_Fixed_Config(TypeConfiguration):
-    def __init__(self, scorer, observer, maxMinutesWithoutFocus=30, numObs=1, minMinutesBetweenObs=0):
-        self.scorer = scorer
-        self.maxMinutesWithoutFocus = maxMinutesWithoutFocus  # max time, in minutes, that this object can be scheduled after the most recent focus loop
-        self.numObs = numObs
-        self.minMinutesBetweenObs = minMinutesBetweenObs  # minimum time, in minutes, between the start times of multiple observations of the same object
+    def __init__(self, scorer, maxMinutesWithoutFocus=30, numObs=1, minMinutesBetweenObs=0, downtimeMinutesAfterObs=0):
+        super().__init__(scorer,maxMinutesWithoutFocus, numObs, minMinutesBetweenObs, downtimeMinutesAfterObs)
         self.timeResolution = None
         self.candidateDict = None
         self.designations = None
+        self.name="UserFixed"
 
     def selectCandidates(self, startTimeUTC: datetime, endTimeUTC: datetime, dbPath):
         dbConnection = CandidateDatabase(dbPath, "Night Obs Tool - UserFixed Agent")
@@ -44,7 +44,7 @@ class User_Fixed_Config(TypeConfiguration):
         c = candidateDict[targetName]
         start = stringToTime(row["Start Time (UTC)"])
         name = targetName + "_" + c.Filter + "_user_fixed"
-        return genericScheduleLine(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
+        return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
                                    "{}: {}s by {}, {}".format(targetName, c.ExposureTime,
                                                               c.NumExposures, c.Filter), c.ExposureTime, c.NumExposures,
                                    move=True,
@@ -64,7 +64,4 @@ class User_Fixed_Config(TypeConfiguration):
         return scoreLine
 
 
-def getConfig(observer):
-    # returns a TypeConfiguration object for targets of type "UserFixed"
-    # this config will only apply to candidates with CandidateType "UserFixed"
-    return "UserFixed", User_Fixed_Config(None, observer, maxMinutesWithoutFocus=uConfig["max_minutes_without_focus"])
+scheduling_config = User_Fixed_Config(None, maxMinutesWithoutFocus=uConfig["max_minutes_without_focus"],downtimeMinutesAfterObs=uConfig["downtime_after_obs"])

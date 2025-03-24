@@ -11,7 +11,8 @@ def PATH_TO(fname:str): return join(MODULE_PATH,fname)
 try:
     sys.path.append(MODULE_PATH)
     from scheduleLib.candidateDatabase import Candidate
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from scheduleLib.schedule import generic_schedule_line
     import scheduleLib.genUtils as genUtils
 
     genConfig = genUtils.Config(join(MODULE_PATH, "files", "configs", "config.toml"))
@@ -19,13 +20,14 @@ try:
 
 except ImportError:
     from scheduleLib.candidateDatabase import Candidate
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from scheduleLib.schedule import generic_schedule_line
     import scheduleLib.genUtils as genUtils
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
-minutesAfterObs = aConfig["minutes_after_obs"]
+minutesAfterObs = aConfig["downtime_after_obs"]
 
 MINUTES_BETWEEN_DATASETS = aConfig["minutes_between_datasets"]
 INDIVIDUAL_DATASET_EXPTIME = aConfig["individual_dataset_exptime"]
@@ -37,14 +39,12 @@ def findExposure(magnitude, str=True):
 
 
 class AstrophotographyConfig(TypeConfiguration):
-    def __init__(self, scorer, observer, maxMinutesWithoutFocus=30, numObs=1, minMinutesBetweenObs=0):
-        self.scorer = scorer
-        self.maxMinutesWithoutFocus = maxMinutesWithoutFocus  # max time, in minutes, that this object can be scheduled after the most recent focus loop
-        self.numObs = numObs
-        self.minMinutesBetweenObs = minMinutesBetweenObs  # minimum time, in minutes, between the start times of multiple observations of the same object
+    def __init__(self, scorer, maxMinutesWithoutFocus=30, numObs=1, minMinutesBetweenObs=0,downtimeMinutesAfterObs=0):
+        super().__init__(scorer,maxMinutesWithoutFocus, numObs, minMinutesBetweenObs, downtimeMinutesAfterObs)
         self.timeResolution = None
         self.candidateDict = None
         self.designations = None
+        self.name = "Astrophotography"
 
     def selectCandidates(self, startTimeUTC: datetime, endTimeUTC: datetime, dbPath):
         candidates = Candidate.dfToCandidates(pd.read_csv(PATH_TO(join("schedulerConfigs","Astrophotography","observable.csv"))))
@@ -68,7 +68,7 @@ class AstrophotographyConfig(TypeConfiguration):
         move = 1  # we want the first one to have the telescope move and the other ones to stay still
         for filt, time in zip(["g", "i", "r"], [firstStartDt, secondStartDt, thirdStartDt]):
             name = targetName + "_" + filt + "_aphot"
-            lines.append(genericScheduleLine(c.RA, c.Dec, filt, time, name.replace(" ", "_"),
+            lines.append(generic_schedule_line(c.RA, c.Dec, filt, time, name.replace(" ", "_"),
                                              "{}: {}s by {}, {}".format(targetName, INDIVIDUAL_DATASET_EXPTIME,
                                                                         INDIVIDUAL_DATASET_NUMEXP, filt), INDIVIDUAL_DATASET_EXPTIME, INDIVIDUAL_DATASET_NUMEXP, move=bool(move),
                                              guiding=True))
@@ -89,13 +89,4 @@ class AstrophotographyConfig(TypeConfiguration):
         return scoreLine
 
 
-def getConfig(observer):
-    # returns a TypeConfiguration object for targets of type "Astrophotography"
-    # this config will only apply to candidates with CandidateType "Astrophotography"
-    return "Astrophotography", AstrophotographyConfig(None, observer, maxMinutesWithoutFocus=aConfig["max_minutes_without_focus"],numObs=aConfig["num_obs"],minMinutesBetweenObs=aConfig["min_minutes_between_obs"])
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("astroRes.csv")
-    print(df)
-    print(df.columns)
+scheduling_config = AstrophotographyConfig(None, maxMinutesWithoutFocus=aConfig["max_minutes_without_focus"],numObs=aConfig["num_obs"],minMinutesBetweenObs=aConfig["min_minutes_between_obs"],downtimeMinutesAfterObs=aConfig["downtime_after_obs"])

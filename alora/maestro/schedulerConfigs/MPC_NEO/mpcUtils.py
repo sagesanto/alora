@@ -23,6 +23,8 @@ import asyncio
 import matplotlib.pyplot as plt
 from numpy import sqrt
 
+from alora.maestro.scheduleLib import schedule
+
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(grandparentDir)
@@ -204,7 +206,7 @@ def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt, cen
     line_dict["BinningSize"] = binning
     line_dict["Description"] = "\""+ lineAtObs[-1] + "\""
 
-    line = genUtils.fill_schedule_line(line_dict)
+    line = schedule.fill_schedule_line(line_dict)
 
     if spath is not None:
         ephemObj.write(spath, logger, filename=c.CandidateName+".txt", scheduler_format=True, format_only=True)
@@ -228,7 +230,7 @@ async def getCometList(asyncHelper):
 # https://cheatography.com/brianallan/cheat-sheets/python-f-strings-number-formatting/
 def _formatEphem(ephems, desig,move=1,bin2fits=0,guiding=1, offset=0):
     # Internal: take an object in the form returned from self.mpc.get_ephemeris() and convert each line to the scheduler format, before returning it in a dictionary of {startDt : line}
-    ephemDict = {None: genUtils.scheduleHeader()}
+    ephemDict = {None: schedule.scheduleHeader()}
     if ephems is None:
         return None
     for i in ephems:

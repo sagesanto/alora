@@ -12,24 +12,19 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
+from alora.config.utils import Config
+from os.path import join, pardir, dirname, abspath
+MODULE_PATH = abspath(join(dirname(__file__), pardir,pardir,pardir))
+
+cfg = Config(join(MODULE_PATH, "files", "configs", "config.toml"))
 
 def get_database_path():
-    settings_path = os.path.join(module_dir, "../../MaestroCore/settings.txt")
-    with open(settings_path, "r") as settingsFile:
-        settings = json.load(settingsFile)
-    return settings["candidateDbPath"][0]
+    return cfg["candidateDbPath"]
 
 log_dir = os.path.join(module_dir, "logs")
 os.makedirs(log_dir, exist_ok=True)
 
 dateFormat = '%m/%d/%Y %H:%M:%S'
-# fileFormatter = logging.Formatter(fmt='%(asctime)s %(levelname)-2s | %(message)s', datefmt=dateFormat)
-# fileHandler = logging.FileHandler(os.path.join(log_dir, "db.log"))
-# fileHandler.setFormatter(fileFormatter)
-# fileHandler.setLevel(logging.INFO)
-# logger = logging.getLogger(__name__)
-# logger.addHandler(fileHandler)
-# logger.setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -75,10 +70,6 @@ def renewDbSession():
     dbSession = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine, ))
     logger.info("Renewed db session")
 
-
-# dbPath = get_database_path()
-# print("USING TEST DATABASE PATH!!!!!!")
-# dbPath = os.path.join(module_dir, "../../files/misc_and_records/obsLoggerTest/candidate_database_20240113.db")
 dbPath = get_database_path()
 SQLALCHEMY_DATABASE_URL = f'sqlite:///{dbPath}'
 

@@ -1,0 +1,23 @@
+{    
+    "HEAVY_LOGGING": {
+        "DefaultValue": false,
+        "ValDisplayType": "bool",
+        "Description": "Whether or not to do an intensive amount of logging of web requests. This should basically always be false",
+        "Units": "seconds",
+        "Hidden": true
+    },
+    "MAX_SIMULTANEOUS_REQUESTS": {
+        "DefaultValue": 10,
+        "Step": 5,
+        "ValDisplayType": "int",
+        "Description": "Maximum allowed simultaneous web requests. Turning this up increases the speed of web I/O operations at the risk of getting rate-limited.",
+        "Units": "requests"
+    },
+    "ASYNC_REQUEST_DELAY_S": {
+        "DefaultValue": 0.5,
+        "Step": 0.1,
+        "ValDisplayType": "float",
+        "Description": "Time delay between successive batches of requests. Turning this down increases the speed of web I/O operations at the risk of getting rate-limited.",
+        "Units": "seconds"
+    }
+}

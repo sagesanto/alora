@@ -1,0 +1,18 @@
+# settings that are directly editable in maestro
+
+ephemTimeout = 120
+ephemStartDelayHrs = 0
+ephemInterval = 2
+ephemFormat = 0
+ephemsObsCode = "654"
+ephemsSavePath = ""
+candidateDbPath = ""
+databaseWaitTimeMinutes = 15
+scheduleStartTimeSecs = 0
+scheduleEndTimeSecs = 0
+scheduleSaveDir = ""
+showAllCandidates = true
+schedulerSaveEphems = false
+autoSetScheduleTimes = true
+schedulerRuns = 1
+temperature = 0

@@ -1,5 +1,7 @@
+import os, sys
 import argparse
-import os, sys, fileinput, pytz
+import json
+from os.path import join, dirname
 from datetime import datetime, time, timedelta
 from dateutil.relativedelta import relativedelta
 import astropy
@@ -9,47 +11,62 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from astropy import units as u
 from astral.sun import sun
-from astral.sun import sun
-from astral import LocationInfo, zoneinfo
 from astral import LocationInfo
 from datetime import datetime, timezone, timedelta
-from datetime import datetime, timezone, timedelta
-from astropy import time, units as u
 from astropy import time, units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 
+from pytz import UTC 
+
 from scheduleLib import genUtils
+from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+from scheduleLib.genUtils import stringToTime, timeToString, ensureAngle, ensureDatetime, ensureFloat, roundToTenMinutes, get_candidate_db_path, MAESTRO_DIR
+from alora.config import observatory_location
+
 
 MINUTES_BETWEEN_OBS = 3
 
-TMO = LocationInfo(name='TMO', region='CA, USA', timezone='UTC', latitude=34.36, longitude=-117.63)
+from alora.config.utils import Config
+from scheduleLib.module_loader import ModuleManager
 
-HEADER = genUtils.scheduleHeader().split("|")
+cfg = Config(join(MAESTRO_DIR,"files","configs","config.toml"))
+
+
+class ScheduleError(Exception):
+    """!Exception raised for user-facing errors in scheduling
+    @param message: explanation of the error
+    """
+    def __init__(self, message="No candidates are visible tonight"):
+        self.message = message
+        super().__init__(self.message)
 
 class Observation:
     # hell on earth, preferred method is fromLine
     def __init__(self, startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA,
-                 dDec, guiding, description):  # etc
+                 dDec, guiding, description, candidate_id):  # etc
         self.startTime, self.targetName, self.RA, self.Dec, self.exposureTime, self.numExposures, self.duration, self.filter, self.ephemTime, self.dRA, self.dDec, self.guiding, self.description = startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA, dDec, guiding, description
         self.endTime = self.startTime + relativedelta(seconds=float(self.duration))
         self.isMPC_NEO = "MPC NEO" in self.description
         if self.isMPC_NEO:
             self.ephemTime = processEphemTime(self.ephemTime,
                                               self.startTime + relativedelta(seconds=float(self.duration) / 2))
+        self.candidate_id = candidate_id
+        self.candidate=None
+        self.candidate_config = None
 
     @classmethod
-    def fromLine(cls, line):  # this is bad but whatever
+    def fromLine(cls, line, header):  # this is bad but whatever
 #       DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|CandidateID|Description
         # need to rework this to split based on keywords, not just on the number of pipes - headers change over time, want to be able to process schedules from any time
         split = line.split('|')
-        if len(split) > len(HEADER):
-            raise Exception(f"Schedule line ({split}) has too many attributes for its header {HEADER}!")
+        if len(split) > len(header):
+            raise Exception(f"Schedule line ({split}) has too many attributes for its header {header}!")
         description = split.pop()
         # print("Description: ", description)
-        split += [None] * (len(HEADER) - 1 - len(split))
+        split += [None] * (len(header) - 1 - len(split))
         split.append(description)
-        d = {HEADER[i]: split[i] for i in range(len(HEADER))}
-        startTime = stringToTime(d["DateTime"])
+        d = {header[i]: split[i] for i in range(len(header))}
+        startTime = stringToTime(d["DateTime"],scheduler=True).replace(tzinfo=UTC)
         occupied = d["Occupied"]  # probably always 1
         targetName = d["Target"]
         move = d["Move"]  # probably always 1
@@ -60,6 +77,11 @@ class Observation:
         duration = float(exposureTime) * float(numExposures)  # seconds
         filter = d["Filter"]
         guiding = d["Guiding"]
+        candidate_id = d.get("CandidateID")
+        if candidate_id == "None":
+            candidate_id = None
+        if candidate_id is not None:
+            candidate_id = int(candidate_id)
         # candidate_ID = split[12]
         descSplit = description.split(" ")
         if "MPC" in description:
@@ -69,12 +91,12 @@ class Observation:
         else:
             ephemTime = dRA = dDec = None
         return cls(startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA,
-                    dDec,  guiding, description)
+                    dDec,  guiding, description,candidate_id)
 
     # this currently is not up to date with the new format of the schedule header - 1/18/24
     # generate a Scheduler.txt line
     def genLine(self, num):  # num is the number (1-index) of times this object has been added to the schedule
-        line = timeToString(self.startTime)
+        line = timeToString(self.startTime,scheduler=True)
         attr = ["1", self.targetName + "_" + str(num), "1", self.RA, self.Dec, self.exposureTime, self.numExposures,
                 self.filter, self.description]
         for attribute in attr:
@@ -95,33 +117,156 @@ class Target:
 
 class AutoFocus:
     def __init__(self, desiredStartTime):
-        self.startTime = stringToTime(desiredStartTime) if isinstance(desiredStartTime,
-                                                                      str) else desiredStartTime
-        self.endTime = self.startTime + relativedelta(minutes=5)
+        """!
+        Create an AutoFocus line for the scheduler
+        @param desiredStartTime:
+        """
+        self.startTime = ensureDatetime(desiredStartTime)
+        self.endTime = self.startTime + timedelta(minutes=cfg["focus_loop_duration"]/60)
+
+    def genLine(self):
+        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, move=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
 
     @classmethod
     def fromLine(cls, line):
         time = line.split('|')[0]
-        time = stringToTime(time)
+        time = stringToTime(time,scheduler=True).replace(tzinfo=UTC)
         return cls(time)
+    
 
-    # generate a line to put into the scheduler
-    def genLine(self):
-        return timeToString(self.startTime) + "|1|Focus|0|0|0|0|0|CLEAR|'Refocusing'"
+SCHEDULE_SCHEMA_PATH = join(MAESTRO_DIR, dirname(__file__),"schedule_schema.json")
+
+with open(SCHEDULE_SCHEMA_PATH,"r") as f:
+    schedule_schema = json.loads(f.read())
+
+def scheduleHeader():
+    """!
+    Return the (static) header for the scheduler line
+    """
+    return "|".join(list(schedule_schema.keys()))
+    # return "DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|Offset|CandidateID|ROIHeight|ROIWidth|ROIStartX|ROIStartY|BinningSize|Description"
+
+def fill_schedule_line(arg_dict:dict):
+    """Make a schedule line from a dictionary of field:value pairs, filling in default values for missing ones (where possible)
+
+    :param arg_dict: dictionary that specifies `field`:`value`, where `field` exactly matches a key in the schedule schema. If a `field`'s `value` is `None`, it will be replaced with the default `value` for that `field`, if one exists. If no default `value` exists for a `field` and its `value` is not provided, an error will be raised 
+    :type arg_dict: _type_
+    :raises ScheduleError: raised if `field`s are provided that do not match the schedule schema
+    :raises ScheduleError: raised if `arg_dict`'s keys is missing fields that have no default value specified in the schedule schema
+    :rtype: str
+    """
+
+    # make blank line
+    line_dict = {k:schedule_schema[k].get("default") for k in schedule_schema.keys()}
+    
+    bad_keys = []
+    # copy over provided info
+    for k,v in arg_dict.items():
+        if k not in line_dict.keys():
+            bad_keys.append(k)
+            continue
+        if arg_dict[k] is not None:
+            line_dict[k]=v
+    if bad_keys:
+        raise ScheduleError(f"Requested schedule line contained illegal keys {bad_keys}. To allow new keys in the schedule, modify {SCHEDULE_SCHEMA_PATH}")
+    
+    missing_keys = []
+    # fill in with unfilled slots with defaults
+    for k,v in line_dict.items():
+        if v is None:
+            missing_keys.append(k)
+    if missing_keys:
+        raise ScheduleError(f"Tried to make schedule line but no value provided for field(s) {missing_keys} in args {arg_dict}. To allow field(s) to be blank, add a 'default' key to the field in {SCHEDULE_SCHEMA_PATH}.")
+    
+    line_vals = [str(line_dict[k]) for k in schedule_schema.keys()]  # double check that our keys are in the correct order
+
+    return "|".join(line_vals)
+
+
+
+def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, move=None, bin2fits=None,
+                        guiding=None, offset=None, ROI_height=None,ROI_width=None,ROI_start_x=None, ROI_start_y=None, binning_size=None, CandidateID=None):
+    """!
+    Generate a generic schedule line. If optional arguments are left as `None`, they will be set to the default value for that field
+    @param RA: right ascension of the target, as Angle or in degrees
+    @type RA: Angle|float|str
+    @param filterName: name of filterwheel filter to use
+    @param startDt: datetime at start of observation
+    @param name: name of candidate as it should appear in the schedule
+    @param description: description for schedule
+    @param exposureTime: Seconds per exposure.
+    @type exposureTime: float|int|str
+    @param exposures: Number of exposures
+    @type exposures: int|str
+    @param move: should the telescope move from its previous location to this one before observing?
+    @type move: bool
+    @param bin2fits: should the telescope convert binary files to fits files
+    @type bin2fits: bool
+    @param guiding: should the telescope guide during this observation?
+    @type guiding: bool
+    @return: line to insert into schedule text file
+    @rtype: str
+    """
+    for arg in [move,bin2fits,guiding,offset]:
+        if isinstance(arg,bool):
+            arg = "1" if arg else "0"
+
+    line_dict = {}
+    line_dict["DateTime"] = timeToString(startDt, scheduler=True)
+    line_dict["Occupied"] = "1"
+    line_dict["Target"] = name
+    line_dict["Move"] = "1" if move else "0"
+    line_dict["RA"] = str(ensureFloat(RA))
+    line_dict["Dec"] = str(ensureFloat(Dec))
+    line_dict["ExposureTime"] = str(exposureTime)
+    line_dict["#Exposure"] = str(exposures)
+    line_dict["Filter"] = filterName
+    line_dict["Bin2Fits"] = "1" if bin2fits else "0"
+    line_dict["Guiding"] = "1" if guiding else "0"
+    line_dict["Offset"] = "1" if offset else "0"
+    line_dict["CandidateID"] = str(CandidateID)
+    line_dict["ROIHeight"] = ROI_height
+    line_dict["ROIWidth"] = ROI_width
+    line_dict["ROIStartX"] = ROI_start_x
+    line_dict["ROIStartY"] = ROI_start_y
+    line_dict["BinningSize"] = binning_size
+    line_dict["Description"] = "\"" + description + "\""
+
+    return fill_schedule_line(line_dict)
+
+def findCenterTime(startTime: datetime, duration: timedelta):
+    """!
+    Find the nearest ten minute interval to the center of the time window {start, start+duration}
+    @param startTime: datetime object representing the start of the window
+    @param duration: timedelta representing the length of the window
+    @return: datetime representing the center of the window, rounded to the nearest ten minutes
+    """
+    center = startTime + (duration / 2)
+    return roundToTenMinutes(center)
 
 
 class Schedule:
     def __new__(cls, *args, **kwargs):
         return super(Schedule, cls).__new__(cls)
-
-    def __init__(self, tasks=[],
-                 targets={}):  # tasks are AutoFocus or Observation objects, targets is dict of target name to target object
+    
+    # tasks are AutoFocus or Observation objects, targets is dict of target name to target object
+    def __init__(self, header:list[str], tasks=None, targets=None):  
         self.tasks = []
-        self.targets = {}
+        self.modules = ModuleManager(write_out=genUtils.write_out).load_all_modules()
+        self.mod_cfgs = {k:v.scheduling_config for k,v in self.modules.items() if v}
+        input_tasks = tasks or []
+        self.targets = targets or {}
+        if input_tasks:
+            self.appendTasks(input_tasks)
+        self.header = header
+        self.candidate_db = CandidateDatabase(get_candidate_db_path(),"schedule_reader")
 
     def appendTask(self, task):
         if isinstance(task, Observation):
             name = task.targetName
+            if task.candidate_id is not None:
+                task.candidate = self.candidate_db.getCandidateByID(task.candidate_id)
+                task.candidate_config = self.mod_cfgs.get(task.candidate.CandidateType)
             if name not in self.targets.keys():
                 self.targets[name] = Target(name)
             self.targets[name].addObservation(task)  # make sure this actually works with scope n stuff
@@ -145,7 +290,7 @@ class Schedule:
         # add an autoFocus loop to the schedule
 
     def toTxt(self):
-        lines = "DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Description\n\n"
+        lines = f"{'|'.join(self.header)}\n\n"
         self.namesDict = {}  # map names of objects to the number of times theyve been observed
         for task in self.tasks:
             if isinstance(task, Observation):
@@ -181,16 +326,50 @@ class Schedule:
         for target in self.targets.values():
             summary = summary + "Target: " + target.name + ", " + str(len(target.observations)) + " observations:\n"
             for obs in target.observations:
-                summary = summary + "\t" + timeToString(obs.startTime) + ", " + str(obs.duration) + " second duration\n"
+                summary = summary + "\t" + timeToString(obs.startTime,scheduler=True) + ", " + str(obs.duration) + " second duration\n"
         focusTimes = []
         for task in self.tasks:
             if isinstance(task, AutoFocus):
                 focusTimes.append(task.startTime)
         summary += "Schedule has " + str(len(focusTimes)) + " AutoFocus loops:\n"
         for time in focusTimes:
-            summary = summary + "\t" + timeToString(time) + "\n"
+            summary = summary + "\t" + timeToString(time,scheduler=True) + "\n"
 
         return summary
+    
+    @classmethod
+    def read(cls,filename):
+        lines = []
+        tasks = []
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+        cleanedLines = [l.replace("\n", '') for l in lines if l != "\n" and l != " \n"]
+        header = cleanedLines.pop(0).split('|')
+        for line in cleanedLines:
+            if 'Refocusing' in line:
+                tasks.append(AutoFocus.fromLine(line))
+            else:  # assume it's an observation
+                tasks.append(Observation.fromLine(line,header))
+        schedule = Schedule(header=header)
+        schedule.appendTasks(tasks)
+        return schedule
+    
+    def check(self, testList=None, verbose=True):
+        print("Schedule Validation: (Note: line number does not count blank lines)")
+        if testList is None:
+            testList = tests
+        status = []
+        errors = 0
+        for test in testList:
+            status.append(test.run(self))
+        for state in status:
+            if state[1] != 0:
+                errors += 1
+                if verbose:
+                    print('\033[1;31m ' + state[0] + ' \033[0;0m', state[2].out())
+            elif verbose:
+                print('\033[1;32m ' + state[0] + ' \033[0;0m', "No Error!")
+        return errors
 
     # probably will want some helper functions
 
@@ -202,45 +381,18 @@ def processEphemTime(eTime, midTime):
     return midTime.replace(hour=int(h), minute=int(m), second=0)
 
 
-# convert an angle in decimal, given as a string, to a angle in hour minute second format
-def angleToHMS(angle):
-    h = float(angle) / 15
-    m = 60 * (h - int(h))
-    s = 60 * (m - int(m))
-    return time(hour=int(h), minute=int(m), second=int(s))
+# # take time as string from scheduler, return time object
+# def stringToTime(tstring):  # example input: 2022-12-26T05:25:00.000
+#     time = datetime.strptime(tstring, '%Y-%m-%dT%H:%M:%S.000')
+#     return time.replace(tzinfo=pytz.UTC)
 
 
-# take time as string from scheduler, return time object
-def stringToTime(tstring):  # example input: 2022-12-26T05:25:00.000
-    time = datetime.strptime(tstring, '%Y-%m-%dT%H:%M:%S.000')
-    return time.replace(tzinfo=pytz.UTC)
-
-
-def timeToString(time):
-    return datetime.strftime(time, '%Y-%m-%dT%H:%M:%S.000')
+# def timeToString(time):
+#     return datetime.strftime(time, '%Y-%m-%dT%H:%M:%S.000')
 
 
 def friendlyString(time):
     return datetime.strftime(time, '%m/%d %H:%M')
-
-
-# takes existing schedule file, returns schedule object
-def readSchedule(filename):
-    lines = []
-    tasks = []
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-    cleanedLines = [l.replace("\n", '') for l in lines if l != "\n" and l != " \n"]
-    for line in cleanedLines:
-        if 'DateTime' in line:  # ignore the template at the top
-            continue
-        if 'Refocusing' in line:
-            tasks.append(AutoFocus.fromLine(line))
-        else:  # assume it's an observation
-            tasks.append(Observation.fromLine(line))
-    schedule = Schedule()
-    schedule.appendTasks(tasks)
-    return schedule
 
 
 ######### ScheduleChecker  ##########
@@ -265,24 +417,6 @@ class Test:
         return self.name, status, error
 
 
-def checkSchedule(schedule, testList=None, verbose=True):
-    print("Schedule Validation: (Note: line number does not count blank lines)")
-    if testList is None:
-        testList = tests
-    status = []
-    errors = 0
-    for test in testList:
-        status.append(test.run(schedule))
-    for state in status:
-        if state[1] != 0:
-            errors += 1
-            if verbose:
-                print('\033[1;31m ' + state[0] + ' \033[0;0m', state[2].out())
-        elif verbose:
-            print('\033[1;32m ' + state[0] + ' \033[0;0m', "No Error!")
-    return errors
-
-
 ##### Schedule Tests #####
 
 
@@ -294,7 +428,7 @@ from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', category=AstropyWarning)
 debug = False  # won't be accurate when this is True, change before using!
 
-# dict of observation durations (seconds) to acceptable offsets (seconds)
+# dict of observation durations (seconds) to acceptable offset from centered-in-time (seconds) - for MPC
 obsTimeOffsets = {300: 30, 600: 120, 1200: 300, 1800: 600}
 
 
@@ -328,8 +462,8 @@ def chronoOrderErrorMaker(lineNum):
     return Error("Chronological Order Error", lineNum, message)
 
 
-def autoFocusErrorMaker(lineNum):
-    message = "AutoFocus loops are too far apart! Must occur no less than once per hour!"
+def autoFocusErrorMaker(lineNum, time_since, max_minutes_since):
+    message = f"AutoFocus loops are too far apart! Must refocus within {max_minutes_since} minutes of beginning this observation, but it has been {time_since} minutes since the last focus."
     return Error("AutoFocus Error", lineNum, message)
 
 
@@ -352,10 +486,9 @@ def scheduleOverlap(schedule):  # this is all bad
     return 0, noError()
 
 
-def checkSunrise(schedule, loc=TMO):
-    global debug
+def checkSunrise(schedule, loc=observatory_location):
     if debug:
-        sunriseUTC = stringToTime("2022-12-26T10:00:00.000")
+        sunriseUTC = stringToTime("2022-12-26T10:00:00.000",scheduler=True).replace(tzinfo=UTC)
     else:
         sunriseUTC = genUtils.get_sunrise_sunset()[0]
     end = len(schedule.tasks) - 1
@@ -385,12 +518,14 @@ def chronologicalOrder(schedule):
 
 
 def autoFocusTiming(schedule):
-    prevTime = schedule.tasks[0].startTime
+    prev_focus_time = schedule.tasks[0].startTime  
     for task in schedule.tasks:
         if isinstance(task, AutoFocus):
-            prevTime = task.startTime
-        elif abs(prevTime - task.startTime) > timedelta(hours=1):
-            return 1, autoFocusErrorMaker(schedule.lineNumber(task))
+            prev_focus_time = task.startTime
+        elif task.candidate_config is not None:
+            if task.startTime - prev_focus_time > timedelta(minutes=task.candidate_config.maxMinutesWithoutFocus):
+                return 1, autoFocusErrorMaker(schedule.lineNumber(task), task.startTime - prev_focus_time, task.candidate_config.maxMinutesWithoutFocus)
+            
     # now check to make sure that the remaining schedule is less that one hour
     # print(prevTime - schedule.tasks[-1].startTime)
 
@@ -462,11 +597,14 @@ def isBefore(task1, task2):
 
 
 def overlap(task1, task2):
-    start1, end1 = task1.startTime, (
-        task1.endTime + timedelta(minutes=MINUTES_BETWEEN_OBS) if isinstance(task1, Observation) else task1.endTime)
-    start2, end2 = task2.startTime, (
-        task2.endTime + timedelta(minutes=MINUTES_BETWEEN_OBS) if isinstance(task2, Observation) else task2.endTime)
-    return (start1 < end2 and end1 > start2) or (start2 < end1 and end2 > start1)  # is this right
+    minutes_btwn_obs_1 = task1.candidate_config.downtimeMinutesAfterObs if (isinstance(task1, Observation) and task1.candidate_config) else 0 * u.minute
+    minutes_btwn_obs_2 = task2.candidate_config.downtimeMinutesAfterObs if (isinstance(task2, Observation) and task2.candidate_config) else 0 * u.minute
+    start1, end1 = task1.startTime, task1.endTime
+    start2, end2 = task2.startTime, task2.endTime
+    overlaps =  (start1 < end2 and end1 > start2) or (start2 < end1 and end2 > start1)  # is this right
+    if overlaps:
+        print(f"Overlap erorr: task1 starts at {task1.startTime}, ends at {task1.endTime} and wants {minutes_btwn_obs_1} minutes between, task2 starts at {task2.startTime}, ends at {task2.endTime} and wants {minutes_btwn_obs_2} minutes between")
+    return overlaps
 
 
 # next test: RA/Dec Limits
@@ -483,8 +621,7 @@ tests = [overlapTest, sunriseTest, obsCenteredTest, chronOrderTest, autoFocusTes
 
 
 def runTestingSuite(schedule, verbose=True):
-    global tests
-    return checkSchedule(schedule, tests, verbose)
+    return schedule.check(tests, verbose)
 
 
 ##### Schedule Scoring #####
@@ -577,9 +714,9 @@ if __name__ == "__main__":
     debug = args.debug
     if debug:
         # make schedules
-        goodSchedule = readSchedule("libFiles/exampleGoodSchedule.txt")
+        goodSchedule = Schedule.read("libFiles/exampleGoodSchedule.txt")
         # good schedule should pass almost all tests - will fail the autofocus test and the overlap test (doesn't allow 3 minutes between obs)
-        badSchedule = readSchedule("libFiles/exampleBadSchedule.txt")
+        badSchedule = Schedule.read("libFiles/exampleBadSchedule.txt")
         # bad schedule should fail every test, as so:
         #   - Time Overlap Error: lines 1 and 2 should overlap
         #   - Sunrise Error: last observation happens too close to "sunrise"
@@ -589,13 +726,13 @@ if __name__ == "__main__":
         #   - RA/Dec Limits: line 15 is outside of the RA/Dec limits
         print("-" * 10)
         print(goodSchedule.summarize())
-        checkSchedule(goodSchedule, tests)
+        goodSchedule.check(tests)
         print("-" * 10)
         print(badSchedule.summarize())
-        checkSchedule(badSchedule, tests)
+        badSchedule.check(tests)
         print("-" * 10)
         print("\033[1;31m In debug mode so some inputs simulated! Turn off debug to see accurate results! \033[0;0m")
 
     else:
-        userSchedule = readSchedule(args.scheduleFile)
-        checkSchedule(userSchedule, tests)
+        userSchedule = Schedule.read(args.scheduleFile)
+        userSchedule.check(tests)

@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup  # to parse html files
 from numpy import sqrt
 from photometrics.mpc_neo_confirm import MPCNeoConfirm as mpcObj
 
+from alora.config import observatory_location
 from schedulerConfigs.MPC_NEO import mpcUtils
 
 # general fuckery
@@ -81,10 +82,7 @@ class TargetSelector:
         self.logger = logging.getLogger(__name__)
 
         # set location
-        self.observatory = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"],
-                                        timezone=genConfig["obs_timezone"],
-                                        latitude=genConfig["obs_lat"],
-                                        longitude=genConfig["obs_lon"])
+        self.observatory = observatory_location
         # find sunrise and sunset
         s = sun.sun(self.observatory.observer, date=datetime.now(timezone.utc), tzinfo=timezone.utc)
         self.sunriseUTC = s["sunrise"]
