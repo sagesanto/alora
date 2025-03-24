@@ -59,6 +59,9 @@ def _main():
     from scheduleLib.genUtils import inputToAngle, Config
     from scheduleLib.module_loader import ModuleManager
     from functools import partial
+    import faulthandler
+    
+    faulthandler.enable()
 
 
     # VAL_DISPLAY_TYPES = {
@@ -305,7 +308,9 @@ def _main():
                 if insert_at is not None and insert_at != from_index:
                     self.rearrangeSchedule(from_index, insert_at)
 
+
                 event.accept()  # ✅ Explicit acceptance
+
             else:
                 event.ignore()
 
@@ -317,6 +322,8 @@ def _main():
             return None
 
         def rearrangeSchedule(self, from_index, to_index):
+            print(from_index)
+            print(to_index)
             if from_index < 0 or from_index >= len(self.parent.scheduleDf):
                 return
             if to_index < 0 or to_index >= len(self.parent.scheduleDf):
@@ -324,30 +331,33 @@ def _main():
 
             # ✅ Get the row to move as a DataFrame instead of Series
             row = self.parent.scheduleDf.iloc[[from_index]].copy()
+            print("Possible Problem 1")
 
             # ✅ Remove the row from the original position
             self.parent.scheduleDf.drop(index=from_index, inplace=True)
+            print("Possible Problem 2")
             self.parent.scheduleDf.reset_index(drop=True, inplace=True)
-
+            print("Possible Problem 3")
             # ✅ Adjust the target index if needed
             if to_index > from_index:
                 to_index -= 1
-
+            print("Possible Problem 4")
             # ✅ Split the DataFrame at the target index and reinsert row
             upper = self.parent.scheduleDf.iloc[:to_index]
             lower = self.parent.scheduleDf.iloc[to_index:]
-
+            print("Possible Problem 5")
             # ✅ Use pd.concat() to reassemble DataFrame with the row inserted
             self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
-
+            print()
             # ✅ Refresh the UI after drop
             self.parent.displaySchedule()
-
+            print("Possible Problem 7")
             # ✅ Save updated schedule to CSV
             save_path = os.path.join(
                 self.parent.settings.query("scheduleSaveDir")[0],
                 "schedule.csv"
             )
+            print("Possible Problem 8")
             self.parent.scheduleDf.to_csv(save_path, index=False)
 
 
@@ -1115,17 +1125,17 @@ def _main():
                 self.statusbar.showMessage("Can't find saved scheduler CSV.")
                 logger.error("Can't find saved scheduler CSV.")
                 return
-
+            print(self.scheduleDf)
             # ✅ Step 1: Remove existing layout and widgets cleanly
             old_layout = self.schedule_display_container.layout()
             if old_layout:
-                self.schedule_display_container.setLayout(None)
+                # self.schedule_display_container.setWidget(QWidget())
                 while old_layout.count():
                     item = old_layout.takeAt(0)
                     if item:
                         widget = item.widget()
                         if widget:
-                            widget.setParent(None)
+                            # widget.setParent(None)
                             widget.deleteLater()
 
                         layout = item.layout()
@@ -1133,13 +1143,13 @@ def _main():
                             while layout.count():
                                 sub_item = layout.takeAt(0)
                                 if sub_item.widget():
-                                    sub_item.widget().setParent(None)
+                                    # sub_item.widget().setParent(None)
                                     sub_item.widget().deleteLater()
                             layout.deleteLater()
 
-                old_layout.deleteLater()
+                # old_layout.deleteLater()
                 QCoreApplication.processEvents()
-
+            print("Debugging")
             # ✅ Step 2: Create new DropWidget for drag-and-drop
             content = DropWidget(self)
 
@@ -1247,11 +1257,14 @@ def _main():
             updateButtonSizes()
 
             # ✅ Step 5: Assign new layout directly to container
-            c_layout = QVBoxLayout()
-            c_layout.setSpacing(0)  # ✅ Remove spacing between rows
-            c_layout.setContentsMargins(0, 0, 0, 0)  # ✅ Remove outer margins
-            c_layout.addWidget(content)
-            self.schedule_display_container.setLayout(c_layout)
+            if old_layout is None:
+                c_layout = QVBoxLayout()
+                c_layout.setSpacing(0)  # ✅ Remove spacing between rows
+                c_layout.setContentsMargins(0, 0, 0, 0)  # ✅ Remove outer margins
+                c_layout.addWidget(content)
+                self.schedule_display_container.setLayout(c_layout)
+            else:
+                old_layout.addWidget(content)
 
             # ✅ Step 6: Ensure resizing behavior
             t_content = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -1676,4 +1689,5 @@ def main():
     run_with_crash_writing("MaestroApp", _main)
 
 if __name__ == "__main__":
-    main()
+    # main()
+    _main()
