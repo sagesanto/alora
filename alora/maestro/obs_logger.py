@@ -6,7 +6,7 @@ from sqlite3 import DatabaseError
 from scheduleLib.genUtils import query_to_dict
 import scheduleLib.db.dbConfig as dbConfig
 from scheduleLib.db.db_models import Observation, CandidateModel
-from scheduleLib.sCoreCondensed import readSchedule, AutoFocus
+from alora.maestro.scheduleLib.schedule import Schedule, AutoFocus
 
 
 def process_metadata(metadata_db_path, start, end, candidate_name):
@@ -81,7 +81,7 @@ class ObsLogger:
         if metadata_db_path is None:
             metadata_db_path = os.path.join(os.path.dirname(schedule_path),"Metadata.db")
         obs_data = process_obs_log(obs_log_path)
-        schedule = readSchedule(schedule_path)
+        schedule = Schedule.read(schedule_path)
         obs_dicts = []
         # print("Obs Data: ", obs_data)
 

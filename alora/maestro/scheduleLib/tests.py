@@ -9,6 +9,7 @@ import astropy.units as u
 
 from candidateDatabase import Candidate, CandidateDatabase
 from genUtils import overlapping_time_windows, get_current_sidereal_time, find_transit_time
+from alora.config import observatory_location
 
 genConfig = ConfigParser()
 files_path = os.path.join(os.path.dirname(__file__),os.pardir,"files")
@@ -17,9 +18,7 @@ genConfig.read(os.path.join(files_path, "configs", "config.txt"))
 
 class TestGenUtils(unittest.TestCase):
     def setUp(self):
-        self.location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                        latitude=genConfig["obs_lat"],
-                        longitude=genConfig["obs_lon")]
+        self.location = observatory_location
 
     def test_overlapping_time_windows(self):
         # test 1: time windows that do overlap

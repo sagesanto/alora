@@ -1,6 +1,8 @@
 # Sage Santomenna 2023/2024
 
-import sys, os, traceback
+import sys, os
+import shutil
+import traceback
 from os.path import join, abspath, dirname
 
 sys.path.append(abspath(dirname(__file__)))
@@ -35,7 +37,7 @@ def _main():
     from PyQt6 import QtGui, QtCore
     from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
         QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, \
-              QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
+              QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
                 QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox, QScrollArea, QDialog, QDialogButtonBox
     from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel, QTimer, QMimeData, QDataStream, QByteArray, \
         QIODevice, QIODeviceBase, QEventLoop, QCoreApplication
@@ -309,6 +311,7 @@ def _main():
             self.set_ephemeris_icon(STATUS_IDLE)
             self.set_modules_icon(STATUS_IDLE)
             self.set_processes_icon(QtGui.QIcon(LOGO_PATH("system-monitor")))
+            self.set_settings_icon(QtGui.QIcon(LOGO_PATH("gear")))
             self.toggleRejectButton.setIcon(QtGui.QIcon(LOGO_PATH("cross")))
             self.removeToggleButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-circle-frame")))
             self.addCandidateButton.setIcon(QtGui.QIcon(LOGO_PATH("plus-circle-frame")))
@@ -320,7 +323,8 @@ def _main():
 
 
             # initialize custom things
-            self.settings = Settings(PATH_TO(join("MaestroCore","settings.txt")))
+            SETTINGS_PATH = PATH_TO(join("files","configs","in_maestro_settings.toml"))
+            self.settings = TOMLSettings(SETTINGS_PATH)
             self.processModel = ProcessModel(statusBar=self.statusBar())
             self.ephemListModel = FlexibleListModel()
             self.blacklistModel = FlexibleListModel()
@@ -386,8 +390,11 @@ def _main():
                 "str":self.add_str_cfg,
                 "bool":self.add_bool_cfg,
                 "longstr":self.add_longstr_cfg,
-                "choice":self.add_choice_cfg
+                "choice":self.add_choice_cfg,
+                "path":self.add_str_cfg
             }
+
+            self.write_settings_tab()
 
             # begin usage logging
             for i in self.__dict__.values():
@@ -402,7 +409,7 @@ def _main():
 
         def connect_db(self):
             try:
-                self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath")[0], "Maestro")
+                self.dbConnection = CandidateDatabase(self.settings.query("candidateDbPath"), "Maestro")
                 self.set_database_icon(STATUS_DONE)
                 return True
             except FileNotFoundError:
@@ -576,7 +583,115 @@ def _main():
             if return_box:
                 return msgBox
             msgBox.exec()
-        
+
+        def load_settings_into_layout(self,cfg_desc:dict,cfg:TOMLSettings,cfg_layout:QBoxLayout):
+            for k,v in cfg_desc.items():
+                if v.get("Hidden",False):
+                    continue
+                item_widget = QWidget()
+                item_layout = QVBoxLayout()
+                item_label = QLabel(k)
+                item_label.setFont(QtGui.QFont("Segoe UI", 14, weight=QtGui.QFont.Weight.Bold))
+                item_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                item_label.setWordWrap(True)
+                item_layout.addWidget(item_label)
+
+                item_description = QLabel(v["Description"])
+                item_description.setFont(QtGui.QFont("Segoe UI", 12, italic=True))
+                item_description.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                item_description.setWordWrap(True)
+                item_layout.addWidget(item_description)
+
+                edit_layout = QHBoxLayout()
+                edit_box = self.cfg_display_types[v["ValDisplayType"]](k,v,cfg)
+                edit_box.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+                edit_box.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+                edit_layout.addWidget(edit_box)
+                if v["Units"]:
+                    unit_label = QLabel(v["Units"])
+                    unit_label.setFont(QtGui.QFont("Segoe UI", 12))
+                    unit_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+                    edit_layout.addWidget(unit_label)
+                if v["ValDisplayType"] != "longstr":
+                    edit_layout.addSpacerItem(QSpacerItem(1,1,QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Minimum))
+
+                item_layout.addLayout(edit_layout)
+                item_widget.setLayout(item_layout)
+                cfg_layout.addWidget(item_widget)
+
+        def write_settings_tab(self):
+            self.config_scroll.setWidget(QWidget())
+            # w.deleteLater()
+            # print("deleted children")
+            content = QWidget()
+            clayout = QVBoxLayout()
+            clayout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            # add a little vertical space at the top
+            clayout.addSpacing(10)
+            title = QLabel("General Settings")
+            title.setFont(QtGui.QFont("Segoe UI", 20,weight=QtGui.QFont.Weight.Bold))  # ok so the rest of the app is probably in Sego UI but i like Segoe UI
+            title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            title.setWordWrap(True)
+            clayout.addWidget(title)
+            content.setLayout(clayout)
+
+            cfg_desc_path = PATH_TO(join("files","configs","config.schema"))
+            cfg_path = PATH_TO(join("files","configs","config.toml"))
+            try:
+                with open(cfg_desc_path,"r") as f:
+                    cfg_desc = json.load(f)
+                cfg = TOMLSettings(cfg_path)
+                cfg.loadSettings()
+
+                self.load_settings_into_layout(cfg_desc,cfg,clayout)
+                
+            except FileNotFoundError as e:
+                cfg_label = QLabel(f"No configuration file found.")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+            except Exception as e:
+                cfg_label = QLabel(f"Error loading configuration:")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+                err_label = QLabel(traceback.format_exc())
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                clayout.addWidget(err_label)
+
+            clayout.addSpacing(10)
+            title = QLabel("Async Web Client Settings")
+            title.setFont(QtGui.QFont("Segoe UI", 20,weight=QtGui.QFont.Weight.Bold))  # ok so the rest of the app is probably in Sego UI but i like Segoe UI
+            title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            title.setWordWrap(True)
+            clayout.addWidget(title)
+            content.setLayout(clayout)
+
+            cfg_desc_path = PATH_TO(join("files","configs","async_config.schema"))
+            cfg_path = PATH_TO(join("files","configs","async_config.toml"))
+            try:
+                with open(cfg_desc_path,"r") as f:
+                    cfg_desc = json.load(f)
+                cfg = TOMLSettings(cfg_path)
+                cfg.loadSettings()
+
+                self.load_settings_into_layout(cfg_desc,cfg,clayout)
+                
+            except FileNotFoundError as e:
+                cfg_label = QLabel(f"No configuration file found.")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+            except Exception as e:
+                cfg_label = QLabel(f"Error loading configuration:")
+                cfg_label.setFont(QtGui.QFont("Segoe UI", 14))
+                clayout.addWidget(cfg_label)
+                err_label = QLabel(traceback.format_exc())
+                err_label.setFont(QtGui.QFont("Segoe UI", 12))
+                clayout.addWidget(err_label)
+
+            # print("adding content to scroll")
+            self.config_scroll.setWidget(content)
+            # print("added")
+
+
         def write_default_module_settings(self,mod_dir):
             try:
                 if not os.path.exists(join(mod_dir,"cfg.schema")):
@@ -873,6 +988,8 @@ def _main():
         def set_processes_icon(self,img_path):
             self.tabWidget.setTabIcon(5,QtGui.QIcon(img_path))
 
+        def set_settings_icon(self,img_path):
+            self.tabWidget.setTabIcon(6,QtGui.QIcon(img_path))
 
         def updateTables(self, index):
             # tables = {self.candidatesTabIndex: self.candidateView}
@@ -882,7 +999,7 @@ def _main():
 
         # start the database update process
         def startDbUpdater(self):
-            if not os.path.exists(self.settings.query("candidateDbPath")[0]):
+            if not os.path.exists(self.settings.query("candidateDbPath")):
                 emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
                 self.warning_popup("No Database", emsg)
                 self.statusBar().showMessage(emsg,10000)
@@ -904,7 +1021,7 @@ def _main():
             self.databaseProcess.succeeded.connect(lambda: self.set_candidates_icon(STATUS_DONE))
             # TODO: make this work     
             self.databaseProcess.errorSignal.connect(lambda: self.set_candidates_icon(STATUS_ERROR))
-            self.databaseProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','database.py')), json.dumps(self.settings.asDict())])
+            self.databaseProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','database.py'))])
             self.set_candidates_icon(STATUS_BUSY)
 
 
@@ -954,7 +1071,7 @@ def _main():
             self.sched_error_occurred = val
 
         def runScheduler(self):
-            if not self.settings.query("scheduleSaveDir")[0]:
+            if not self.settings.query("scheduleSaveDir"):
                 self.warning_popup("No Save Directory Selected", "Please choose a save directory for the schedule using the button in the Schedule tab.")
                 return
             if self.dbConnection is None:
@@ -974,7 +1091,7 @@ def _main():
 
             if debug:
                 self.scheduleProcess.msg.connect(lambda msg: print("Scheduler: ", msg))
-            self.scheduleProcess.start(PYTHON_PATH, [PATH_TO("scheduler.py"), json.dumps(self.settings.asDict()),
+            self.scheduleProcess.start(PYTHON_PATH, [PATH_TO("scheduler.py"),
                                                 str(blacklistedCandidateDesigs), str(whitelistedCandidateDesigs),
                                                 excludedTimeRanges])
             self.set_scheduler_icon(STATUS_BUSY)
@@ -1329,7 +1446,7 @@ def _main():
 
         def getCandidates(self):
             try:
-                if self.settings.query("showAllCandidates")[0]:
+                if self.settings.query("showAllCandidates"):
                     self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
                 else:
                     logger.info("Showing select")
@@ -1459,7 +1576,7 @@ def _main():
             Load the stored candidates into the table. Fetches candidates if has None
             @return:
             """
-            if self.candidates is None and os.path.exists(self.settings.query("candidateDbPath")[0]):
+            if self.candidates is None and os.path.exists(self.settings.query("candidateDbPath")):
                 self.getCandidates()
             if self.candidates:
                 oldModel = self.candidateTable
@@ -1504,8 +1621,7 @@ def _main():
                 candidate in candidatesToRequest}
             if debug:
                 logger.debug(targetDict)
-            self.ephemProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','ephemerides.py')), json.dumps(targetDict),
-                                            json.dumps(self.settings.asDict())])
+            self.ephemProcess.start(PYTHON_PATH, [PATH_TO(join('MaestroCore','ephemerides.py')), json.dumps(targetDict)])
             self.set_ephemeris_icon(STATUS_BUSY)
             # launch waiting window
             # gather the candidates indicated
@@ -1533,7 +1649,7 @@ def _main():
             infoWindow.exec()
 
         def startDbOperator(self):
-            if not os.path.exists(self.settings.query("candidateDbPath")[0]):
+            if not os.path.exists(self.settings.query("candidateDbPath")):
                 emsg = "Couldn't find database file. To use Maestro, choose a database under Database > Target Database Location, then press 'Request Restart'"
                 self.warning_popup("No Database", emsg)
                 self.statusBar().showMessage(emsg,10000)
@@ -1551,9 +1667,8 @@ def _main():
             # self.dbOperatorProcess.triggered.connect(self.dbStatusChecker)
             self.dbOperatorProcess.ended.connect(self.getCandidates)
             self.dbOperatorProcess.start(PYTHON_PATH,
-                                        [PATH_TO(join('MaestroCore','databaseOperations.py')), json.dumps(self.settings.asDict())])
+                                        [PATH_TO(join('MaestroCore','databaseOperations.py'))])
 
-        
     app = QApplication([])
 
     window = MainWindow()

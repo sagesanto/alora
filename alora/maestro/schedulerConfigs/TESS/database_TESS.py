@@ -10,12 +10,15 @@ import numpy as np
 import pytz
 import logging
 
+from alora.config import observatory_location
+
 try:
     grandparentDir = abspath(join(dirname(__file__), pardir, pardir))
     sys.path.append(grandparentDir)
     from scheduleLib import genUtils, candidateDatabase
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, overlapping_time_windows
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
+    from scheduleLib.schedule import generic_schedule_line
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
@@ -24,16 +27,15 @@ try:
 
 except ImportError:
     from scheduleLib import genUtils
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, genericScheduleLine, overlapping_time_windows
+    from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
+    from scheduleLib.schedule import generic_schedule_line
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     tConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
 
-location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                        latitude=genConfig["obs_lat"],
-                        longitude=genConfig["obs_lon"])
+location = observatory_location
 
 logger = logging.getLogger("TESS Database Agent")
 

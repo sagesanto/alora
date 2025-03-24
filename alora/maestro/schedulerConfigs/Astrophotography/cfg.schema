@@ -29,7 +29,7 @@
       "Description": "Number of frames in a single dataset in a single filter",
       "Units": ""
     },
-    "minutes_after_obs": {
+    "downtime_after_obs": {
       "Key": "minutes_after_obs",
       "DefaultValue": 5,
       "Step": 0.5,

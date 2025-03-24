@@ -3,7 +3,6 @@ from scheduleLib.crash_reports import run_with_crash_writing
 
 def main():
 
-    import configparser
     import os, sys, time, re
     # import timeit
     # from line_profiler_pycharm import profile
@@ -40,7 +39,9 @@ def main():
     from matplotlib import pyplot as plt
     from matplotlib.colors import ListedColormap
 
-    import scheduleLib.sCoreCondensed
+    from alora.maestro.scheduleLib.schedule import scheduleHeader, friendlyString, AutoFocus, Schedule as ScheduleCls
+    from alora.config.utils import Config
+    from alora.config import obs_cfg
     from scheduleLib.candidateDatabase import Candidate
 
     # for packaging reasons, i promise
@@ -53,7 +54,6 @@ def main():
         sys.path.append(MODULE_PATH)
 
         from scheduleLib import genUtils
-        from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
         from scheduleLib.module_loader import ModuleManager
 
@@ -61,7 +61,6 @@ def main():
 
     except ImportError:
         from scheduleLib import genUtils
-        from scheduleLib import sCoreCondensed
         from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
         from scheduleLib.module_loader import ModuleManager
 
@@ -361,7 +360,7 @@ def main():
             start = self.schedule.start_time
             end = self.schedule.end_time
             timeGrid = astroplan.time_grid_from_range((start, end), self.time_resolution)
-            times = [sCoreCondensed.friendlyString(t.datetime) for t in timeGrid]
+            times = [friendlyString(t.datetime) for t in timeGrid]
             schedArr = np.zeros(len(times))  # 0 = slot empty, n = slot full, where n is the priority tier of the object
             for r in excludedTimeRanges:
                 iStart, iEnd = max(int((r[0] - start.unix) / self.time_resolution.value), 0), min(
@@ -686,24 +685,7 @@ def main():
 
         modules = ModuleManager().load_active_modules()
         for k, mod in modules.items():
-            typeName, conf = mod.getConfig(observer)  # modules must have this function
-            configDict[typeName] = conf 
-        
-        # import configurations from python files placed in the schedulerConfigs folder
-
-        # root = "schedulerConfigs"
-        # root_directory = PATH_TO("schedulerConfigs")
-        # module_names = []
-        # for dir in [f"{root}."+d for d in os.listdir(root_directory) if isdir(join(root_directory, d))]:
-        #     module_names.append(dir)
-        # for m in module_names:
-        #     try:
-        #         module = import_module(m, "schedulerConfigs")
-        #         typeName, conf = module.getConfig(observer)  # modules must have this function
-        #         configDict[typeName] = conf
-        #     except Exception as e:
-        #         logger.error(f"Can't import config module {m}: {e}. Fix and try again.")
-        #         raise e
+            configDict[mod.scheduling_config.name] = mod.scheduling_config
 
         # turn the lists of candidates into one list
         candidates = [candidate for candidateList in [c.selectCandidates(startTime, endTime, candidateDbPath) for c in configDict.values()]
@@ -804,7 +786,7 @@ def main():
         # runningList.append("\n")
         if targetName == "Focus":
             targetStart = stringToTime(row.iloc[1])
-            runningList.append(genUtils.AutoFocus(targetStart).genLine())
+            runningList.append(AutoFocus(targetStart).genLine())
             runningList.append("\n")
             return
 
@@ -823,7 +805,7 @@ def main():
         """
         # each target type will need to have the machinery to turn an entry from the scheduleDf + the candidateDict into a
         # scheduler line - maybe we'll make a default version later
-        linesList = [genUtils.scheduleHeader()+"\n\n"]
+        linesList = [scheduleHeader()+"\n\n"]
         scheduleDf.apply(lambda row: lineConverter(row, configDict, candidateDict, linesList, spath), axis=1)
         # print(linesList)
         linesList = [l+"\n" if not l.endswith("\n") else l for l in linesList]
@@ -848,11 +830,15 @@ def main():
         """
         return [dType(i) for i in lsStr.split(",")]
 
-    location = EarthLocation.from_geodetic(-117.6815, 34.3819, 0)
-    TMO = Observer(name='Table Mountain Observatory',
+
+    maestro_settings = Config(PATH_TO(join("files","configs","in_maestro_settings.toml")))
+
+
+    location = EarthLocation.from_geodetic(obs_cfg["LONGITUDE"], obs_cfg["LATITUDE"], 0)
+    obs = Observer(name=obs_cfg["NAME"],
                 location=location,
-                timezone=utc,
-                )  # timezone=pytz.timezone('US/Pacific')
+                timezone=pytz.timezone(obs_cfg["TIMEZONE"]),
+                ) 
     blacklist = []
     saveEphems = False
     whitelist = []  # implement this
@@ -866,26 +852,25 @@ def main():
         sunriseUTC, sunsetUTC = roundToTenMinutes(sunriseUTC), roundToTenMinutes(sunsetUTC)
         sunriseUTC -= timedelta(hours=1)  # to account for us closing the dome one hour before sunrise
         sunsetUTC = max(sunsetUTC, pytz.UTC.localize(datetime.utcnow()))
-        savepath = PATH_TO("/files/outputs/scheduleOut")
-        candidateDbPath = genUtils.get_candidate_database_path()
+        savepath = PATH_TO("files/outputs/scheduleOut")
+        candidateDbPath = genUtils.get_candidate_db_path()
         overwrite = False
     else:
-        settings = json.loads(sys.argv[1])
         localtz = datetime.now().astimezone().tzinfo
-        sunsetUTC = datetime.fromtimestamp(settings["scheduleStartTimeSecs"], tz=localtz).astimezone(pytz.utc)
-        sunriseUTC = datetime.fromtimestamp(settings["scheduleEndTimeSecs"], tz=localtz).astimezone(pytz.utc)
+        sunsetUTC = datetime.fromtimestamp(maestro_settings["scheduleStartTimeSecs"], tz=localtz).astimezone(pytz.utc)
+        sunriseUTC = datetime.fromtimestamp(maestro_settings["scheduleEndTimeSecs"], tz=localtz).astimezone(pytz.utc)
         print(f"Making schedule from {sunsetUTC} to {sunriseUTC}")
-        savepath = settings["scheduleSaveDir"]
-        blacklist = toList(sys.argv[2])
-        whitelist = toList(sys.argv[3])
-        excludedTimeRanges = retrieveExcludeList(sys.argv[4])
+        savepath = maestro_settings["scheduleSaveDir"]
+        blacklist = toList(sys.argv[1])
+        whitelist = toList(sys.argv[2])
+        excludedTimeRanges = retrieveExcludeList(sys.argv[3])
         # for r in excludedTimeRanges:
-        numRuns = settings["schedulerRuns"]
-        temperature = settings["temperature"] / 10
+        numRuns = maestro_settings["schedulerRuns"]
+        temperature = maestro_settings["temperature"] / 10
         print(temperature)
         print(f"Making schedule from {sunsetUTC} to {sunriseUTC}") 
-        candidateDbPath = settings["candidateDbPath"]
-        saveEphems = settings["schedulerSaveEphems"]
+        candidateDbPath = maestro_settings["candidateDbPath"]
+        saveEphems = maestro_settings["schedulerSaveEphems"]
         overwrite = True
 
     # prepare saveloc
@@ -923,7 +908,7 @@ def main():
     # make schedule(s)
     for i in range(numRuns):
         start = time.time()
-        scheduleDf, blocks, schedule, candidateDict, configDict = createSchedule(TMO, sunsetUTC, sunriseUTC,
+        scheduleDf, blocks, schedule, candidateDict, configDict = createSchedule(obs, sunsetUTC, sunriseUTC,
                                                                                 blacklist, whitelist,
                                                                                 excludedTimeRanges,
                                                                                 candidateDbPath,
@@ -1021,8 +1006,8 @@ def main():
         f.writelines(schedLines)
     print(f"Wrote schedule to {sched_outpath}")
     try:
-        checkerSched = scheduleLib.sCoreCondensed.readSchedule(join(savepath, "schedule.txt"))
-        scheduleLib.sCoreCondensed.checkSchedule(checkerSched)
+        checkerSched = ScheduleCls.read(join(savepath, "schedule.txt"))
+        checkerSched.check()
     except Exception as e:
         sys.stderr.write("Got error trying to check schedule: " + repr(e) + "\n")
         raise

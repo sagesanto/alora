@@ -1,0 +1,14 @@
+{
+    "focus_loop_duration": {
+      "DefaultValue": 300,
+      "ValDisplayType": "float",
+      "Description": "Duration of telescope refocus procedure",
+      "Units": "seconds"
+    },
+    "BASE_CRASH_DIR": {
+      "DefaultValue": "files/outputs/crash_reports",
+      "ValDisplayType": "path",
+      "Description": "Save location of crash reports",
+      "Units": ""
+    }
+}

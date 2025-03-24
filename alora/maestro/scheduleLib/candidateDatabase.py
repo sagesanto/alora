@@ -191,25 +191,6 @@ class BaseCandidate:
                     d[key] = val
         return d
 
-    def genGenericScheduleLine(self, filterName: str, startDt: datetime, name: str, description: str, exposureTime=None,
-                               exposures=None, move=True, bin2fits=False,
-                               guiding=True):
-        """!
-        Generate a generic schedule from this Candidate. See \ref genUtils.genericScheduleLine for full documentation
-        @param exposureTime: exp time in seconds. if None, uses self.ExposureTime instead
-        @type exposureTime: float|int|str|None
-        @param exposures: number of expsosures. if None, uses self.NumExposures instead
-        @type exposures: int|str|None
-        @return: line to insert into schedule text file
-        @rtype: str
-        """
-
-        exposureTime = exposureTime or self.ExposureTime
-        exposures = exposures or self.NumExposures
-
-        return genUtils.genericScheduleLine(self.RA, self.Dec, filterName, startDt, name, description, exposureTime,
-                                            exposures, move, bin2fits, guiding)
-
     @classmethod
     def fromDictionary(cls, entry: dict):
         """!
@@ -553,7 +534,8 @@ class CandidateDatabase(SQLDatabase):
         @return: list of Candidate objects, or None
         @rtype: list[Candidate]|None
         """
-        return self.table_query("Candidates", "*", "ID = ?", [ID], returnAsCandidates=True)
+        res = self.table_query("Candidates", "*", "ID = ?", [ID], returnAsCandidates=True)
+        return res[0] if res else None
 
     def getCandidatesByIDs(self, IDList):
         """
@@ -640,7 +622,7 @@ class CandidateDatabase(SQLDatabase):
         """
         Mark a candidate as removed in the database. This is a soft delete, and the candidate will still be in the database (but will not be considered "valid" if checked). Sets the Removed, RemovedReason, and RemovedDt fields.
         """
-        candidate = self.getCandidateByID(ID)[0]
+        candidate = self.getCandidateByID(ID)
         print("attempting to remove candidate with ID", ID)
         if candidate:
             reason = self.__author + ": " + reason
@@ -656,7 +638,7 @@ class CandidateDatabase(SQLDatabase):
         return ID
 
     def rejectCandidateByID(self, ID: str, reason: str):
-        candidate = self.getCandidateByID(ID)[0]
+        candidate = self.getCandidateByID(ID)
         print("attempting to remove candidate with ID", ID)
         if candidate:
             reason = self.__author + ": " + reason

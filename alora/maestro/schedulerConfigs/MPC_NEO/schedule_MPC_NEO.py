@@ -44,16 +44,14 @@ def reverseNonzeroRunInplace(arr):
 
 
 class MpcConfig(TypeConfiguration):
-    def __init__(self, scorer, priority, observer=None, maxMinutesWithoutFocus=70, numObs=2, minMinutesBetweenObs=35):
-        self.scorer = scorer
+    def __init__(self, scorer, priority, maxMinutesWithoutFocus=70, numObs=2, minMinutesBetweenObs=35, downtimeMinutesAfterObs:float=0):
+        super().__init__(scorer,maxMinutesWithoutFocus, numObs, minMinutesBetweenObs, downtimeMinutesAfterObs)
         self.Priority = priority
-        self.maxMinutesWithoutFocus = maxMinutesWithoutFocus  # max time, in minutes, that this object can be scheduled after the most recent focus loop
-        self.numObs = numObs
-        self.minMinutesBetweenObs = minMinutesBetweenObs  # minimum time, in minutes, between the start times of multiple observations of the same object
         self.timeResolution = None
         self.candidateDict = None
         self.designations = None
         self.friend = mpcUtils.UncertainEphemFriend()
+        self.name = "MPC NEO"
 
     def selectCandidates(self, startTimeUTC: datetime, endTimeUTC: datetime, dbPath):
         dbConnection = CandidateDatabase(dbPath, "Night Obs Tool")
@@ -64,7 +62,7 @@ class MpcConfig(TypeConfiguration):
         return candidates
 
     def generateTransitionDict(self):
-        objTransitionDict = {'default': mConfig["minutes_after_obs"] * 60 * u.second}
+        objTransitionDict = {'default': self.downtimeMinutesAfterObs.to("minute")}
         for d in self.designations:
             objTransitionDict[("Focus", d)] = 0 * u.second
             objTransitionDict[("Unused Time", d)] = 0 * u.second
@@ -127,9 +125,4 @@ class MPCScorer(astroplan.Scorer):
         return scoreArray
 
 
-def getConfig(observer):
-    # returns a TypeConfiguration object for targets of type "MPC NEO"
-    configuration = MpcConfig(MPCScorer, mConfig["priority"], maxMinutesWithoutFocus=mConfig["max_minutes_without_focus"],numObs=mConfig["num_obs"],minMinutesBetweenObs=mConfig["min_minutes_between_obs"])
-
-    return "MPC NEO", configuration
-    # this config will only apply to candidates with CandidateType "MPC NEO"
+scheduling_config = MpcConfig(MPCScorer, mConfig["priority"], maxMinutesWithoutFocus=mConfig["max_minutes_without_focus"],numObs=mConfig["num_obs"],minMinutesBetweenObs=mConfig["min_minutes_between_obs"],downtimeMinutesAfterObs=mConfig["downtime_after_obs"])

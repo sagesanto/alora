@@ -1,21 +1,43 @@
 {
     "DateTime": {},
-    "Occupied": {"default": 1},
+    "Occupied": {
+        "default": 1
+    },
     "Target": {},
-    "Move": {"default": 1},
+    "Move": {
+        "default": 1
+    },
     "RA": {},
     "Dec": {},
     "ExposureTime": {},
     "#Exposure": {},
     "Filter": {},
-    "Bin2Fits": {"default": 0},
-    "Guiding": {"default": 1},
-    "Offset": {"default": 0},
-    "CandidateID": {"default": -1},
-    "ROIHeight": {"default": 6144},
-    "ROIWidth": {"default": 6144},
-    "ROIStartX": {"default": 0},
-    "ROIStartY": {"default": 0},
-    "BinningSize": {"default": "1x1"},
+    "Bin2Fits": {
+        "default": 0
+    },
+    "Guiding": {
+        "default": 1
+    },
+    "Offset": {
+        "default": 0
+    },
+    "CandidateID": {
+        "default": -1
+    },
+    "ROIHeight": {
+        "default": 6144
+    },
+    "ROIWidth": {
+        "default": 6144
+    },
+    "ROIStartX": {
+        "default": 0
+    },
+    "ROIStartY": {
+        "default": 0
+    },
+    "BinningSize": {
+        "default": "1x1"
+    },
     "Description": {}
 }

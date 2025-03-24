@@ -4,6 +4,7 @@
 import sys, os, math
 from os.path import abspath, dirname, join, pardir
 
+from alora.config.utils import Config
 MODULE_PATH = abspath(join(dirname(__file__), pardir))
 
 def PATH_TO(fname:str): return join(MODULE_PATH,fname)
@@ -40,24 +41,9 @@ def main():
                     datetime.now(pytz.UTC) + timedelta(minutes=delay)).strftime(
                 "%m/%d %H:%M") + " UTC"
 
-
-        # # import all modules in schedulerConfigs
-        # root_directory = PATH_TO("schedulerConfigs")
-        # module_names = []
-        # for dir in ["schedulerConfigs."+d for d in os.listdir(root_directory) if os.path.isdir(os.path.join(root_directory, d))]:
-        #     module_names.append(dir)
-        # modules = {}
-        # for m in module_names:
-        #     try:
-        #         modules[m] = import_module(m, "schedulerConfigs")
-        #     except Exception as e:
-        #         write_out(f"Can't import config module {m}: {e}. Fix and try again.")
-        #         raise e
-
-        settingsJstr = sys.argv[1]
-        settings = json.loads(settingsJstr)
-        waitTime = int(settings["databaseWaitTimeMinutes"])
-        dbPath = settings["candidateDbPath"]
+        maestro_settings = Config(join(MODULE_PATH,"files","configs","in_maestro_settings.toml"))
+        waitTime = maestro_settings["databaseWaitTimeMinutes"]
+        dbPath = maestro_settings["candidateDbPath"]
 
         while True:
             total = len(modules.keys())

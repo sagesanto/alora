@@ -1,0 +1,6 @@
+# time it takes to focus, seconds
+focus_loop_duration = 300
+# crash report directory
+BASE_CRASH_DIR = "files/outputs/crash_reports"
+
+# module-specific settings can be found in the module's directory or edited in the app 

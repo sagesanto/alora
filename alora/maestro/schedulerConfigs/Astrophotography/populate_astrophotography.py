@@ -5,6 +5,8 @@ from os.path import join, dirname, pardir, abspath
 from astral import LocationInfo
 from astroquery.simbad import Simbad
 
+from alora.config import observatory_location
+
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(grandparentDir)
@@ -23,9 +25,7 @@ except ImportError:
     aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
     genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
 
-obs = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                   latitude=genConfig["obs_lat"],
-                   longitude=genConfig["obs_lon"])
+obs = observatory_location
 
 
 def getData():

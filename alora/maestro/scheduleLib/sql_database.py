@@ -9,7 +9,7 @@ class SQLDatabase:
         self.connected = False
 
     def open(self, path, check_same_thread=True, **kwargs):
-        print("hi")
+        # print("hi")
         if not os.path.exists(path):
             raise FileNotFoundError(f"Could not find file '{path}'")
 
@@ -19,7 +19,7 @@ class SQLDatabase:
             del kwargs["detect_types"]
         # no try. we arent cowards
         self.db_connection = sqlite3.connect(path, check_same_thread=check_same_thread, detect_types=det_types, **kwargs)
-        print(self.db_connection)
+        # print(self.db_connection)
         self.db_connection.row_factory = sqlite3.Row
         self.db_cursor = self.db_connection.cursor()
         self.connected = True

@@ -41,7 +41,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
-import scheduleLib.sCoreCondensed
+import alora.maestro.scheduleLib.schedule
 from scheduleLib.candidateDatabase import Candidate
 from scheduler import TMOScheduler
 
@@ -51,7 +51,7 @@ try:
         os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
     from scheduleLib import genUtils
-    from scheduleLib import sCoreCondensed
+    from alora.maestro.scheduleLib import schedule
     from scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
     genConfig = genUtils.Config(os.path.join(os.path.dirname(__file__), "files", "configs", "config.toml"))
@@ -59,7 +59,7 @@ try:
     sys.path.remove(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 except ImportError:
     from scheduleLib import genUtils
-    from scheduleLib import sCoreCondensed
+    from alora.maestro.scheduleLib import schedule
     from scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
     genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
@@ -83,7 +83,7 @@ utc = pytz.UTC
 #5. creation of tree from a given schedule
 #6. monte carlo tree search
 
-#1. legality of a schedule (sCoreCondensed.py)
+#1. legality of a schedule (schedule.py)
 #a schedule is legal if:
 # all observations are entirely between the start and end of the night
 # no observations overlap
@@ -111,8 +111,7 @@ def findCandidates(observer: Observer, startTime: datetime, endTime: datetime, b
     for file in files:
         try:
             module = import_module(file, "schedulerConfigs")
-            typeName, conf = module.getConfig(observer)  # modules must have this function
-            configDict[typeName] = conf
+            configDict[module.scheduling_config.name] = module.scheduling_config
         except:
             print("Can't import", file)
             raise

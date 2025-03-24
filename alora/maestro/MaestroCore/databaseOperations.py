@@ -8,7 +8,9 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from scheduleLib.crash_reports import run_with_crash_writing
-
+from alora.config.utils import Config
+from os.path import join, pardir, dirname, abspath
+MODULE_PATH = abspath(join(dirname(__file__), pardir))
 def main():
     import concurrent.futures
     import re, json, time
@@ -74,13 +76,13 @@ def main():
 
     # on launch, connect to the candidate database, then wait for a job to come through stdin in the form of a properly-formatted json string
     write_out("Starting db ops")
-    # arg: settings dict as jstr
-    settings = json.loads(sys.argv[1])
+    maestro_settings = Config(join(MODULE_PATH,"files","configs","in_maestro_settings.toml"))
 
     # this is where all the jobs are hooked up - job type (str) : function to perform
     typeJobDict = {"No Jobs": lambda: None, "remove": markCandidatesRemoved,
                 "reject": markCandidatesRejected, "unreject": unrejectCandidates,
-                "unremove": unremoveCandidates, "csvAdd": addCandidatesFromCsv, "jsonAdd": addCandidatesFromJson}
+                "unremove": unremoveCandidates, "csvAdd": addCandidatesFromCsv, 
+                "jsonAdd": addCandidatesFromJson}
 
     currentJobType = "No Jobs"
     jobIDs = dict(zip(list(typeJobDict.keys()), [0] * len(typeJobDict)))
@@ -88,7 +90,7 @@ def main():
     completedJobs = []
     failedJobs = []
 
-    candidateDb = CandidateDatabase(settings["candidateDbPath"], "MaestroUser")
+    candidateDb = CandidateDatabase(maestro_settings["candidateDbPath"], "MaestroUser")
     with concurrent.futures.ThreadPoolExecutor() as pool:
         # watch for input
         futureStdInRead = pool.submit(genUtils.readStdin)

@@ -1,0 +1,66 @@
+{
+    "ephemTimeout": [
+        120,
+        "spinBox"
+    ],
+    "ephemStartDelayHrs": [
+        0,
+        "spinBox"
+    ],
+    "ephemInterval": [
+        1,
+        "dropdown"
+    ],
+    "ephemFormat": [
+        0,
+        "dropdown"
+    ],
+    "ephemsObsCode": [
+        "654",
+        "entry"
+    ],
+    "ephemsSavePath": [
+        "",
+        "folderSelect"
+    ],
+    "candidateDbPath": [
+        "",
+        "fileSelect"
+    ],
+    "databaseWaitTimeMinutes": [
+        15,
+        "spinBox"
+    ],
+    "scheduleStartTimeSecs": [
+        1689048000,
+        "timeedit"
+    ],
+    "scheduleEndTimeSecs": [
+        1689076200,
+        "timeedit"
+    ],
+    "scheduleSaveDir": [
+        "",
+        "folderSelect"
+    ],
+    "showAllCandidates": [
+        false,
+        "bool"
+    ],
+    "schedulerSaveEphems": [
+        true,
+        "bool"
+    ],
+    "autoSetScheduleTimes": [
+        true,
+        "bool"
+    ],
+    "schedulerRuns": [
+        1,
+        "int"
+    ],
+    "temperature": [
+        0,
+        "int"
+    ]
+}

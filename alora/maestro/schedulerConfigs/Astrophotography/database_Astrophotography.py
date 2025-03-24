@@ -9,6 +9,8 @@ import pytz
 
 from os.path import pardir, join, abspath, dirname
 
+from alora.config import observatory_location
+
 MODULE_PATH = abspath(join(dirname(__file__), pardir, pardir))
 def PATH_TO(fname:str): return join(MODULE_PATH,fname)
 
@@ -36,9 +38,7 @@ def evalObservability(candidates: list[Candidate], location):
             candidates]
 
 def update_database(_db_path):
-    location = LocationInfo(name=genConfig["obs_name"], region=genConfig["obs_region"], timezone=genConfig["obs_timezone"],
-                            latitude=genConfig["obs_lat"],
-                            longitude=genConfig["obs_lon"])
+    location = observatory_location
     synodicStart = datetime.now(tz=pytz.UTC)
 
     # program:
