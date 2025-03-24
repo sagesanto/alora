@@ -36,9 +36,11 @@ def _main():
     from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
         QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, \
               QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QCheckBox, QLabel, QListWidgetItem, \
-                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox, QScrollArea
-    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel, QTimer
+                QSizePolicy, QSpinBox, QSpacerItem, QTextEdit, QDoubleSpinBox, QScrollArea, QDialog, QDialogButtonBox
+    from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime, QSortFilterProxyModel, QTimer, QMimeData, QDataStream, QByteArray, \
+        QIODevice, QIODeviceBase, QEventLoop, QCoreApplication
     import PyQt6.QtWidgets as QtWidgets
+    from PyQt6.QtGui import QPalette, QColor, QDrag
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
@@ -50,12 +52,14 @@ def _main():
     from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton
     from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
     from MaestroCore.utils.windows import ScrollMessageBox
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta 
     from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
     import astropy.units as u
 
     from scheduleLib.genUtils import inputToAngle, Config
     from scheduleLib.module_loader import ModuleManager
+    from functools import partial
+
 
     # VAL_DISPLAY_TYPES = {
     #     "float":QLineEdit,
@@ -244,7 +248,131 @@ def _main():
         def asDict(self):
             return {k: v for k, [v, _] in self.cfg.items()}
 
+    class DraggableButton(QPushButton):
+        def __init__(self, text, index, main_window, parent=None):
+            super().__init__(text, parent)
+            self.index = index
+            self.main_window = main_window
+            self.setAcceptDrops(True)
 
+        def mousePressEvent(self, event):
+            if event.button() == Qt.MouseButton.LeftButton:
+                # Left click – open the popup using the main window reference
+                self.main_window.openPopupDialog(self.text())
+            elif event.button() == Qt.MouseButton.RightButton:
+                # Right click – start dragging
+                drag = QDrag(self)
+                mime_data = QMimeData()
+
+                # Encode row index into the mime data
+                data = QByteArray()
+                stream = QDataStream(data, QIODeviceBase.OpenModeFlag.WriteOnly)
+                stream.writeInt(self.index)
+                mime_data.setData("application/x-schedule-item", data)
+
+                drag.setMimeData(mime_data)
+                drag.setPixmap(self.grab())
+
+                drag.exec(Qt.DropAction.MoveAction)  # ✅ Correct in Qt6
+
+
+
+    class DropWidget(QWidget):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.setAcceptDrops(True)
+            self.parent = parent
+            self.layout = QVBoxLayout()
+            self.layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # ✅ Correct in Qt6
+            self.setLayout(self.layout)
+
+        def dragEnterEvent(self, event):
+            if event.mimeData().hasFormat("application/x-schedule-item"):
+                event.accept()
+            else:
+                event.ignore()
+
+        def dropEvent(self, event):
+            if event.mimeData().hasFormat("application/x-schedule-item"):
+                data = event.mimeData().data("application/x-schedule-item")
+                stream = QDataStream(data, QIODeviceBase.OpenModeFlag.ReadOnly)
+                from_index = stream.readInt()
+
+                # ✅ `position()` returns QPointF in Qt6, convert to QPoint
+                pos = event.position().toPoint()
+                insert_at = self.findButtonIndex(pos)
+
+                if insert_at is not None and insert_at != from_index:
+                    self.rearrangeSchedule(from_index, insert_at)
+
+                event.accept()  # ✅ Explicit acceptance
+            else:
+                event.ignore()
+
+        def findButtonIndex(self, pos):
+            for i in range(self.layout.count()):
+                widget = self.layout.itemAt(i).widget()
+                if widget and widget.geometry().contains(pos):
+                    return i
+            return None
+
+        def rearrangeSchedule(self, from_index, to_index):
+            if from_index < 0 or from_index >= len(self.parent.scheduleDf):
+                return
+            if to_index < 0 or to_index >= len(self.parent.scheduleDf):
+                return
+
+            # ✅ Get the row to move as a DataFrame instead of Series
+            row = self.parent.scheduleDf.iloc[[from_index]].copy()
+
+            # ✅ Remove the row from the original position
+            self.parent.scheduleDf.drop(index=from_index, inplace=True)
+            self.parent.scheduleDf.reset_index(drop=True, inplace=True)
+
+            # ✅ Adjust the target index if needed
+            if to_index > from_index:
+                to_index -= 1
+
+            # ✅ Split the DataFrame at the target index and reinsert row
+            upper = self.parent.scheduleDf.iloc[:to_index]
+            lower = self.parent.scheduleDf.iloc[to_index:]
+
+            # ✅ Use pd.concat() to reassemble DataFrame with the row inserted
+            self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
+
+            # ✅ Refresh the UI after drop
+            self.parent.displaySchedule()
+
+            # ✅ Save updated schedule to CSV
+            save_path = os.path.join(
+                self.parent.settings.query("scheduleSaveDir")[0],
+                "schedule.csv"
+            )
+            self.parent.scheduleDf.to_csv(save_path, index=False)
+
+
+
+
+    def loadDfInTable(df, table):
+        table.setRowCount(len(df.index))
+        table.setColumnCount(len(df.columns))
+        table.setHorizontalHeaderLabels(df.columns)
+
+        for row_idx, row in df.iterrows():
+            for col_idx, value in enumerate(row):
+                table.setItem(row_idx, col_idx, QTableItem(str(value)))
+
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+
+
+    def clearLayout(layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+                
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
             super(MainWindow, self).__init__(parent)
@@ -960,66 +1088,235 @@ def _main():
                         displayTexts.remove(t)
                         break
 
+
+
         def displaySchedule(self):
             basepath = self.settings.query("scheduleSaveDir")[0] + os.sep + "schedule"
-            imgPath = basepath + ".png"
             csvPath = basepath + ".csv"
 
             if os.path.isfile(csvPath):
-                self.scheduleDf = pd.read_csv(csvPath).drop(labels='Tags', axis="columns")
-                # self.scheduleDf
-                loadDfInTable(self.scheduleDf, self.scheduleTable)
-                self.schedTabWidget.setCurrentWidget(self.schedViewTab)
-                self.scheduleTable.resizeColumnsToContents()
-                self.scheduleTable.resizeRowsToContents()
-                self.scheduleTable.update()
+                try:
+                    # ✅ Read the CSV and convert times to datetime objects
+                    self.scheduleDf = pd.read_csv(csvPath).drop(labels='Tags', axis="columns", errors="ignore")
+                    self.scheduleDf['Start Time (UTC)'] = pd.to_datetime(self.scheduleDf['Start Time (UTC)'])
+                    self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
 
+                    loadDfInTable(self.scheduleDf, self.scheduleTable)
+                    self.schedTabWidget.setCurrentWidget(self.schedViewTab)
+                    self.scheduleTable.resizeColumnsToContents()
+                    self.scheduleTable.resizeRowsToContents()
+                    self.scheduleTable.update()
+
+                except Exception as e:
+                    self.statusbar.showMessage(f"Failed to load schedule: {e}")
+                    logger.error(f"Failed to load schedule: {e}")
+                    return
             else:
-                self.statusbar.showMessage(
-                    "Can't find saved scheduler csv. If and only if it reports that it ran correctly, please report this.")
-                logger.error("Can't find saved scheduler csv. *If and only if* the scheduler reports that it ran correctly, please report this.")
-                return # should we clear the schedule?
+                self.statusbar.showMessage("Can't find saved scheduler CSV.")
+                logger.error("Can't find saved scheduler CSV.")
+                return
 
-            # Schedule Editor will go here (for now)
-            # TO-DO
-            t_content = QSizePolicy()
-            t_content.setHorizontalStretch(70)
-            t_content.setHorizontalPolicy(QSizePolicy.Policy.Preferred)
-            t_content.setVerticalPolicy(QSizePolicy.Policy.Preferred)
-            self.scheduleTable.setSizePolicy(t_content)
-        
-            content = QWidget()
-            scroll = QScrollArea()
+            # ✅ Step 1: Remove existing layout and widgets cleanly
+            old_layout = self.schedule_display_container.layout()
+            if old_layout:
+                self.schedule_display_container.setLayout(None)
+                while old_layout.count():
+                    item = old_layout.takeAt(0)
+                    if item:
+                        widget = item.widget()
+                        if widget:
+                            widget.setParent(None)
+                            widget.deleteLater()
 
-            clayout = QVBoxLayout()
-            for i, row in self.scheduleDf.iterrows():
-                if row["Target"] not in ["Focus", "Unused Time"]:
+                        layout = item.layout()
+                        if layout:
+                            while layout.count():
+                                sub_item = layout.takeAt(0)
+                                if sub_item.widget():
+                                    sub_item.widget().setParent(None)
+                                    sub_item.widget().deleteLater()
+                            layout.deleteLater()
 
-                    l = QLabel(row["Target"])
+                old_layout.deleteLater()
+                QCoreApplication.processEvents()
+
+            # ✅ Step 2: Create new DropWidget for drag-and-drop
+            content = DropWidget(self)
+
+            if content.layout is None:
+                content.setLayout(QVBoxLayout())
+
+            # ✅ Step 3: Maintain consistent color mapping for targets
+            target_colors = {}
+
+            def get_color_for_target(target):
+                if target in target_colors:
+                    return target_colors[target]  # ✅ Reuse existing color
                 else:
-                    l = QLabel()
-                clayout.addWidget(l)
-            content.setLayout(clayout)
+                    # ✅ Generate new color and store it
+                    new_color = QColor(
+                        random.randint(150, 255),
+                        random.randint(150, 255),
+                        random.randint(150, 255)
+                    )
+                    target_colors[target] = new_color
+                    return new_color
 
+            # ✅ Step 4: Dynamically scale buttons based on window size
+            def updateButtonSizes():
+                container_width = self.schedule_display_container.width()
+                container_height = self.schedule_display_container.height()
 
-            # p_content = QSizePolicy()
-            # p_content.setHorizontalStretch(30)
-            # p_content.setHorizontalPolicy(QSizePolicy.Policy.Preferred)
-            # p_content.setVerticalPolicy(QSizePolicy.Policy.Preferred)
-            # self.schedule_display_container.setSizePolicy(p_content)
-            scroll.setWidget(content)
+                # ✅ Calculate total observing time (in minutes)
+                total_duration = (self.scheduleDf['End Time (UTC)'] - self.scheduleDf['Start Time (UTC)']).dt.total_seconds().sum() / 60
+
+                if total_duration > 0:
+                    scale_factor = container_height / total_duration
+                else:
+                    scale_factor = 40
+
+                for i, row in self.scheduleDf.iterrows():
+                    target = row.get("Target")
+                    start_time = row["Start Time (UTC)"]
+                    end_time = row["End Time (UTC)"]
+
+                    if target and target not in ["Focus", "Unused Time"]:
+                        btn = DraggableButton(target, i, self, content)
+
+                        # ✅ Assign consistent color for repeated targets
+                        color = get_color_for_target(target)
+
+                        btn.setStyleSheet(
+                            f"""
+                            QPushButton {{
+                                background-color: rgb({color.red()}, {color.green()}, {color.blue()});
+                                padding: 5px;
+                                border-radius: 5px;
+                                font-size: 14px;
+                                font-weight: bold;
+                            }}
+                            QPushButton:hover {{ opacity: 0.8; }}
+                            QPushButton:pressed {{ opacity: 0.6; }}
+                            """
+                        )
+
+                        # ✅ Compute the real duration from CSV times
+                        duration = (end_time - start_time).total_seconds() / 60
+                        if duration > 0:
+                            # ✅ Scale button size based on total duration
+                            scaled_height = max(20, int(duration * scale_factor))
+                            btn.setFixedHeight(scaled_height)
+
+                            # ✅ Set button width to scale with container
+                            btn.setFixedWidth(int(container_width * 0.7))
+                            btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+                            # ✅ Generate real timestamps from CSV
+                            start_str = start_time.strftime("%H:%M")
+                            end_str = end_time.strftime("%H:%M")
+
+                            # ✅ Create time label with no padding/margin
+                            time_label = QLabel(f"{start_str} - {end_str}")
+                            time_label.setFixedHeight(scaled_height)
+                            time_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+                            time_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+                            time_label.setStyleSheet("font-size: 12px; color: #888; padding: 0px; margin: 0px;")
+
+                            # ✅ Create a horizontal layout to hold timestamp + button
+                            row_layout = QHBoxLayout()
+                            row_layout.setSpacing(10)  # ✅ Small gap between label and button
+                            row_layout.setContentsMargins(0, 0, 0, 0)
+
+                            # ✅ Add timestamp label
+                            row_layout.addWidget(time_label)
+
+                            # ✅ Add button to layout
+                            row_layout.addWidget(btn)
+                            row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+                            # ✅ Create a container widget for each row
+                            row_container = QWidget()
+                            row_container.setLayout(row_layout)
+
+                            # ✅ Remove container margins
+                            row_container.setContentsMargins(0, 0, 0, 0)
+
+                            # ✅ Add row to main layout
+                            content.layout.addWidget(row_container)
+
+            updateButtonSizes()
+
+            # ✅ Step 5: Assign new layout directly to container
             c_layout = QVBoxLayout()
-            c_layout.addWidget(scroll)
+            c_layout.setSpacing(0)  # ✅ Remove spacing between rows
+            c_layout.setContentsMargins(0, 0, 0, 0)  # ✅ Remove outer margins
+            c_layout.addWidget(content)
             self.schedule_display_container.setLayout(c_layout)
-            # add blocks
-            # center them
-            # scale heights so they are proportional to the length of observatin
-                # set the vertical stretch (give them a size policy) to be the duration of observation 
-                    # dont set a fixed size, set a stretch factor
-                    # color boxes if necessary
+
+            # ✅ Step 6: Ensure resizing behavior
+            t_content = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            t_content.setHorizontalStretch(70)
+            self.scheduleTable.setSizePolicy(t_content)
+
+            # ✅ Step 7: Handle resizing dynamically
+            def resizeEvent(event):
+                updateButtonSizes()
+                event.accept()
+
+            self.schedule_display_container.resizeEvent = resizeEvent
+
+            # ✅ Step 8: Process events directly to avoid segfaults
+            QCoreApplication.processEvents()
 
 
-            # put this new schedule where 
+
+
+
+
+
+
+
+
+
+
+
+
+        def openPopupDialog(self, target_name):
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"Details for: {target_name}")
+
+            layout = QVBoxLayout(dialog)
+
+            try:
+                row = self.scheduleDf.loc[self.scheduleDf["Target"] == target_name].iloc[0]
+            except IndexError:
+                layout.addWidget(QLabel(f"No data found for '{target_name}'"))
+                buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+                buttons.accepted.connect(dialog.accept)
+                layout.addWidget(buttons)
+                dialog.exec()
+                return
+
+            table = QTableWidget(1, 6)
+            table.setHorizontalHeaderLabels(["Target", "Start Time", "End Time", "Duration", "RA", "Dec"])
+
+            table.setItem(0, 0, QTableItem(str(row["Target"])))
+            table.setItem(0, 1, QTableItem(str(row["Start Time (UTC)"])))
+            table.setItem(0, 2, QTableItem(str(row["End Time (UTC)"])))
+            table.setItem(0, 3, QTableItem(str(row["Duration (Minutes)"])))
+            table.setItem(0, 4, QTableItem(str(row["RA"])))
+            table.setItem(0, 5, QTableItem(str(row["Dec"])))
+
+            table.resizeColumnsToContents()
+            layout.addWidget(table)
+
+            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addWidget(buttons)
+
+            dialog.exec()
+ 
 
 
 
