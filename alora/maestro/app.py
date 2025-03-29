@@ -288,10 +288,12 @@ def _main():
             self.layout = QVBoxLayout()
             self.layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # ✅ Correct in Qt6
             self.setLayout(self.layout)
+            self.prev_container_size = None
 
         def dragEnterEvent(self, event):
             if event.mimeData().hasFormat("application/x-schedule-item"):
                 event.accept()
+                self.prev_container_size = self.parent.schedule_display_container.height()
             else:
                 event.ignore()
 
@@ -331,81 +333,44 @@ def _main():
             print(f"From slot: {from_index} ({self.parent.scheduleDf.iloc[[from_index]]['Target']})")
             print(f"To slot: {to_index} ({self.parent.scheduleDf.iloc[[to_index]]['Target']})")
 
-            # print("before any modification:",self.parent.scheduleDf)
             # remove the row from the original position
             self.parent.scheduleDf.drop(index=from_index, inplace=True)
             self.parent.scheduleDf.reset_index(drop=True, inplace=True)
-            # if to_index > from_index:
-            #     to_index -= 1
-            # print()
-            # print("Before:")
-            # print("upper:",self.parent.scheduleDf.iloc[:to_index])
-            # print()
-            # print("row:",row)
-            # print("lower:",self.parent.scheduleDf.iloc[to_index:])
-            # print()
-            # print()
 
-            # print("Affected before:",affected)
             duration = row["Duration (Minutes)"].values[0]  # length of the observation that we're moving around
-            # print("duration:",duration)
-            # print("Row, before:",row)
-            # print("after removing row:",self.parent.scheduleDf)
-
             
             if from_index < to_index:  # we're moving the observation down (later) in the schedule
-                # print(affected["Start Time (UTC)"],affected["Start Time (UTC)"] - timedelta(minutes=duration))
-                # print("affected:",self.parent.scheduleDf.loc[from_index:to_index-1])
-                # print("Shifting start time")
-                # print(self.parent.scheduleDf)
-                # print("Shifting end time")
-                # shift the start and end time of the rows that are being leapfrogged over by the length of the observation we're moving
-                self.parent.scheduleDf.loc[from_index:to_index-1,"Start Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"Start Time (UTC)"] - timedelta(minutes=duration)
-                self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"] - timedelta(minutes=duration)
-                # move the start time of the row we're moving to be the end time of the last row that was leapfrogged
-                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"].values[-1]
+                idx1 = from_index
+                idx2 = to_index-1
+                dt = timedelta(minutes=-duration)
+
             else:
-                # print("case 2")
                 idx1 = to_index
                 idx2 = from_index-1
-
-                # print("affected:",self.parent.scheduleDf.loc[idx1:idx2])
+                dt = timedelta(minutes=duration)
+                # in this case, we do the adjustment to the target row before we move things around
                 row["Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"].values[0]
-                # print(affected["Start Time (UTC)"],affected["Start Time (UTC)"] + timedelta(minutes=duration))
-                # print("shifting start time")
-                self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] + timedelta(minutes=duration)
-                # print(self.parent.scheduleDf)
-                # print("Shifting end time")
-                self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] + timedelta(minutes=duration)
-                # print(self.parent.scheduleDf)
 
+            # shift the affected rows (the rows that are being leapfrogged) by the duration of the observation
+            self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] + dt
+            self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] + dt
+
+            if from_index < to_index:
+                # move the start time of the row we're moving to be the end time of the last row that was leapfrogged
+                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"].values[-1]
+
+            # move the end time of the observation to match the start (plus the duration)
             row["End Time (UTC)"] = row["Start Time (UTC)"] + timedelta(minutes=duration)
-            # print("after shift:",self.parent.scheduleDf)
+
             upper = self.parent.scheduleDf.iloc[:to_index]
-            # print("Affected after:",affected)
-            # print("Row, after:",row)
-            
-        
             lower = self.parent.scheduleDf.iloc[to_index:]
-            # lower["Start Time (UTC)"] = lower["Start Time (UTC)"] + timedelta(minutes=duration)
-            # lower["End Time (UTC)"] = lower["End Time (UTC)"] + timedelta(minutes=duration)
-            # ✅ Use pd.concat() to reassemble DataFrame with the row inserted
-            # print("Upper:",upper)
-            # print("Row:",row)
-            # print("Lower:",lower)
-            print()
+
+            # stack the three parts together
             self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
-            # ✅ Refresh the UI after drop
+            # self.parent.scheduleDf.reset_index(drop=True, inplace=True)
+
+            # now that we've made the changes, redraw the display
             self.parent.displaySchedule()
-
-            # # ✅ Save updated schedule to CSV
-            # save_path = os.path.join(
-            #     self.parent.settings.query("scheduleSaveDir")[0],
-            #     "schedule.csv"
-            # )
-            # self.parent.scheduleDf.to_csv(save_path, index=False)
-
-
 
 
     def loadDfInTable(df, table):
@@ -1190,7 +1155,7 @@ def _main():
             self.scheduleTable.resizeRowsToContents()
             self.scheduleTable.update()
             
-            # ✅ Step 1: Remove existing layout and widgets cleanly
+            # remove existing widgets
             old_layout = self.schedule_display_container.layout()
             if old_layout:
                 # self.schedule_display_container.setWidget(QWidget())
@@ -1211,10 +1176,8 @@ def _main():
                                     sub_item.widget().deleteLater()
                             layout.deleteLater()
 
-                # old_layout.deleteLater()
                 QCoreApplication.processEvents()
-            print("Debugging")
-            # ✅ Step 2: Create new DropWidget for drag-and-drop
+            # create new DropWidget for drag-and-drop
             content = DropWidget(self)
 
             if content.layout is None:
@@ -1232,14 +1195,14 @@ def _main():
                     self.target_colors[target] = new_color
                     return new_color
 
-            # ✅ Step 4: Dynamically scale buttons based on window size
+            # dynamically scale buttons based on window size
             def updateButtonSizes():
                 container_width = self.schedule_display_container.width()
                 container_height = self.schedule_display_container.height()
                 print("Container height:",container_height)
 
 
-                # ✅ Calculate total observing time (in minutes)
+                # calculate total observing time (in minutes)
                 total_duration = sum(self.scheduleDf['Duration (Minutes)'])
                 print("Total duration:",total_duration)
                 scale_factor = container_height / total_duration
@@ -1249,22 +1212,9 @@ def _main():
                     start_time = row["Start Time (UTC)"]
                     end_time = row["End Time (UTC)"]
 
-# Container height: 818
-# Total duration: 112.0
-# Scale factor: 7.303571428571429
-# B 146
-# A 87
-# C 219
-# D 36
-# E 219
-# F 109
-
-
                     if target:
-                    # if target and target not in ["Focus", "Unused Time"]:
                         btn = DraggableButton(target, i, self, content)
 
-                        # ✅ Assign consistent color for repeated targets
                         color = get_color_for_target(target)
 
                         btn.setStyleSheet(
@@ -1281,77 +1231,71 @@ def _main():
                             """
                         )
 
-                        # ✅ Compute the real duration from CSV times
+                        # find duration of observation
                         duration = (end_time - start_time).total_seconds() / 60
                         if duration > 0:
-                            # ✅ Scale button size based on total duration
-                            # scaled_height = max(20, int(duration * scale_factor))
+                            # scale button size based on observation duration wrt total duration
                             scaled_height = int(duration * scale_factor)
                             btn.setFixedHeight(scaled_height)
                             print(str(row["Target"]),scaled_height)
 
-                            # ✅ Set button width to scale with container
+                            # set button width to scale with container
                             btn.setFixedWidth(int(container_width * 0.7))
                             btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-                            # ✅ Generate real timestamps from CSV
+                            # generate timestamps from CSV
                             start_str = start_time.strftime("%H:%M")
                             end_str = end_time.strftime("%H:%M")
 
-                            # ✅ Create time label with no padding/margin
                             time_label = QLabel(f"{start_str} - {end_str}")
                             time_label.setFixedHeight(scaled_height)
                             time_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
                             time_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
                             time_label.setStyleSheet("font-size: 12px; color: #888; padding: 0px; margin: 0px;")
 
-                            # ✅ Create a horizontal layout to hold timestamp + button
+                            # horizontal layout to hold timestamp + button
                             row_layout = QHBoxLayout()
-                            row_layout.setSpacing(10)  # ✅ Small gap between label and button
+                            row_layout.setSpacing(10)
                             row_layout.setContentsMargins(0, 0, 0, 0)
 
-                            # ✅ Add timestamp label
                             row_layout.addWidget(time_label)
 
-                            # ✅ Add button to layout
                             row_layout.addWidget(btn)
                             row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-                            # ✅ Create a container widget for each row
+                            # create a container widget for each row
                             row_container = QWidget()
                             row_container.setLayout(row_layout)
-
-                            # ✅ Remove container margins
                             row_container.setContentsMargins(0, 0, 0, 0)
 
-                            # ✅ Add row to main layout
+                            # add row to main layout
                             content.layout.addWidget(row_container)
 
             updateButtonSizes()
 
-            # ✅ Step 5: Assign new layout directly to container
+            # assign new layout directly to container
             if old_layout is None:
                 c_layout = QVBoxLayout()
-                c_layout.setSpacing(0)  # ✅ Remove spacing between rows
-                c_layout.setContentsMargins(0, 0, 0, 0)  # ✅ Remove outer margins
+                c_layout.setSpacing(0)  # remove spacing between rows
+                c_layout.setContentsMargins(0, 0, 0, 0)  # remove outer margins
                 c_layout.addWidget(content)
                 self.schedule_display_container.setLayout(c_layout)
             else:
                 old_layout.addWidget(content)
 
-            # ✅ Step 6: Ensure resizing behavior
+            # ensure resizing behavior
             t_content = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             t_content.setHorizontalStretch(70)
             self.scheduleTable.setSizePolicy(t_content)
 
-            # ✅ Step 7: Handle resizing dynamically
+            # handle resizing dynamically
             def resizeEvent(event):
                 updateButtonSizes()
                 event.accept()
 
             self.schedule_display_container.resizeEvent = resizeEvent
 
-            # ✅ Step 8: Process events directly to avoid segfaults
+            # process events directly to avoid segfaults
             QCoreApplication.processEvents()
 
 
