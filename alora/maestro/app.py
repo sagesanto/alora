@@ -322,43 +322,88 @@ def _main():
             return None
 
         def rearrangeSchedule(self, from_index, to_index):
-            print(from_index)
-            print(to_index)
             if from_index < 0 or from_index >= len(self.parent.scheduleDf):
                 return
             if to_index < 0 or to_index >= len(self.parent.scheduleDf):
                 return
 
-            # ✅ Get the row to move as a DataFrame instead of Series
             row = self.parent.scheduleDf.iloc[[from_index]].copy()
-            print("Possible Problem 1")
+            print(f"From slot: {from_index} ({self.parent.scheduleDf.iloc[[from_index]]['Target']})")
+            print(f"To slot: {to_index} ({self.parent.scheduleDf.iloc[[to_index]]['Target']})")
 
-            # ✅ Remove the row from the original position
+            # print("before any modification:",self.parent.scheduleDf)
+            # remove the row from the original position
             self.parent.scheduleDf.drop(index=from_index, inplace=True)
-            print("Possible Problem 2")
             self.parent.scheduleDf.reset_index(drop=True, inplace=True)
-            print("Possible Problem 3")
-            # ✅ Adjust the target index if needed
-            if to_index > from_index:
-                to_index -= 1
-            print("Possible Problem 4")
-            # ✅ Split the DataFrame at the target index and reinsert row
+            # if to_index > from_index:
+            #     to_index -= 1
+            # print()
+            # print("Before:")
+            # print("upper:",self.parent.scheduleDf.iloc[:to_index])
+            # print()
+            # print("row:",row)
+            # print("lower:",self.parent.scheduleDf.iloc[to_index:])
+            # print()
+            # print()
+
+            # print("Affected before:",affected)
+            duration = row["Duration (Minutes)"].values[0]  # length of the observation that we're moving around
+            # print("duration:",duration)
+            # print("Row, before:",row)
+            # print("after removing row:",self.parent.scheduleDf)
+
+            
+            if from_index < to_index:  # we're moving the observation down (later) in the schedule
+                # print(affected["Start Time (UTC)"],affected["Start Time (UTC)"] - timedelta(minutes=duration))
+                # print("affected:",self.parent.scheduleDf.loc[from_index:to_index-1])
+                # print("Shifting start time")
+                # print(self.parent.scheduleDf)
+                # print("Shifting end time")
+                # shift the start and end time of the rows that are being leapfrogged over by the length of the observation we're moving
+                self.parent.scheduleDf.loc[from_index:to_index-1,"Start Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"Start Time (UTC)"] - timedelta(minutes=duration)
+                self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"] - timedelta(minutes=duration)
+                # move the start time of the row we're moving to be the end time of the last row that was leapfrogged
+                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[from_index:to_index-1,"End Time (UTC)"].values[-1]
+            else:
+                # print("case 2")
+                idx1 = to_index
+                idx2 = from_index-1
+
+                # print("affected:",self.parent.scheduleDf.loc[idx1:idx2])
+                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"].values[0]
+                # print(affected["Start Time (UTC)"],affected["Start Time (UTC)"] + timedelta(minutes=duration))
+                # print("shifting start time")
+                self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] + timedelta(minutes=duration)
+                # print(self.parent.scheduleDf)
+                # print("Shifting end time")
+                self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] + timedelta(minutes=duration)
+                # print(self.parent.scheduleDf)
+
+            row["End Time (UTC)"] = row["Start Time (UTC)"] + timedelta(minutes=duration)
+            # print("after shift:",self.parent.scheduleDf)
             upper = self.parent.scheduleDf.iloc[:to_index]
+            # print("Affected after:",affected)
+            # print("Row, after:",row)
+            
+        
             lower = self.parent.scheduleDf.iloc[to_index:]
-            print("Possible Problem 5")
+            # lower["Start Time (UTC)"] = lower["Start Time (UTC)"] + timedelta(minutes=duration)
+            # lower["End Time (UTC)"] = lower["End Time (UTC)"] + timedelta(minutes=duration)
             # ✅ Use pd.concat() to reassemble DataFrame with the row inserted
-            self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
+            # print("Upper:",upper)
+            # print("Row:",row)
+            # print("Lower:",lower)
             print()
+            self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
             # ✅ Refresh the UI after drop
             self.parent.displaySchedule()
-            print("Possible Problem 7")
-            # ✅ Save updated schedule to CSV
-            save_path = os.path.join(
-                self.parent.settings.query("scheduleSaveDir")[0],
-                "schedule.csv"
-            )
-            print("Possible Problem 8")
-            self.parent.scheduleDf.to_csv(save_path, index=False)
+
+            # # ✅ Save updated schedule to CSV
+            # save_path = os.path.join(
+            #     self.parent.settings.query("scheduleSaveDir")[0],
+            #     "schedule.csv"
+            # )
+            # self.parent.scheduleDf.to_csv(save_path, index=False)
 
 
 
@@ -448,6 +493,8 @@ def _main():
             self.scheduleDf = None
             self.dbConnection = None
 
+            # dict that maintains a consistent mapping of target names to colors for display in
+            self.target_colors = {}
 
             # call setup functions
             self.settings.loadSettings()
@@ -578,7 +625,9 @@ def _main():
             self.processAbortButton.clicked.connect(self.abortProcess)
             self.processModel.rowsInserted.connect(lambda parent: self.processesTreeView.expandRecursively(parent))
             self.requestDbRestartButton.clicked.connect(self.startDbUpdater)
-            self.genScheduleButton.clicked.connect(self.runScheduler)
+            # self.genScheduleButton.clicked.connect(self.runScheduler)
+            self.genScheduleButton.clicked.connect(lambda:self.load_test_schedule().displaySchedule())
+            self.genScheduleButton.clicked.connect(lambda: print("LOADING TEST SCHEDULE!!"))
             self.pingButton.clicked.connect(self.pingProcess)
             self.requestDbCycleButton.clicked.connect(self.requestDbCycle)
             self.hardModeButton.clicked.connect(self.hardMode)
@@ -1075,7 +1124,7 @@ def _main():
             self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m))
             # self.scheduleProcess.failed.connect(lambda m: self.warning_popup("Scheduler Failed",m) if self.sched_error_occurred else None)
             self.scheduleProcess.ended.connect(lambda: self.set_scheduler_icon(STATUS_DONE if not self.sched_error_occurred else STATUS_ERROR))
-            self.scheduleProcess.triggered.connect(self.displaySchedule)
+            self.scheduleProcess.triggered.connect(lambda: self.load_created_schedule().displaySchedule())
             self.scheduleProcess.triggered.connect(lambda: self.genScheduleButton.setText("Writing text file"))
             # self.scheduleProcess.ended.connect(self.displaySchedule)
 
@@ -1098,34 +1147,49 @@ def _main():
                         displayTexts.remove(t)
                         break
 
+        def load_schedule_csv(self,fpath):
+            self.scheduleDf = pd.read_csv(fpath).drop(labels='Tags', axis="columns", errors="ignore")
+            self.scheduleDf['Start Time (UTC)'] = pd.to_datetime(self.scheduleDf['Start Time (UTC)'])
+            self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
+            return self
 
 
-        def displaySchedule(self):
-            basepath = self.settings.query("scheduleSaveDir")[0] + os.sep + "schedule"
+        def load_test_schedule(self):
+            self.load_schedule_csv(PATH_TO(join("files","test_schedule.csv")))
+            return self
+
+        def load_created_schedule(self):
+            basepath = join(self.settings.query("scheduleSaveDir")[0],"schedule")
             csvPath = basepath + ".csv"
 
             if os.path.isfile(csvPath):
                 try:
-                    # ✅ Read the CSV and convert times to datetime objects
-                    self.scheduleDf = pd.read_csv(csvPath).drop(labels='Tags', axis="columns", errors="ignore")
-                    self.scheduleDf['Start Time (UTC)'] = pd.to_datetime(self.scheduleDf['Start Time (UTC)'])
-                    self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
-
-                    loadDfInTable(self.scheduleDf, self.scheduleTable)
-                    self.schedTabWidget.setCurrentWidget(self.schedViewTab)
-                    self.scheduleTable.resizeColumnsToContents()
-                    self.scheduleTable.resizeRowsToContents()
-                    self.scheduleTable.update()
-
+                    self.load_schedule_csv(csvPath)
                 except Exception as e:
                     self.statusbar.showMessage(f"Failed to load schedule: {e}")
                     logger.error(f"Failed to load schedule: {e}")
-                    return
+                    self.warning_popup("Failed to Load Schedule", f"Failed to load schedule: {e}")
+                    self.scheduleDf = None
+                    return self
             else:
                 self.statusbar.showMessage("Can't find saved scheduler CSV.")
+                self.warning_popup("No Schedule Found", "Can't find saved scheduler CSV.")
                 logger.error("Can't find saved scheduler CSV.")
+                self.scheduleDf = None
+            return self
+
+
+        def displaySchedule(self):
+            if self.scheduleDf is None:
                 return
             print(self.scheduleDf)
+
+            loadDfInTable(self.scheduleDf, self.scheduleTable)
+            self.schedTabWidget.setCurrentWidget(self.schedViewTab)
+            self.scheduleTable.resizeColumnsToContents()
+            self.scheduleTable.resizeRowsToContents()
+            self.scheduleTable.update()
+            
             # ✅ Step 1: Remove existing layout and widgets cleanly
             old_layout = self.schedule_display_container.layout()
             if old_layout:
@@ -1156,41 +1220,48 @@ def _main():
             if content.layout is None:
                 content.setLayout(QVBoxLayout())
 
-            # ✅ Step 3: Maintain consistent color mapping for targets
-            target_colors = {}
-
             def get_color_for_target(target):
-                if target in target_colors:
-                    return target_colors[target]  # ✅ Reuse existing color
+                if target in self.target_colors:
+                    return self.target_colors[target]
                 else:
-                    # ✅ Generate new color and store it
                     new_color = QColor(
                         random.randint(150, 255),
                         random.randint(150, 255),
                         random.randint(150, 255)
                     )
-                    target_colors[target] = new_color
+                    self.target_colors[target] = new_color
                     return new_color
 
             # ✅ Step 4: Dynamically scale buttons based on window size
             def updateButtonSizes():
                 container_width = self.schedule_display_container.width()
                 container_height = self.schedule_display_container.height()
+                print("Container height:",container_height)
+
 
                 # ✅ Calculate total observing time (in minutes)
-                total_duration = (self.scheduleDf['End Time (UTC)'] - self.scheduleDf['Start Time (UTC)']).dt.total_seconds().sum() / 60
-
-                if total_duration > 0:
-                    scale_factor = container_height / total_duration
-                else:
-                    scale_factor = 40
-
+                total_duration = sum(self.scheduleDf['Duration (Minutes)'])
+                print("Total duration:",total_duration)
+                scale_factor = container_height / total_duration
+                print("Scale factor:",scale_factor)
                 for i, row in self.scheduleDf.iterrows():
                     target = row.get("Target")
                     start_time = row["Start Time (UTC)"]
                     end_time = row["End Time (UTC)"]
 
-                    if target and target not in ["Focus", "Unused Time"]:
+# Container height: 818
+# Total duration: 112.0
+# Scale factor: 7.303571428571429
+# B 146
+# A 87
+# C 219
+# D 36
+# E 219
+# F 109
+
+
+                    if target:
+                    # if target and target not in ["Focus", "Unused Time"]:
                         btn = DraggableButton(target, i, self, content)
 
                         # ✅ Assign consistent color for repeated targets
@@ -1214,8 +1285,10 @@ def _main():
                         duration = (end_time - start_time).total_seconds() / 60
                         if duration > 0:
                             # ✅ Scale button size based on total duration
-                            scaled_height = max(20, int(duration * scale_factor))
+                            # scaled_height = max(20, int(duration * scale_factor))
+                            scaled_height = int(duration * scale_factor)
                             btn.setFixedHeight(scaled_height)
+                            print(str(row["Target"]),scaled_height)
 
                             # ✅ Set button width to scale with container
                             btn.setFixedWidth(int(container_width * 0.7))
@@ -1282,18 +1355,6 @@ def _main():
             QCoreApplication.processEvents()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         def openPopupDialog(self, target_name):
             dialog = QDialog(self)
             dialog.setWindowTitle(f"Details for: {target_name}")
@@ -1329,9 +1390,6 @@ def _main():
             layout.addWidget(buttons)
 
             dialog.exec()
- 
-
-
 
         def autoSetSchedulerTimes(self, run=True):
             if run:
@@ -1616,7 +1674,7 @@ def _main():
             self.ephem_error_occurred = False
             self.ephemProcess = self.initProcess("Ephemerides", description="The Ephemerides process is responsible for fetching ephemerides for the selected targets.")
             # if debug:
-            #     # self.ephemProcess.ended.connect(lambda: print(self.processModel.rootItem.__dict__))
+                # self.ephemProcess.ended.connect(lambda: print(self.processModel.rootItem.__dict__))
                 # self.ephemProcess.msg.connect(lambda msg: print(msg))
             self.ephemProcess.errorOccurred.connect(lambda: self.set_ephem_error_occurred(True))
             self.ephemProcess.ended.connect(lambda: self.getEphemsButton.setDisabled(False))
@@ -1690,4 +1748,8 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    _main()
+    try:
+        _main()
+    except OSError as e:
+        print(e)
+        raise e
