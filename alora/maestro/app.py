@@ -49,7 +49,7 @@ def _main():
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
     from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel, ModuleListEntry
-    from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton
+    from MaestroCore.utils.buttons import FileSelectionButton, ModelRemoveButton, DraggableButton, DropWidget
     from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
     from MaestroCore.utils.windows import ScrollMessageBox
     from datetime import datetime, timedelta 
@@ -251,126 +251,7 @@ def _main():
         def asDict(self):
             return {k: v for k, [v, _] in self.cfg.items()}
 
-    class DraggableButton(QPushButton):
-        def __init__(self, text, index, main_window, parent=None):
-            super().__init__(text, parent)
-            self.index = index
-            self.main_window = main_window
-            self.setAcceptDrops(True)
 
-        def mousePressEvent(self, event):
-            if event.button() == Qt.MouseButton.LeftButton:
-                # Left click – open the popup using the main window reference
-                self.main_window.openPopupDialog(self.text())
-            elif event.button() == Qt.MouseButton.RightButton:
-                # Right click – start dragging
-                drag = QDrag(self)
-                mime_data = QMimeData()
-
-                # Encode row index into the mime data
-                data = QByteArray()
-                stream = QDataStream(data, QIODeviceBase.OpenModeFlag.WriteOnly)
-                stream.writeInt(self.index)
-                mime_data.setData("application/x-schedule-item", data)
-
-                drag.setMimeData(mime_data)
-                drag.setPixmap(self.grab())
-
-                drag.exec(Qt.DropAction.MoveAction)  # ✅ Correct in Qt6
-
-
-
-    class DropWidget(QWidget):
-        def __init__(self, parent):
-            super().__init__(parent)
-            self.setAcceptDrops(True)
-            self.parent = parent
-            self.layout = QVBoxLayout()
-            self.layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # ✅ Correct in Qt6
-            self.setLayout(self.layout)
-            self.prev_container_size = None
-
-        def dragEnterEvent(self, event):
-            if event.mimeData().hasFormat("application/x-schedule-item"):
-                event.accept()
-                self.prev_container_size = self.parent.schedule_display_container.height()
-            else:
-                event.ignore()
-
-        def dropEvent(self, event):
-            if event.mimeData().hasFormat("application/x-schedule-item"):
-                data = event.mimeData().data("application/x-schedule-item")
-                stream = QDataStream(data, QIODeviceBase.OpenModeFlag.ReadOnly)
-                from_index = stream.readInt()
-
-                # ✅ `position()` returns QPointF in Qt6, convert to QPoint
-                pos = event.position().toPoint()
-                insert_at = self.findButtonIndex(pos)
-
-                if insert_at is not None and insert_at != from_index:
-                    self.rearrangeSchedule(from_index, insert_at)
-
-
-                event.accept()  # ✅ Explicit acceptance
-
-            else:
-                event.ignore()
-
-        def findButtonIndex(self, pos):
-            for i in range(self.layout.count()):
-                widget = self.layout.itemAt(i).widget()
-                if widget and widget.geometry().contains(pos):
-                    return i
-            return None
-
-        def rearrangeSchedule(self, from_index, to_index):
-            if from_index < 0 or from_index >= len(self.parent.scheduleDf):
-                return
-            if to_index < 0 or to_index >= len(self.parent.scheduleDf):
-                return
-
-            row = self.parent.scheduleDf.iloc[[from_index]].copy()
-            print(f"From slot: {from_index} ({self.parent.scheduleDf.iloc[[from_index]]['Target']})")
-            print(f"To slot: {to_index} ({self.parent.scheduleDf.iloc[[to_index]]['Target']})")
-
-            # remove the row from the original position
-            self.parent.scheduleDf.drop(index=from_index, inplace=True)
-            self.parent.scheduleDf.reset_index(drop=True, inplace=True)
-
-            duration = row["Duration (Minutes)"].values[0]  # length of the observation that we're moving around
-            
-            if from_index < to_index:  # we're moving the observation down (later) in the schedule
-                idx1 = from_index
-                idx2 = to_index-1
-                dt = timedelta(minutes=-duration)
-
-            else:
-                idx1 = to_index
-                idx2 = from_index-1
-                dt = timedelta(minutes=duration)
-                # in this case, we do the adjustment to the target row before we move things around
-                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"].values[0]
-
-            # shift the affected rows (the rows that are being leapfrogged) by the duration of the observation
-            self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"Start Time (UTC)"] + dt
-            self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"] + dt
-
-            if from_index < to_index:
-                # move the start time of the row we're moving to be the end time of the last row that was leapfrogged
-                row["Start Time (UTC)"] = self.parent.scheduleDf.loc[idx1:idx2,"End Time (UTC)"].values[-1]
-
-            # move the end time of the observation to match the start (plus the duration)
-            row["End Time (UTC)"] = row["Start Time (UTC)"] + timedelta(minutes=duration)
-
-            upper = self.parent.scheduleDf.iloc[:to_index]
-            lower = self.parent.scheduleDf.iloc[to_index:]
-
-            # stack the three parts together
-            self.parent.scheduleDf = pd.concat([upper, row, lower], ignore_index=True)
-            # self.parent.scheduleDf.reset_index(drop=True, inplace=True)
-
-            # now that we've made the changes, redraw the display
-            self.parent.displaySchedule()
 
 
     def loadDfInTable(df, table):
@@ -1144,7 +1025,7 @@ def _main():
             return self
 
 
-        def displaySchedule(self):
+        def displaySchedule(self, redraw = False):
             if self.scheduleDf is None:
                 return
             print(self.scheduleDf)
@@ -1155,29 +1036,9 @@ def _main():
             self.scheduleTable.resizeRowsToContents()
             self.scheduleTable.update()
             
-            # remove existing widgets
-            old_layout = self.schedule_display_container.layout()
-            if old_layout:
-                # self.schedule_display_container.setWidget(QWidget())
-                while old_layout.count():
-                    item = old_layout.takeAt(0)
-                    if item:
-                        widget = item.widget()
-                        if widget:
-                            # widget.setParent(None)
-                            widget.deleteLater()
+            self.scheduleDispDock.setWidget(QWidget())
 
-                        layout = item.layout()
-                        if layout:
-                            while layout.count():
-                                sub_item = layout.takeAt(0)
-                                if sub_item.widget():
-                                    # sub_item.widget().setParent(None)
-                                    sub_item.widget().deleteLater()
-                            layout.deleteLater()
 
-                QCoreApplication.processEvents()
-            # create new DropWidget for drag-and-drop
             content = DropWidget(self)
 
             if content.layout is None:
@@ -1203,7 +1064,7 @@ def _main():
 
 
                 # calculate total observing time (in minutes)
-                total_duration = sum(self.scheduleDf['Duration (Minutes)'])
+                total_duration = (max(self.scheduleDf["End Time (UTC)"]) - min(self.scheduleDf['Start Time (UTC)'])).total_seconds()/60
                 print("Total duration:",total_duration)
                 scale_factor = container_height / total_duration
                 print("Scale factor:",scale_factor)
@@ -1271,17 +1132,11 @@ def _main():
                             # add row to main layout
                             content.layout.addWidget(row_container)
 
+            
             updateButtonSizes()
 
             # assign new layout directly to container
-            if old_layout is None:
-                c_layout = QVBoxLayout()
-                c_layout.setSpacing(0)  # remove spacing between rows
-                c_layout.setContentsMargins(0, 0, 0, 0)  # remove outer margins
-                c_layout.addWidget(content)
-                self.schedule_display_container.setLayout(c_layout)
-            else:
-                old_layout.addWidget(content)
+            self.scheduleDispDock.setWidget(content)
 
             # ensure resizing behavior
             t_content = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
