@@ -955,7 +955,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.schedTabWidget.setCurrentIndex(0)
+        self.schedTabWidget.setCurrentIndex(1)
         self.intervalComboBox.setCurrentIndex(0)
         self.formatComboBox.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
