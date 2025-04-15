@@ -85,7 +85,7 @@
            </sizepolicy>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="schedGenTab">
            <attribute name="title">
@@ -110,7 +110,7 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <property name="sizeConstraint">
-               <enum>QLayout::SetDefaultConstraint</enum>
+               <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
               </property>
               <item>
                <layout class="QHBoxLayout" name="genSchedButtonHorizLayout">
@@ -135,13 +135,13 @@
                    <string>Start time for schedule</string>
                   </property>
                   <property name="currentSection">
-                   <enum>QDateTimeEdit::MonthSection</enum>
+                   <enum>QDateTimeEdit::Section::MonthSection</enum>
                   </property>
                   <property name="displayFormat">
                    <string>MM/dd hh:mm UTC</string>
                   </property>
                   <property name="timeSpec">
-                   <enum>Qt::UTC</enum>
+                   <enum>Qt::TimeSpec::UTC</enum>
                   </property>
                  </widget>
                 </item>
@@ -164,13 +164,13 @@
                    <string>End time for schedule</string>
                   </property>
                   <property name="currentSection">
-                   <enum>QDateTimeEdit::MonthSection</enum>
+                   <enum>QDateTimeEdit::Section::MonthSection</enum>
                   </property>
                   <property name="displayFormat">
                    <string>MM/dd hh:mm UTC</string>
                   </property>
                   <property name="timeSpec">
-                   <enum>Qt::UTC</enum>
+                   <enum>Qt::TimeSpec::UTC</enum>
                   </property>
                  </widget>
                 </item>
@@ -252,7 +252,7 @@
                    <string>Save copies of ephemeris retrieved during schedule generation</string>
                   </property>
                   <property name="layoutDirection">
-                   <enum>Qt::LeftToRight</enum>
+                   <enum>Qt::LayoutDirection::LeftToRight</enum>
                   </property>
                   <property name="text">
                    <string>Save Ephems</string>
@@ -323,7 +323,7 @@
                 <item>
                  <spacer name="horizontalSpacer">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -346,7 +346,7 @@
                 <item>
                  <widget class="QFrame" name="verticalFrame">
                   <property name="frameShape">
-                   <enum>QFrame::Box</enum>
+                   <enum>QFrame::Shape::Box</enum>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout">
                    <property name="spacing">
@@ -376,7 +376,7 @@
                       <string>Blacklist</string>
                      </property>
                      <property name="alignment">
-                      <set>Qt::AlignCenter</set>
+                      <set>Qt::AlignmentFlag::AlignCenter</set>
                      </property>
                     </widget>
                    </item>
@@ -409,13 +409,13 @@
                       <string>These targets will not be considered for scheduling</string>
                      </property>
                      <property name="frameShape">
-                      <enum>QFrame::Box</enum>
+                      <enum>QFrame::Shape::Box</enum>
                      </property>
                      <property name="alternatingRowColors">
                       <bool>true</bool>
                      </property>
                      <property name="selectionMode">
-                      <enum>QAbstractItemView::MultiSelection</enum>
+                      <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                      </property>
                     </widget>
                    </item>
@@ -444,7 +444,7 @@
                 <item>
                  <widget class="QFrame" name="verticalFrame_2">
                   <property name="frameShape">
-                   <enum>QFrame::Box</enum>
+                   <enum>QFrame::Shape::Box</enum>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_3">
                    <property name="spacing">
@@ -468,7 +468,7 @@
                       <string>Whitelist</string>
                      </property>
                      <property name="alignment">
-                      <set>Qt::AlignCenter</set>
+                      <set>Qt::AlignmentFlag::AlignCenter</set>
                      </property>
                     </widget>
                    </item>
@@ -501,13 +501,13 @@
                       <string>These targets will recieve priority scheduling</string>
                      </property>
                      <property name="frameShape">
-                      <enum>QFrame::Box</enum>
+                      <enum>QFrame::Shape::Box</enum>
                      </property>
                      <property name="alternatingRowColors">
                       <bool>true</bool>
                      </property>
                      <property name="selectionMode">
-                      <enum>QAbstractItemView::MultiSelection</enum>
+                      <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                      </property>
                     </widget>
                    </item>
@@ -533,7 +533,7 @@
                 <item>
                  <widget class="QFrame" name="verticalFrame_4">
                   <property name="frameShape">
-                   <enum>QFrame::Box</enum>
+                   <enum>QFrame::Shape::Box</enum>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_8">
                    <property name="spacing">
@@ -557,7 +557,7 @@
                       <string>Excluded Time Ranges</string>
                      </property>
                      <property name="alignment">
-                      <set>Qt::AlignCenter</set>
+                      <set>Qt::AlignmentFlag::AlignCenter</set>
                      </property>
                     </widget>
                    </item>
@@ -572,13 +572,13 @@
                         <string>Start time for excluded timerange</string>
                        </property>
                        <property name="currentSection">
-                        <enum>QDateTimeEdit::MonthSection</enum>
+                        <enum>QDateTimeEdit::Section::MonthSection</enum>
                        </property>
                        <property name="displayFormat">
                         <string>MM/dd hh:mm UTC</string>
                        </property>
                        <property name="timeSpec">
-                        <enum>Qt::UTC</enum>
+                        <enum>Qt::TimeSpec::UTC</enum>
                        </property>
                       </widget>
                      </item>
@@ -598,7 +598,7 @@
                         <string>End time for excluded timerange</string>
                        </property>
                        <property name="currentSection">
-                        <enum>QDateTimeEdit::HourSection</enum>
+                        <enum>QDateTimeEdit::Section::HourSection</enum>
                        </property>
                        <property name="displayFormat">
                         <string>MM/dd hh:mm UTC</string>
@@ -607,7 +607,7 @@
                         <number>2</number>
                        </property>
                        <property name="timeSpec">
-                        <enum>Qt::UTC</enum>
+                        <enum>Qt::TimeSpec::UTC</enum>
                        </property>
                       </widget>
                      </item>
@@ -632,16 +632,16 @@
                       <string>These time ranges will be forbidden when scheduling</string>
                      </property>
                      <property name="frameShape">
-                      <enum>QFrame::Box</enum>
+                      <enum>QFrame::Shape::Box</enum>
                      </property>
                      <property name="editTriggers">
-                      <set>QAbstractItemView::NoEditTriggers</set>
+                      <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                      </property>
                      <property name="alternatingRowColors">
                       <bool>true</bool>
                      </property>
                      <property name="selectionMode">
-                      <enum>QAbstractItemView::MultiSelection</enum>
+                      <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                      </property>
                     </widget>
                    </item>
@@ -664,7 +664,7 @@
                 <item>
                  <spacer name="horizontalSpacer_2">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -684,7 +684,7 @@
            <attribute name="title">
             <string>View</string>
            </attribute>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,1">
             <property name="leftMargin">
              <number>0</number>
             </property>
@@ -701,21 +701,21 @@
              <widget class="QTableWidget" name="scheduleTable">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                <horstretch>70</horstretch>
+                <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="frameShape">
-               <enum>QFrame::Box</enum>
+               <enum>QFrame::Shape::Box</enum>
               </property>
               <property name="frameShadow">
-               <enum>QFrame::Sunken</enum>
+               <enum>QFrame::Shadow::Sunken</enum>
               </property>
               <property name="sizeAdjustPolicy">
-               <enum>QAbstractScrollArea::AdjustToContents</enum>
+               <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
               </property>
               <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
+               <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
               </property>
               <property name="showDropIndicator" stdset="0">
                <bool>false</bool>
@@ -727,7 +727,7 @@
                <bool>true</bool>
               </property>
               <property name="selectionBehavior">
-               <enum>QAbstractItemView::SelectRows</enum>
+               <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
               </property>
               <property name="sortingEnabled">
                <bool>true</bool>
@@ -747,31 +747,42 @@
              </widget>
             </item>
             <item>
-             <widget class="QDockWidget" name="scheduleDispDock">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                <horstretch>30</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>524287</width>
-                <height>5000</height>
-               </size>
-              </property>
-              <property name="features">
-               <set>QDockWidget::NoDockWidgetFeatures</set>
-              </property>
-              <widget class="QWidget" name="schedule_display_container">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                 <horstretch>30</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-              </widget>
-             </widget>
+             <layout class="QVBoxLayout" name="verticalLayout_12" stretch="0,0">
+              <item>
+               <widget class="QDockWidget" name="scheduleDispDock">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>524287</width>
+                  <height>5000</height>
+                 </size>
+                </property>
+                <property name="features">
+                 <set>QDockWidget::DockWidgetFeature::NoDockWidgetFeatures</set>
+                </property>
+                <widget class="QWidget" name="schedule_display_container">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                   <horstretch>30</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="addObservationButton">
+                <property name="text">
+                 <string>Add Observation</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
@@ -808,7 +819,7 @@
            </sizepolicy>
           </property>
           <property name="features">
-           <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+           <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
           </property>
           <property name="windowTitle">
            <string>Targets</string>
@@ -953,7 +964,7 @@
                 <item>
                  <spacer name="horizontalSpacer_3">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -968,10 +979,10 @@
               <item>
                <widget class="QTableView" name="candidateView">
                 <property name="sizeAdjustPolicy">
-                 <enum>QAbstractScrollArea::AdjustToContents</enum>
+                 <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
                 </property>
                 <property name="editTriggers">
-                 <set>QAbstractItemView::NoEditTriggers</set>
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                 </property>
                 <property name="dragDropOverwriteMode">
                  <bool>false</bool>
@@ -980,10 +991,10 @@
                  <bool>true</bool>
                 </property>
                 <property name="selectionMode">
-                 <enum>QAbstractItemView::MultiSelection</enum>
+                 <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                 </property>
                 <property name="selectionBehavior">
-                 <enum>QAbstractItemView::SelectRows</enum>
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
                 </property>
                 <property name="sortingEnabled">
                  <bool>true</bool>
@@ -1027,7 +1038,7 @@
            </sizepolicy>
           </property>
           <property name="features">
-           <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+           <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
           </property>
           <property name="windowTitle">
            <string>Database</string>
@@ -1058,10 +1069,10 @@
                </sizepolicy>
               </property>
               <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
+               <enum>QFrame::Shape::StyledPanel</enum>
               </property>
               <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
+               <enum>QFrame::Shadow::Raised</enum>
               </property>
               <property name="lineWidth">
                <number>1</number>
@@ -1180,7 +1191,7 @@
                      <item>
                       <spacer name="horizontalSpacer_5">
                        <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <enum>Qt::Orientation::Horizontal</enum>
                        </property>
                        <property name="sizeHint" stdset="0">
                         <size>
@@ -1230,10 +1241,10 @@
                    <item>
                     <spacer name="horizontalSpacer_6">
                      <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
+                      <enum>Qt::Orientation::Horizontal</enum>
                      </property>
                      <property name="sizeType">
-                      <enum>QSizePolicy::Expanding</enum>
+                      <enum>QSizePolicy::Policy::Expanding</enum>
                      </property>
                      <property name="sizeHint" stdset="0">
                       <size>
@@ -1273,7 +1284,7 @@
                     <string>Program Errors</string>
                    </property>
                    <property name="textFormat">
-                    <enum>Qt::MarkdownText</enum>
+                    <enum>Qt::TextFormat::MarkdownText</enum>
                    </property>
                   </widget>
                  </item>
@@ -1289,13 +1300,13 @@
                     <string>Program runtime errors will appear here</string>
                    </property>
                    <property name="horizontalScrollBarPolicy">
-                    <enum>Qt::ScrollBarAsNeeded</enum>
+                    <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
                    </property>
                    <property name="sizeAdjustPolicy">
-                    <enum>QAbstractScrollArea::AdjustToContents</enum>
+                    <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
                    </property>
                    <property name="editTriggers">
-                    <set>QAbstractItemView::NoEditTriggers</set>
+                    <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                    </property>
                    <property name="dragDropOverwriteMode">
                     <bool>false</bool>
@@ -1304,19 +1315,19 @@
                     <bool>true</bool>
                    </property>
                    <property name="selectionMode">
-                    <enum>QAbstractItemView::SingleSelection</enum>
+                    <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
                    </property>
                    <property name="selectionBehavior">
-                    <enum>QAbstractItemView::SelectRows</enum>
+                    <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
                    </property>
                    <property name="textElideMode">
-                    <enum>Qt::ElideNone</enum>
+                    <enum>Qt::TextElideMode::ElideNone</enum>
                    </property>
                    <property name="verticalScrollMode">
-                    <enum>QAbstractItemView::ScrollPerPixel</enum>
+                    <enum>QAbstractItemView::ScrollMode::ScrollPerPixel</enum>
                    </property>
                    <property name="horizontalScrollMode">
-                    <enum>QAbstractItemView::ScrollPerPixel</enum>
+                    <enum>QAbstractItemView::ScrollMode::ScrollPerPixel</enum>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -1372,7 +1383,7 @@
         <item>
          <widget class="QDockWidget" name="ephemDock">
           <property name="features">
-           <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+           <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
           </property>
           <property name="windowTitle">
            <string>Ephemeris</string>
@@ -1432,7 +1443,7 @@
                    </sizepolicy>
                   </property>
                   <property name="focusPolicy">
-                   <enum>Qt::StrongFocus</enum>
+                   <enum>Qt::FocusPolicy::StrongFocus</enum>
                   </property>
                   <property name="toolTip">
                    <string>Granularity of generated ephemeris</string>
@@ -1444,7 +1455,7 @@
                    <number>0</number>
                   </property>
                   <property name="sizeAdjustPolicy">
-                   <enum>QComboBox::AdjustToContents</enum>
+                   <enum>QComboBox::SizeAdjustPolicy::AdjustToContents</enum>
                   </property>
                   <item>
                    <property name="text">
@@ -1471,10 +1482,10 @@
                 <item>
                  <spacer name="horizontalSpacer_10">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Preferred</enum>
+                   <enum>QSizePolicy::Policy::Preferred</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1516,10 +1527,10 @@
                 <item>
                  <spacer name="horizontalSpacer_11">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Preferred</enum>
+                   <enum>QSizePolicy::Policy::Preferred</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1541,7 +1552,7 @@
                    <string>Start in</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignCenter</set>
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
                   </property>
                   <property name="margin">
                    <number>5</number>
@@ -1568,10 +1579,10 @@
                 <item>
                  <spacer name="horizontalSpacer_12">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Preferred</enum>
+                   <enum>QSizePolicy::Policy::Preferred</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1600,7 +1611,7 @@
                    <string>Format</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -1613,7 +1624,7 @@
                    </sizepolicy>
                   </property>
                   <property name="focusPolicy">
-                   <enum>Qt::StrongFocus</enum>
+                   <enum>Qt::FocusPolicy::StrongFocus</enum>
                   </property>
                   <property name="toolTip">
                    <string>Output format for ephemeris</string>
@@ -1628,7 +1639,7 @@
                    <number>0</number>
                   </property>
                   <property name="sizeAdjustPolicy">
-                   <enum>QComboBox::AdjustToContents</enum>
+                   <enum>QComboBox::SizeAdjustPolicy::AdjustToContents</enum>
                   </property>
                   <property name="placeholderText">
                    <string>Select</string>
@@ -1648,10 +1659,10 @@
                 <item>
                  <spacer name="horizontalSpacer_13">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Preferred</enum>
+                   <enum>QSizePolicy::Policy::Preferred</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1673,7 +1684,7 @@
                    <string>Timeout</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -1696,10 +1707,10 @@
                 <item>
                  <spacer name="horizontalSpacer_14">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
+                   <enum>QSizePolicy::Policy::Fixed</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1725,7 +1736,7 @@
                    <string>Target Name Entry</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignCenter</set>
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -1741,7 +1752,7 @@
                    <string>Type a target's name here and press Enter to add to ephemeris request list</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                   <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
                   </property>
                   <property name="clearButtonEnabled">
                    <bool>true</bool>
@@ -1768,10 +1779,10 @@
                 <item>
                  <spacer name="horizontalSpacer_4">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Minimum</enum>
+                   <enum>QSizePolicy::Policy::Minimum</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1805,10 +1816,10 @@
                 <item>
                  <spacer name="horizontalSpacer_16">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeType">
-                   <enum>QSizePolicy::Expanding</enum>
+                   <enum>QSizePolicy::Policy::Expanding</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1849,25 +1860,25 @@
                      <string>Ephemeris will be fetched for these targets</string>
                     </property>
                     <property name="frameShadow">
-                     <enum>QFrame::Plain</enum>
+                     <enum>QFrame::Shadow::Plain</enum>
                     </property>
                     <property name="lineWidth">
                      <number>3</number>
                     </property>
                     <property name="editTriggers">
-                     <set>QAbstractItemView::NoEditTriggers</set>
+                     <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                     </property>
                     <property name="alternatingRowColors">
                      <bool>true</bool>
                     </property>
                     <property name="selectionMode">
-                     <enum>QAbstractItemView::MultiSelection</enum>
+                     <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                     </property>
                     <property name="selectionBehavior">
-                     <enum>QAbstractItemView::SelectRows</enum>
+                     <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
                     </property>
                     <property name="itemAlignment">
-                     <set>Qt::AlignLeading</set>
+                     <set>Qt::AlignmentFlag::AlignLeading</set>
                     </property>
                    </widget>
                   </item>
@@ -1900,10 +1911,10 @@
                    <string>**Convert Coordinates**</string>
                   </property>
                   <property name="textFormat">
-                   <enum>Qt::MarkdownText</enum>
+                   <enum>Qt::TextFormat::MarkdownText</enum>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -2037,7 +2048,7 @@
                 <item>
                  <spacer name="horizontalSpacer_7">
                   <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
+                   <enum>Qt::Orientation::Horizontal</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -2052,10 +2063,10 @@
               <item>
                <spacer name="verticalSpacer_5">
                 <property name="orientation">
-                 <enum>Qt::Vertical</enum>
+                 <enum>Qt::Orientation::Vertical</enum>
                 </property>
                 <property name="sizeType">
-                 <enum>QSizePolicy::Expanding</enum>
+                 <enum>QSizePolicy::Policy::Expanding</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -2133,8 +2144,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>973</width>
-                     <height>721</height>
+                     <width>964</width>
+                     <height>717</height>
                     </rect>
                    </property>
                   </widget>
@@ -2179,7 +2190,7 @@
            </sizepolicy>
           </property>
           <property name="features">
-           <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+           <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
           </property>
           <property name="windowTitle">
            <string>Processes</string>
@@ -2284,16 +2295,16 @@
               <item>
                <widget class="QTreeView" name="processesTreeView">
                 <property name="editTriggers">
-                 <set>QAbstractItemView::NoEditTriggers</set>
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                 </property>
                 <property name="dragDropOverwriteMode">
                  <bool>false</bool>
                 </property>
                 <property name="selectionMode">
-                 <enum>QAbstractItemView::MultiSelection</enum>
+                 <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                 </property>
                 <property name="selectionBehavior">
-                 <enum>QAbstractItemView::SelectRows</enum>
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
                 </property>
                 <property name="wordWrap">
                  <bool>true</bool>

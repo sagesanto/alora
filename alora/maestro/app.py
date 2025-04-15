@@ -252,6 +252,22 @@ def _main():
             return {k: v for k, [v, _] in self.cfg.items()}
 
 
+    def addScheduleEntry(self, target, start_time, end_time, duration, ra, dec):
+        new_entry = {
+            "Target": target,
+            "Start Time (UTC)": start_time,
+            "End Time (UTC)": end_time,
+            "Duration (Minutes)": duration,
+            "RA": ra,
+            "Dec": dec
+        }
+
+        self.scheduleDf = pd.concat([self.scheduleDf, pd.DataFrame([new_entry])], ignore_index=True)
+
+        save_path = os.path.join(self.settings.query("scheduleSaveDir")[0], "schedule.csv")
+        self.scheduleDf.to_csv(save_path, index=False)
+
+        self.displaySchedule()
 
 
     def loadDfInTable(df, table):
@@ -560,7 +576,7 @@ def _main():
             if return_box:
                 return msgBox
             msgBox.exec()
-
+        
         def write_default_module_settings(self,mod_dir):
             try:
                 if not os.path.exists(join(mod_dir,"cfg.schema")):
@@ -1024,6 +1040,10 @@ def _main():
                 self.scheduleDf = None
             return self
 
+        def add_observation_popup(self):
+            dialog = QDialog(self)
+            layout = QVBoxLayout()
+            
 
         def displaySchedule(self, redraw = False):
             if self.scheduleDf is None:
@@ -1533,6 +1553,7 @@ def _main():
             self.dbOperatorProcess.start(PYTHON_PATH,
                                         [PATH_TO(join('MaestroCore','databaseOperations.py')), json.dumps(self.settings.asDict())])
 
+        
     app = QApplication([])
 
     window = MainWindow()
