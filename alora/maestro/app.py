@@ -266,7 +266,7 @@ def _main():
 
         self.scheduleDf = pd.concat([self.scheduleDf, pd.DataFrame([new_entry])], ignore_index=True)
 
-        save_path = os.path.join(self.settings.query("scheduleSaveDir")[0], "schedule.csv")
+        save_path = os.path.join(self.settings.query("scheduleSaveDir"), "schedule.csv")
         self.scheduleDf.to_csv(save_path, index=False)
 
         self.displaySchedule()
@@ -1150,7 +1150,7 @@ def _main():
             return self
 
         def load_created_schedule(self):
-            basepath = join(self.settings.query("scheduleSaveDir")[0],"schedule")
+            basepath = join(self.settings.query("scheduleSaveDir"),"schedule")
             csvPath = basepath + ".csv"
 
             if os.path.isfile(csvPath):
