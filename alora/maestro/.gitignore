@@ -1,3 +1,6 @@
+files/configs/**.toml
+schedulerConfigs/**/config.toml
+
 /.idea/
 /.hypothesis/
 /.__pycache__/

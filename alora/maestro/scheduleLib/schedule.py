@@ -18,16 +18,16 @@ from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 
 from pytz import UTC 
 
-from scheduleLib import genUtils
-from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
-from scheduleLib.genUtils import stringToTime, timeToString, ensureAngle, ensureDatetime, ensureFloat, roundToTenMinutes, get_candidate_db_path, MAESTRO_DIR
+from alora.maestro.scheduleLib import genUtils
+from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+from alora.maestro.scheduleLib.genUtils import stringToTime, timeToString, ensureAngle, ensureDatetime, ensureFloat, roundToTenMinutes, get_candidate_db_path, MAESTRO_DIR
 from alora.config import observatory_location
 
 
 MINUTES_BETWEEN_OBS = 3
 
 from alora.config.utils import Config
-from scheduleLib.module_loader import ModuleManager
+from alora.maestro.scheduleLib.module_loader import ModuleManager
 
 cfg = Config(join(MAESTRO_DIR,"files","configs","config.toml"))
 
@@ -56,8 +56,6 @@ class Observation:
 
     @classmethod
     def fromLine(cls, line, header):  # this is bad but whatever
-#       DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|CandidateID|Description
-        # need to rework this to split based on keywords, not just on the number of pipes - headers change over time, want to be able to process schedules from any time
         split = line.split('|')
         if len(split) > len(header):
             raise Exception(f"Schedule line ({split}) has too many attributes for its header {header}!")
@@ -69,7 +67,7 @@ class Observation:
         startTime = stringToTime(d["DateTime"],scheduler=True).replace(tzinfo=UTC)
         occupied = d["Occupied"]  # probably always 1
         targetName = d["Target"]
-        move = d["Move"]  # probably always 1
+        move = d["Move"]  # probably always 1   # TODO: NOT ALWAYS 1
         RA = float(d["RA"])
         Dec = float(d["Dec"])
         exposureTime = d["ExposureTime"]
@@ -714,9 +712,9 @@ if __name__ == "__main__":
     debug = args.debug
     if debug:
         # make schedules
-        goodSchedule = Schedule.read("libFiles/exampleGoodSchedule.txt")
+        goodSchedule = Schedule.read(join(MAESTRO_DIR,'scheduleLib','libFiles',"exampleGoodSchedule.txt"))
         # good schedule should pass almost all tests - will fail the autofocus test and the overlap test (doesn't allow 3 minutes between obs)
-        badSchedule = Schedule.read("libFiles/exampleBadSchedule.txt")
+        badSchedule = Schedule.read(join(MAESTRO_DIR,'scheduleLib','libFiles',"exampleBadSchedule.txt"))
         # bad schedule should fail every test, as so:
         #   - Time Overlap Error: lines 1 and 2 should overlap
         #   - Sunrise Error: last observation happens too close to "sunrise"

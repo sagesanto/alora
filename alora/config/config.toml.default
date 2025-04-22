@@ -1,0 +1,67 @@
+SKYX_PORT = 3040
+CHOIR_PORT = 3050
+
+# telemetry
+TELEMETRY_PORT = 18812
+TELEM_DBPATH = "telemetry.db"
+TELEM_API_PORT = 5050
+
+CLOSED_LOOP_OUTDIR = "D:/Data/closed_loop/"
+CLOSED_LOOP_TOLERANCE = 1  # arcmin
+
+IMAGE_EXTENSION = "fit"
+
+# choir: slack
+# im not accidentally leaking things, i swear
+SLACK_WHISPERS = ["U03VA46UGSJ","W01148Y9LHM"]
+SLACK_CHANNELS = ["C07P35WNX4G"]
+
+# telemetry: weather
+WEATHER_URL = "https://swd.weatherflow.com/swd/rest"
+
+# watchdog
+WATCHDOG_PORT = 3055
+[WEATHER_CONDITIONS_CLOSE]
+    FORECAST.precip_probability = [">", 0.0]
+    NOW.precip = [">", 0]
+    NOW.wind_avg = [">", 9]  # 20 mph ~= 9m/s
+    NOW.relative_humidity = [">",80]
+
+[DEFAULTS]
+    BIN = 2  # default binning size for camera
+
+[OBSERVATORY]
+    NAME = "Alora"
+    REGION = "AZ, USA"  # can be any string
+    LATITUDE = 31.955556
+    LONGITUDE = -110.306667
+    TIMEZONE = "UTC"
+    BBOX_BUFFER_DEG = 0  # buffer to shrink bounding box by when determining whether target is within pointing limits
+
+[CAMERA]
+    NAME = "ZWO ASI1600MM Pro"
+    FIELD_WIDTH = 24.4828 # arcmin
+    FIELD_HEIGHT = 18.5093 # arcmin
+    PIX_SCALE = 0.3155 # arcsec/pixel (UNBINNED)
+    CCD_WIDTH_PIX = 4656
+    CCD_HEIGHT_PIX = 3520
+
+[POINTING_MODEL]
+    OUTDIR = "D:/Data/pointing_models/"
+    MIN_BRIGHT_STARS = 3
+    EXPTIME = 2
+    FILTER = "L"
+    NSAMPLES = 100
+    BIN = 2
+
+[OBSERVER]
+    PORT = 3045
+
+[ASTROMETRY]
+    SEARCH_RADIUS = 3.0 # degrees to search around guess RA/Dec if provided
+    SOLVE_DIR = "./solutions"
+    ASTROM_EXEC = "wsl"
+    PORT = 5555
+    [EXTRACTION]
+        SIGMA = 3
+        NCONT = 5

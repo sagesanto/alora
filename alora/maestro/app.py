@@ -294,9 +294,12 @@ def _main():
                 
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
+            print("Initializing MainWindow")
             super(MainWindow, self).__init__(parent)
             self.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))  # ----
+            print("Setting up UI")
             self.setupUi(self)
+            print("Done UI setup")
 
             self.warnings_to_show_after_load = []
             # self.blacklistLabel.setMinimumWidth(self.blacklistView.width())
@@ -317,6 +320,8 @@ def _main():
             self.addCandidateButton.setIcon(QtGui.QIcon(LOGO_PATH("plus-circle-frame")))
             self.blacklistCandidatesButton.setIcon(QtGui.QIcon(LOGO_PATH("cross-white")))
             self.whitelistCandidatesButton.setIcon(QtGui.QIcon(LOGO_PATH("tick-white")))
+            
+            print("Done setting icons")
 
             self.ephem_error_occurred = False
             self.sched_error_occurred = False
@@ -325,7 +330,9 @@ def _main():
             # initialize custom things
             SETTINGS_PATH = PATH_TO(join("files","configs","in_maestro_settings.toml"))
             self.settings = TOMLSettings(SETTINGS_PATH)
+            print("Read settings")
             self.processModel = ProcessModel(statusBar=self.statusBar())
+            print("Created process model")
             self.ephemListModel = FlexibleListModel()
             self.blacklistModel = FlexibleListModel()
             self.whitelistModel = FlexibleListModel()
@@ -342,6 +349,7 @@ def _main():
             self.chooseSchedSavePath.setPrompt("Choose Save Path").isDirectoryDialog(True)
             self.databasePathChooseButton.setPrompt("Select Database File").setPattern("Database File (*.db)")
             self.ephemChooseSaveButton.setPrompt("Choose Save Path").isDirectoryDialog(True)
+            print("Created tables and path buttons")
 
             # initialize misc things
             self.candidateDict = None
@@ -364,10 +372,12 @@ def _main():
 
             # call setup functions
             self.settings.loadSettings()
+            print("Loaded settings")
             
             if self.connect_db():
                 self.startDbUpdater()
                 self.startDbOperator()
+            print("Started db updater and operator")
 
             self.processesTreeView.setModel(self.processModel)
             self.ephemListView.setModel(self.ephemListModel)
@@ -378,6 +388,7 @@ def _main():
             self.current_module_index = 0
 
             self.setConnections()
+            print("Set connections")
 
             self.excludeStartEdit.setDateTime(self.scheduleStartTimeEdit.dateTime())
             self.excludeEndEdit.setDateTime(self.scheduleEndTimeEdit.dateTime())
@@ -695,6 +706,7 @@ def _main():
         def write_default_module_settings(self,mod_dir):
             try:
                 if not os.path.exists(join(mod_dir,"cfg.schema")):
+                    logger.warning(f"Module {mod_dir} does not have a cfg.schema file. Skipping default settings generation.")
                     return
                 with open(join(mod_dir,"cfg.schema"),"r") as f:
                     cfg_schema = json.load(f)
@@ -719,7 +731,7 @@ def _main():
             nerrors = 0
             for name, info in self.mod_info.items():
                 mod = None
-                if not os.path.exists(join(info["dir"],"config.json")):
+                if not os.path.exists(join(info["dir"],"config.toml")):
                     self.write_default_module_settings(info["dir"])
                 # icon = None
                 if info["active"]:

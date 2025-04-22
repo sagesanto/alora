@@ -13,7 +13,7 @@ import tomlkit
 from importlib import import_module
 import traceback
 
-from .genUtils import query_to_dict, MAESTRO_DIR
+from alora.maestro.scheduleLib.genUtils import query_to_dict, MAESTRO_DIR
 
 class ModuleManager:
     def __init__(self,write_out=print) -> None:
