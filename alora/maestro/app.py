@@ -93,7 +93,7 @@ def _main():
     defaultSettings = {}  # don't know how this should be stored/managed/updated - should submodules be able to register their own settings? probably. that's annoying
 
     debug = True
-    scheduler_debug = True
+    scheduler_debug = True # load a test schedule on schedule generation instead of actually making one
     # debug = os.getenv("MAESTRO_DEBUG", False)
 
     CoordConvertFmat = {
@@ -449,8 +449,8 @@ def _main():
                 msg.finished.connect(lambda: QTimer.singleShot(0, self.show_load_errors))
                 msg.exec()
 
-        def set_sunrise_sunset(self):
-            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset()
+        def set_sunrise_sunset(self,dt=None):
+            self.sunriseUTC, self.sunsetUTC = genUtils.get_sunrise_sunset(dt=dt, verbose=True)
             self.sunriseUTC, self.sunsetUTC = genUtils.roundToTenMinutes(self.sunriseUTC), genUtils.roundToTenMinutes(
                 self.sunsetUTC)
 
@@ -1345,11 +1345,18 @@ def _main():
 
             dialog.exec()
 
+
         def autoSetSchedulerTimes(self, run=True):
             if run:
-                self.set_sunrise_sunset()
+                self.set_sunrise_sunset(dt=None)
+                if self.sunriseUTC - timedelta(hours=1) < datetime.now(pytz.utc):
+                    # print("It's after end time for tonight. moving to tomorrow.")
+                    self.set_sunrise_sunset(dt=datetime.now(pytz.utc)+timedelta(days=1))
+                # print("Auto setting scheduler times. Sunrise: ", self.sunriseUTC, " Sunset: ", self.sunsetUTC," current UTC: ",datetime.now(pytz.utc))
                 start = datetimeToQDateTime(max(self.sunsetUTC, datetime.now(pytz.utc)))
+                # print(f"Setting start to the max of sunset ({self.sunsetUTC}) and current time ({datetime.now(pytz.utc)}): {max(self.sunsetUTC, datetime.now(pytz.utc))}")
                 end = datetimeToQDateTime(self.sunriseUTC-timedelta(hours=1))
+                # print(f"Setting end to sunrise - 1 hour: {self.sunriseUTC-timedelta(hours=1)}")
 
                 self.scheduleStartTimeEdit.setDateTime(start)
                 self.scheduleEndTimeEdit.setDateTime(end)

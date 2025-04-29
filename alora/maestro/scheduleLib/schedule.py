@@ -488,7 +488,7 @@ def checkSunrise(schedule, loc=observatory_location):
     if debug:
         sunriseUTC = stringToTime("2022-12-26T10:00:00.000",scheduler=True).replace(tzinfo=UTC)
     else:
-        sunriseUTC = genUtils.get_sunrise_sunset()[0]
+        sunriseUTC = genUtils.get_sunrise_sunset(dt=schedule.tasks[0].startTime)[0]
     end = len(schedule.tasks) - 1
     lastLine = schedule.tasks[end]
     sunriseDiff = sunriseUTC - lastLine.endTime
