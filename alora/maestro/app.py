@@ -45,6 +45,7 @@ def _main():
     from PyQt6.QtGui import QPalette, QColor, QDrag
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
+    from MaestroCore.GUI.palette import palette, stylesheet
     from MaestroCore.addCandidateDialog import AddCandidateDialog
     from scheduleLib import genUtils
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
@@ -92,6 +93,7 @@ def _main():
     defaultSettings = {}  # don't know how this should be stored/managed/updated - should submodules be able to register their own settings? probably. that's annoying
 
     debug = True
+    scheduler_debug = True
     # debug = os.getenv("MAESTRO_DEBUG", False)
 
     CoordConvertFmat = {
@@ -299,6 +301,8 @@ def _main():
             self.setWindowIcon(QtGui.QIcon(LOGO_PATH("windowIcon.ico")))  # ----
             print("Setting up UI")
             self.setupUi(self)
+            self.setPalette(palette)
+            self.setStyleSheet(stylesheet)
             print("Done UI setup")
 
             self.warnings_to_show_after_load = []
@@ -505,9 +509,11 @@ def _main():
             self.processAbortButton.clicked.connect(self.abortProcess)
             self.processModel.rowsInserted.connect(lambda parent: self.processesTreeView.expandRecursively(parent))
             self.requestDbRestartButton.clicked.connect(self.startDbUpdater)
-            # self.genScheduleButton.clicked.connect(self.runScheduler)
-            self.genScheduleButton.clicked.connect(lambda:self.load_test_schedule().displaySchedule())
-            self.genScheduleButton.clicked.connect(lambda: print("LOADING TEST SCHEDULE!!"))
+            if scheduler_debug:
+                self.genScheduleButton.clicked.connect(lambda:self.load_test_schedule().displaySchedule())
+                self.genScheduleButton.clicked.connect(lambda: print("LOADING TEST SCHEDULE!!"))
+            else:
+                self.genScheduleButton.clicked.connect(self.runScheduler)
             self.pingButton.clicked.connect(self.pingProcess)
             self.requestDbCycleButton.clicked.connect(self.requestDbCycle)
             self.hardModeButton.clicked.connect(self.hardMode)
@@ -1681,6 +1687,7 @@ def _main():
             self.dbOperatorProcess.start(PYTHON_PATH,
                                         [PATH_TO(join('MaestroCore','databaseOperations.py'))])
 
+    QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_UseStyleSheetPropagationInWidgetStyles, True)
     app = QApplication([])
 
     window = MainWindow()

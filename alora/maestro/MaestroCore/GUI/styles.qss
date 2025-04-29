@@ -1,0 +1,41 @@
+QWidget {
+    selection-color: {{selected}};
+}
+
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid {{border}};
+}
+
+QTabBar {
+    font-size: 2em;
+}
+
+/* Style the tab using the tab sub-control. Note that
+    it reads QTabBar _not_ QTabWidget */
+QTabBar::tab {
+    background: {{background}};
+    border: 1px solid {{border}};
+    border-bottom-color: {{border}}; /* same as the pane color */
+    min-width: 8ex;
+	min-height: 40px;
+	margin: 1px;
+    padding-left: 3ex;
+    padding-right: 3ex;
+}
+
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: {{focused}}
+}
+
+QTabBar::tab:selected {
+    border: 2px solid {{border}};
+    border-bottom-color: {{selected}}; /* same as pane color */
+}
+
+QTabBar::tab:!selected {
+    margin-top: 3px; /* make non-selected tabs look smaller */
+}
+
+QDockWidget::title {
+    max-height: 0px;
+}
