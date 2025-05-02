@@ -1156,7 +1156,6 @@ def _main():
             self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
             return self
 
-
         def load_test_schedule(self):
             self.schedule = Schedule.read(PATH_TO(join("files","test_schedule.txt")))
             self.scheduleDf = self.schedule.to_dataframe()

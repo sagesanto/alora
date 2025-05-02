@@ -47,7 +47,6 @@ class Observation:
     def __init__(self, startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA,
                  dDec, guiding, description, candidate_id):  # etc
         self.startTime, self.targetName, self.RA, self.Dec, self.exposureTime, self.numExposures, self.duration, self.filter, self.ephemTime, self.dRA, self.dDec, self.guiding, self.description = startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA, dDec, guiding, description
-        self.endTime = self.startTime + relativedelta(seconds=float(self.duration))
         self.isMPC_NEO = "MPC NEO" in self.description
         if self.isMPC_NEO:
             self.ephemTime = processEphemTime(self.ephemTime,
@@ -55,6 +54,10 @@ class Observation:
         self.candidate_id = candidate_id
         self.candidate=None
         self.candidate_config = None
+
+    @property
+    def endTime(self):
+        return self.startTime + relativedelta(seconds=float(self.duration))
 
     @classmethod
     def fromLine(cls, line, header):  # this is bad but whatever
@@ -132,10 +135,13 @@ class AutoFocus:
         """
         self.startTime = ensureDatetime(desiredStartTime)
         self.duration = cfg["focus_loop_duration"]
-        self.endTime = self.startTime + timedelta(minutes=self.duration/60)
 
     def genLine(self):
         return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, move=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
+
+    @property
+    def endTime(self):
+        return self.startTime + relativedelta(seconds=float(self.duration))
 
     @classmethod
     def fromLine(cls, line):
@@ -295,6 +301,15 @@ class Schedule:
     def appendTasks(self, tasks):
         for task in tasks:
             self.appendTask(task)
+
+    def swap_tasks(self, idxA, idxB):
+        # gap <n> = gap after block n at beginning OR default gap len if block is last block
+        # if idxA < idxB:
+            # tasks in middle (after A THROUGH B) move up by A.duration + gap after A
+            # task A.startTime = task B.end time (orig) + gap B
+        # else:
+            # tasks in middle (B + after B but before A) move down by A.duration + gap A
+            # task A.startTime = task B.startTime (orig)
 
     def deleteTask(self, task):
         self.tasks.remove(task)
