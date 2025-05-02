@@ -15,6 +15,8 @@ from astral import LocationInfo
 from datetime import datetime, timezone, timedelta
 from astropy import time, units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+import pandas as pd
+
 
 from pytz import UTC 
 
@@ -74,7 +76,7 @@ class Observation:
         numExposures = d["#Exposure"]
         duration = float(exposureTime) * float(numExposures)  # seconds
         filter = d["Filter"]
-        guiding = d["Guiding"]
+        guiding = d.get("Guiding",1)
         candidate_id = d.get("CandidateID")
         if candidate_id == "None":
             candidate_id = None
@@ -100,6 +102,16 @@ class Observation:
         for attribute in attr:
             line = line + "|" + attribute
         return line
+    
+    def to_dict(self):
+        return {
+                "Target":self.targetName, 
+                "Start Time (UTC)":self.startTime,
+                "End Time (UTC)": self.endTime,
+                "Duration (Minutes)": round(self.duration/60,3),
+                "RA": self.RA,
+                "Dec": self.Dec
+            }
 
 
 # this is an NEO or other target
@@ -112,7 +124,6 @@ class Target:
         self.observations.append(obs)
         # add observations here, maybe in dictionary form with useful keyword?
 
-
 class AutoFocus:
     def __init__(self, desiredStartTime):
         """!
@@ -120,7 +131,8 @@ class AutoFocus:
         @param desiredStartTime:
         """
         self.startTime = ensureDatetime(desiredStartTime)
-        self.endTime = self.startTime + timedelta(minutes=cfg["focus_loop_duration"]/60)
+        self.duration = cfg["focus_loop_duration"]
+        self.endTime = self.startTime + timedelta(minutes=self.duration/60)
 
     def genLine(self):
         return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, move=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
@@ -130,6 +142,16 @@ class AutoFocus:
         time = line.split('|')[0]
         time = stringToTime(time,scheduler=True).replace(tzinfo=UTC)
         return cls(time)
+    
+    def to_dict(self):
+        return {
+                "Target":"Refocusing", 
+                "Start Time (UTC)":self.startTime,
+                "End Time (UTC)": self.endTime,
+                "Duration (Minutes)": round(self.duration/60,3),
+                "RA": None,
+                "Dec": None
+            }
     
 
 SCHEDULE_SCHEMA_PATH = join(MAESTRO_DIR, dirname(__file__),"schedule_schema.json")
@@ -334,6 +356,12 @@ class Schedule:
             summary = summary + "\t" + timeToString(time,scheduler=True) + "\n"
 
         return summary
+    
+    def to_dataframe(self):
+        dicts = []
+        for task in self.tasks:
+            dicts.append(task.to_dict())
+        return pd.DataFrame(dicts)
     
     @classmethod
     def read(cls,filename):
@@ -730,7 +758,7 @@ if __name__ == "__main__":
         badSchedule.check(tests)
         print("-" * 10)
         print("\033[1;31m In debug mode so some inputs simulated! Turn off debug to see accurate results! \033[0;0m")
-
+        print(goodSchedule.to_dataframe())
     else:
         userSchedule = Schedule.read(args.scheduleFile)
         userSchedule.check(tests)

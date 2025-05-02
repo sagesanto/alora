@@ -60,6 +60,7 @@ def _main():
     import astropy.units as u
 
     from scheduleLib.genUtils import inputToAngle, Config
+    from scheduleLib.schedule import Schedule
     from scheduleLib.module_loader import ModuleManager
     from functools import partial
     import faulthandler
@@ -1149,10 +1150,18 @@ def _main():
             self.scheduleDf['Start Time (UTC)'] = pd.to_datetime(self.scheduleDf['Start Time (UTC)'])
             self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
             return self
+        
+        def format_schedule_dataframe(self):
+            self.scheduleDf['Start Time (UTC)'] = pd.to_datetime(self.scheduleDf['Start Time (UTC)'])
+            self.scheduleDf['End Time (UTC)'] = pd.to_datetime(self.scheduleDf['End Time (UTC)'])
+            return self
 
 
         def load_test_schedule(self):
-            self.load_schedule_csv(PATH_TO(join("files","test_schedule.csv")))
+            self.schedule = Schedule.read(PATH_TO(join("files","test_schedule.txt")))
+            self.scheduleDf = self.schedule.to_dataframe()
+            self.format_schedule_dataframe()
+            # self.load_schedule_csv(PATH_TO(join("files","test_schedule.csv")))
             return self
 
         def load_created_schedule(self):

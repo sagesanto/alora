@@ -2,6 +2,11 @@ from PyQt6.QtGui import QPalette, QColor, QGuiApplication
 
 from os.path import join, dirname, abspath, pardir
 
+# https://doc.qt.io/qt-6/stylesheet-examples.html#customizing-qdockwidget
+# https://doc.qt.io/qt-6/stylesheet-reference.html#list-of-properties
+# https://doc.qt.io/qt-6/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar
+# https://github.com/QuasarApp/QStyleSheet/blob/master/materialStyle/materialStyle.css
+
 colors = {
     "selected_text": "#ffffff",
     "selected": "#4575e4",
