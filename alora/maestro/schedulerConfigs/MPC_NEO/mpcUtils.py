@@ -74,7 +74,7 @@ def _findExposure(magnitude, str=True):
     magnitude = float(magnitude)
     if str:
         if magnitude <= 19.5:
-            return "1.0|300.0"
+            return "1.0|600.0"
         if magnitude <= 20.5:
             return "1.0|600.0"
         if magnitude <= 21.0:
@@ -85,7 +85,7 @@ def _findExposure(magnitude, str=True):
 
     else:
         if magnitude <= 19.5:
-            return 1, 300
+            return 1, 600
         if magnitude <= 20.5:
             return 1, 600
         if magnitude <= 21.0:
