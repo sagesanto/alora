@@ -211,6 +211,11 @@ def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, 
         if isinstance(arg,bool):
             arg = "1" if arg else "0"
 
+    try:
+        exposureTime = exposureTime.to_value(u.second)
+    except AttributeError:
+        pass
+    
     line_dict = {}
     line_dict["DateTime"] = timeToString(startDt, scheduler=True)
     line_dict["Occupied"] = "1"

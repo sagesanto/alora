@@ -19,7 +19,6 @@ try:
     from scheduleLib import genUtils, candidateDatabase
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
-    from scheduleLib.schedule import generic_schedule_line
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
@@ -29,7 +28,6 @@ try:
 except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
-    from scheduleLib.schedule import generic_schedule_line
     from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))

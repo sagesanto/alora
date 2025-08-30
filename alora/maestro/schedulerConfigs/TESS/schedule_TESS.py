@@ -52,10 +52,9 @@ class TESS_Config(TypeConfiguration):
     def generateSchedulerLine(self, row, targetName, candidateDict, spath):
         c = candidateDict[targetName]
         start = stringToTime(row["Start Time (UTC)"])
-        name = targetName + "_" + c.Filter + "_TESS"
+        name = f"{targetName}_{c.Filter}"
         return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
-                                   "{}: {}s by {}, {}".format(targetName, c.ExposureTime,
-                                                              c.NumExposures, c.Filter), c.ExposureTime, c.NumExposures,
+                                   f"{targetName}: {c.NumExposures} by {c.ExposureTime}, {c.Filter}", c.ExposureTime, c.NumExposures,
                                    move=True,
                                    guiding=bool(c.Guide), bin2fits=tConfig["bin2fits"])
 
