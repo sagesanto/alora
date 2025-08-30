@@ -5,6 +5,7 @@ from datetime import datetime as datetime, timedelta
 import astropy.units as u
 import pandas as pd
 
+from .tess_utils import calc_num_frames
 
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
@@ -38,6 +39,13 @@ class TESS_Config(TypeConfiguration):
     def selectCandidates(self, startTimeUTC: datetime, endTimeUTC: datetime, dbPath):
         dbConnection = CandidateDatabase(dbPath, "Night Obs Tool - TESS Agent")
         candidates = dbConnection.candidatesForTimeRange(startTimeUTC, endTimeUTC, 0.1, "TESS")
+        for c in candidates:
+            exptime = c.ExposureTime
+            start_time = max(c.StartObservability, startTimeUTC)
+            print(type(start_time))
+            print(type(c.EndObservability))
+            print(type(exptime))
+            c.NumExposures = calc_num_frames(start_time, c.EndObservability, exptime.to_value(u.second))
         self.designations = [c.CandidateName for c in candidates]
         return candidates
 

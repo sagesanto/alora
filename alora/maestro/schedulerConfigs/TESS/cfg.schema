@@ -1,11 +1,27 @@
 {
-    "EXPTIME": {
-      "Key": "EXPTIME",
+    "exptime": {
+      "Key": "exptime",
       "DefaultValue": 10,
       "ValDisplayType": "float",
       "Step": 0.5,
       "Description": "Single-frame exposure time",
       "Units": "seconds"
+    },
+    "priority": {
+      "Key": "priority",
+      "DefaultValue": 1,
+      "Step": 1,
+      "ValDisplayType": "int",
+      "Description": "Priority of TESS observations when scheduling",
+      "Units": "minutes"
+    },
+    "filter": {
+      "Key": "filter",
+      "DefaultValue": "CLEAR",
+      "Step": 1,
+      "ValDisplayType": "str",
+      "Description": "Name of the filter to take the observations in",
+      "Units": ""
     },
     "downtime_after_obs": {
       "Key": "downtime_after_obs",

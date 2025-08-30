@@ -163,7 +163,7 @@ class BaseCandidate:
             try:
                 _ = test_serializer(value,**schema)
             except Exception as e:
-                raise AttributeError(f"{self.CandidateType} candidate cannot set attribute {name} to {value}: {e}. If you're seeing this, it's likely because the author of the '{self.CandidateType}' module has improperly set a candidate attribute somewhere in the code. Please let them know! If you are the module author: this is likely happening because the configured serializer for the field you are trying to set cannot parse the value you're trying to give it. If this is the issue, you could rewrite your serializer or ensure that the value is of the correct type.")
+                raise AttributeError(f"{self.CandidateType} candidate cannot set attribute {name} to {value}: {e}. If you're seeing this, it's likely because the author of the '{self.CandidateType}' module has improperly set a candidate attribute somewhere in the code. Please let them know! If you are the module author: this is likely happening because the configured serializer for the field you are trying to set cannot parse the value you're trying to give it. If this is the issue, you could rewrite your serializer or ensure that the value is of the correct type.") from e
         super().__setattr__(name, value)
 
     def asDict(self,start_dict=None):
@@ -206,7 +206,7 @@ class BaseCandidate:
         try:
             return cls(CandidateName, CandidateType, **entry)  # splat
         except Exception as e:
-            print(f"Error constructing candidate from dictionary {entry}: {e}")
+            # print(f"Error constructing candidate from dictionary {entry}: {e}")
             # return 
             raise e
 
@@ -447,6 +447,9 @@ class CandidateDatabase(SQLDatabase):
                         try:
                             results.append(Candidate.fromDictionary(row))
                         except Exception as e:
+                            # skip errors where we don't recognize the module, it's probably just deactivated
+                            if "not a known candidate module" in str(e):  
+                                continue
                             self.logger.error("Error converting row to Candidate object: " + str(row))
                             self.logger.error(repr(e))
                     result = results

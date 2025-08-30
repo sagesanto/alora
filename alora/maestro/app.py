@@ -733,12 +733,16 @@ def _main():
             current_val = modulecfg.query(name)
             if "Min" in item:
                 spin.setMinimum(item["Min"])
-            elif current_val < spin.minimum():
-                spin.setMinimum(current_val/2)
+            else:
+                spin.setMinimum(-2**20)
+            # elif current_val < spin.minimum():
+                # spin.setMinimum(current_val/2)
             if "Max" in item:
                 spin.setMaximum(item["Max"])
-            elif current_val > spin.maximum():
-                spin.setMaximum(current_val*2)
+            else:
+                spin.setMaximum(2**20)
+            # elif current_val > spin.maximum():
+            #     spin.setMaximum(current_val*2)
             if "Step" in item:
                 spin.setSingleStep(item["Step"])
             spin.setValue(current_val)
@@ -751,12 +755,12 @@ def _main():
             print(name,current_val)
             if "Min" in item:
                 spin.setMinimum(item["Min"])
-            elif current_val < spin.minimum():
-                spin.setMinimum(current_val*2)
+            else:
+                spin.setMinimum(int(-(2**20)))
             if "Max" in item:
                 spin.setMaximum(item["Max"])
-            elif current_val > spin.maximum():
-                spin.setMaximum(current_val*2)
+            else:
+                spin.setMaximum(int(2**20))
             if "Step" in item:
                 spin.setSingleStep(item["Step"])
             spin.setValue(current_val)

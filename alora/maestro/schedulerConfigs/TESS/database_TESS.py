@@ -10,13 +10,14 @@ import numpy as np
 import pytz
 import logging
 
+from .tess_utils import calc_num_frames
 from alora.config import observatory_location
 
 try:
     grandparentDir = abspath(join(dirname(__file__), pardir, pardir))
     sys.path.append(grandparentDir)
     from scheduleLib import genUtils, candidateDatabase
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
     from scheduleLib.schedule import generic_schedule_line
 
@@ -29,7 +30,7 @@ except ImportError:
     from scheduleLib import genUtils
     from scheduleLib.genUtils import stringToTime, TypeConfiguration, overlapping_time_windows
     from scheduleLib.schedule import generic_schedule_line
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     tConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
@@ -48,12 +49,6 @@ def updateCandidate(candidate: Candidate, dbConnection: CandidateDatabase):
     dbConnection.editCandidateByID(candidate.ID, candidate.asDict())
     dbConnection.clear_invalid_status(candidate.ID)
 
-def calc_num_frames(start_obs, end_obs, exptime):
-    if not start_obs or not end_obs or pd.isnull(start_obs) or pd.isnull(end_obs):
-        return -1
-    return int(np.ceil((end_obs - start_obs).total_seconds() / exptime)) # - 5*int(np.ceil(60/exptime)) # need to subtract off for scheduler reasons
-
-
 # to deal with multiple of the same planet in different (or the same) CSVs (because of multiple transits),
 # we will need to load each csv into one big dataframe, then de-duplicate by choosing the next transit of each that
 # has not already occcurred. then, if the candidate is new we'll add it to the database, if it's already in the database
@@ -64,10 +59,10 @@ def make_csv_candidates(csv_names):
     the transit window and the observability window on the night of the transit.
     Does not set the ID of the candidate (performed later) or do any database operations.
     """
-    master_df = pd.concat([pd.read_csv(f, dtype={'TOI': str}) for f in csv_names])
-    
+    master_df = pd.concat([pd.read_csv(f, dtype={'TOI': str}).rename(columns={"Priority":"Rank"}) for f in csv_names])
+
     master_df = master_df.rename(columns={"TOI": "CandidateName", "Vmag": "Magnitude"})
-    master_df["CandidateName"] = master_df["CandidateName"].apply(lambda v: f"{'TOI' if len(v)<=7 else 'TIC'} {v}")
+    master_df["CandidateName"] = master_df["CandidateName"].apply(lambda v: v if "TOI" in v else ( f"{'TOI' if len(v)<=7 else 'TIC'} {v}" ))
     # calculate ingress or egress time +- obs_buffer into new column "obs_window"
     obs_buffer = tConfig["obs_buffer"]
 
@@ -94,7 +89,8 @@ def make_csv_candidates(csv_names):
         "pl_dur_in_min_buffered": "CVal7",
         "pl_orbper": "CVal8",
         "Jmag": "CVal9",
-        "TransitDepth(ppm)": "CVal10",
+        "Rank": "CVal10"
+        # "TransitDepth(ppm)": "CVal10",
     }
 
     # remove candidates that already transited
@@ -126,13 +122,13 @@ def make_csv_candidates(csv_names):
                 logger.error(f"Problem row: {row}")
                 raise ValueError(f"Candidate {row['CandidateName']} has EndObservability after egress. This should not happen.")
 
-    master_df["ExposureTime"] = [tConfig[master_df.index]]
-    master_df["NumExposures"] = master_df.apply(lambda row: calc_num_frames(row.StartObservability,row.EndObservability,tConfig["EXPTIME"]), axis=1) # need to subtract off for scheduler reasons
-    master_df["Filter"] = [tConfig.get("FILTER")] * len(master_df.index)
+    master_df["ExposureTime"] = [tConfig["exptime"]] * len(master_df.index)
+    master_df["NumExposures"] = master_df.apply(lambda row: calc_num_frames(row.StartObservability,row.EndObservability,tConfig["exptime"]), axis=1) # need to subtract off for scheduler reasons
+    master_df["Filter"] = [tConfig["filter"]] * len(master_df.index)
     master_df.rename(columns=colToCVal, inplace=True)
-    master_df.drop(
-        columns=["ingress_dt", "egress_dt", "pl_tranmid", "pl_trandur", "RA_obs_start", "RA_obs_end"], inplace=True
-    )
+    # master_df.drop(
+        # columns=["ingress_dt", "egress_dt", "pl_tranmid", "pl_trandur", "RA_obs_start", "RA_obs_end", "TransitDepth(ppm)"], inplace=True
+    # )
 
     master_df = master_df.reset_index(drop=True)
     candidates = []
@@ -141,12 +137,18 @@ def make_csv_candidates(csv_names):
         for j in ["RA", "Dec"]:
             d[j] = Angle(float(row[j]), unit=u.deg)
         d["Magnitude"] = float(row["Magnitude"])
-        d["Priority"] = int(row["Priority"])
+        d["Priority"] = tConfig["priority"]
+        # d["Priority"] = int(row["Rank"])
+        # d["Priority"] = int(row["Priority"])
 
         for col, cval in row.items():
-            d[col] = cval
+            if col in validFields:
+                d[col] = cval
         del d["CandidateName"]
-        candidates.append(Candidate(row["CandidateName"], "TESS", **d))
+        cname = row["CandidateName"]
+        if cname.endswith(".0"):
+            cname = cname[:-2]
+        candidates.append(Candidate(cname, "TESS", **d))
 
     # for c in candidates:
     #     write_out(f"Candidate {c.CandidateName} with RA {c.RA/(15*u.deg)}h becomes observable at {c.StartObservability}.")
@@ -165,8 +167,8 @@ def update_and_insert(csv_candidates, dbConnection):
     for c in csv_candidates:
         ec = dbConnection.getCandidateByName(c.CandidateName)
         if not ec:
-            c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
-            c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
+            # c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
+            # c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
             dbConnection.insertCandidate(c)
             write_out(f"New TESS Candidate: {c.CandidateName}")
             continue
@@ -175,8 +177,8 @@ def update_and_insert(csv_candidates, dbConnection):
         ec = ec[0]
         if not ec.hasField("StartObservability") or not ec.hasField("EndObservability"):
             write_out(f"Existing candidate for {ec.CandidateName} did not have StartObservability and EndObservability. Updating.")
-            c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
-            c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
+            # c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
+            # c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
             c.ID = ec.ID
             updateCandidate(ec, dbConnection)
             continue
@@ -187,8 +189,8 @@ def update_and_insert(csv_candidates, dbConnection):
         if (c.StartObservability < ec_start or ec_start < datetime.now(tz=pytz.UTC)) and not (ec_start < datetime.now(tz=pytz.UTC) < ec_end):
             write_out(f"Found existing candidate to update: {ec.CandidateName}")
             write_out(f"Updating candidate {ec.CandidateName} with new information.")
-            c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
-            c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
+            # c.StartObservability = genUtils.timeToString(c.StartObservability, shh=True)
+            # c.EndObservability = genUtils.timeToString(c.EndObservability, shh=True)
         else:
             c.StartObservability = ec.StartObservability
             c.EndObservability = ec.EndObservability
@@ -227,7 +229,7 @@ def update_database(dbPath):
                 'Vmag': float
                 'Jmag': float
                 'TransitDepth(ppm)': float
-                'Priority': int
+                'Rank': int
             """)
             del dbConnection
             raise e  
