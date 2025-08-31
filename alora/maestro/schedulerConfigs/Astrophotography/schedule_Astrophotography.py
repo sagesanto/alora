@@ -10,18 +10,18 @@ def PATH_TO(fname:str): return join(MODULE_PATH,fname)
 
 try:
     sys.path.append(MODULE_PATH)
-    from scheduleLib.candidateDatabase import Candidate
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration
-    from scheduleLib.schedule import generic_schedule_line
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from alora.maestro.scheduleLib.schedule import generic_schedule_line
     import scheduleLib.genUtils as genUtils
 
     genConfig = genUtils.Config(join(MODULE_PATH, "files", "configs", "config.toml"))
     aConfig = genUtils.Config(join(dirname(__file__), "config.toml"))
 
 except ImportError:
-    from scheduleLib.candidateDatabase import Candidate
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration
-    from scheduleLib.schedule import generic_schedule_line
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration
+    from alora.maestro.scheduleLib.schedule import generic_schedule_line
     import scheduleLib.genUtils as genUtils
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))

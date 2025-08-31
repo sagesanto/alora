@@ -1,0 +1,1 @@
+ALTER TABLE "Candidates" ADD COLUMN "flags" INTEGER DEFAULT 0;

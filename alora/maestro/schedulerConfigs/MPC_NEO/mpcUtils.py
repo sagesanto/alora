@@ -28,19 +28,19 @@ from alora.maestro.scheduleLib import schedule
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(grandparentDir)
-    from scheduleLib import asyncUtils
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import angleToHMSString, angleToDMSString
+    from alora.maestro.scheduleLib import asyncUtils
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from alora.maestro.scheduleLib.genUtils import angleToHMSString, angleToDMSString
 
     sys.path.remove(grandparentDir)
     aConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "async_config.toml"))
 
 except:
-    from scheduleLib import asyncUtils
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import angleToHMSString, angleToDMSString
+    from alora.maestro.scheduleLib import asyncUtils
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from alora.maestro.scheduleLib.genUtils import angleToHMSString, angleToDMSString
     aConfig = genUtils.Config(os.path.join("files", "configs", "async_config.toml"))
 
 

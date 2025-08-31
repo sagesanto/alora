@@ -19,12 +19,12 @@ except ImportError:
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(grandparentDir)
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
 
     sys.path.remove(grandparentDir)
 
 except ImportError:
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
 
 mConfig = genUtils.Config(join(dirname(__file__),"config.toml"))
 

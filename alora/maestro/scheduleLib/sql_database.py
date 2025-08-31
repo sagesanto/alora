@@ -10,8 +10,8 @@ class SQLDatabase:
 
     def open(self, path, check_same_thread=True, **kwargs):
         # print("hi")
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Could not find file '{path}'")
+        # if not os.path.exists(path):
+        #     raise FileNotFoundError(f"Could not find file '{path}'")
 
         det_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
         if "detect_types" in kwargs:

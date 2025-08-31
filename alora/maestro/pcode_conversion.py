@@ -1,7 +1,7 @@
 # one-time code conversion. does not need to be run ever again.
 from sqlalchemy import text
 import scheduleLib.db.dbConfig as dbConfig
-from scheduleLib.db.db_models import Observation, CandidateModel, ProcessingCode
+from alora.maestro.scheduleLib.db.db_models import Observation, CandidateModel, ProcessingCode
 
 session = dbConfig.candidate_db_session
 

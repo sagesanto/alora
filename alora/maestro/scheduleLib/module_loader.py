@@ -21,6 +21,7 @@ class ModuleManager:
         MODULE_DB_PATH = join(MAESTRO_DIR, "files","modules.db")
         self.module_db = sqlite3.connect(MODULE_DB_PATH)
         self.module_db.row_factory = sqlite3.Row
+        sys.path.append        
 
     def update_modules(self):
         self.module_db.cursor().execute('CREATE TABLE IF NOT EXISTS "modules" ("name" TEXT PRIMARY KEY, "modname" TEXT UNIQUE, "active" BOOLEAN, "description" TEXT, "author" TEXT, "dir" TEXT)')
@@ -80,10 +81,13 @@ class ModuleManager:
         modname = mod_info["modname"]
         try:
             if return_trace:
-                return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs"), None
-            return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs")
+                return import_module(f".{modname}", "alora.maestro.schedulerConfigs"), None
+                # return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs"), None
+            return import_module(f".{modname}", "alora.maestro.schedulerConfigs")
+            # return import_module(f"schedulerConfigs.{modname}", "schedulerConfigs")
         except Exception as e:
             self.write_out(f"Error loading module {name}: {e}")
+            self.write_out(f"Traceback:\n{traceback.format_exc()}")
             if return_trace:
                 return None, traceback.format_exc()
             return None

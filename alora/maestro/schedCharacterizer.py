@@ -21,15 +21,15 @@ try:
     sys.path.append(
         os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
     from alora.maestro.scheduleLib import schedule
-    from scheduleLib.genUtils import stringToTime, roundToTenMinutes
+    from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
     sys.path.remove(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 except:
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
     from alora.maestro.scheduleLib import schedule
-    from scheduleLib.genUtils import stringToTime, roundToTenMinutes
+    from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
 utc = pytz.UTC
 

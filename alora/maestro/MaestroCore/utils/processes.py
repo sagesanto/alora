@@ -263,7 +263,7 @@ class Process(QProcess):
         if "{}: Pong!".format(self.name) in msg:
             # print("Got pong: ", msg)
             logger.info(f"{self.name} got ponged!")
-            self.ponged.emit(msg.replace("{}: ".format(self.name), ""))
+            self.ponged.emit(msg.replace(f"{self.name}: ", ""))
             self.lastPing = None
             return
         if f"{self.name}: CLEAR_ERROR" in msg:

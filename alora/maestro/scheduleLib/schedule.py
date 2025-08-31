@@ -18,16 +18,16 @@ from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 
 from pytz import UTC 
 
-from scheduleLib import genUtils
-from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
-from scheduleLib.genUtils import stringToTime, timeToString, ensureAngle, ensureDatetime, ensureFloat, roundToTenMinutes, get_candidate_db_path, MAESTRO_DIR
+from alora.maestro.scheduleLib import genUtils
+from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+from alora.maestro.scheduleLib.genUtils import stringToTime, timeToString, ensureAngle, ensureDatetime, ensureFloat, roundToTenMinutes, get_candidate_db_path, MAESTRO_DIR
 from alora.config import observatory_location
 
 
 MINUTES_BETWEEN_OBS = 3
 
 from alora.config.utils import Config
-from scheduleLib.module_loader import ModuleManager
+from alora.maestro.scheduleLib.module_loader import ModuleManager
 
 cfg = Config(join(MAESTRO_DIR,"files","configs","config.toml"))
 

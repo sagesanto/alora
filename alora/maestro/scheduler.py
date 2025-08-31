@@ -1,5 +1,5 @@
 # Sage Santomenna 2023
-from scheduleLib.crash_reports import run_with_crash_writing
+from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing
 
 def main():
 
@@ -42,7 +42,7 @@ def main():
     from alora.maestro.scheduleLib.schedule import scheduleHeader, friendlyString, AutoFocus, Schedule as ScheduleCls
     from alora.config.utils import Config
     from alora.config import obs_cfg
-    from scheduleLib.candidateDatabase import Candidate
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate
 
     # for packaging reasons, i promise
 
@@ -53,16 +53,16 @@ def main():
     try:
         sys.path.append(MODULE_PATH)
 
-        from scheduleLib import genUtils
-        from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
-        from scheduleLib.module_loader import ModuleManager
+        from alora.maestro.scheduleLib import genUtils
+        from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from alora.maestro.scheduleLib.module_loader import ModuleManager
 
         genConfig = genUtils.Config(join(dirname(__file__), "files", "configs", "config.toml"))
 
     except ImportError:
-        from scheduleLib import genUtils
-        from scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
-        from scheduleLib.module_loader import ModuleManager
+        from alora.maestro.scheduleLib import genUtils
+        from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes, configure_logger
+        from alora.maestro.scheduleLib.module_loader import ModuleManager
 
         genConfig = genUtils.Config(join("files", "configs", "config.toml"))
 

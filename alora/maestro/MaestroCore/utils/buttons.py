@@ -3,6 +3,8 @@ import os.path
 from PyQt6.QtCore import pyqtSignal, QAbstractListModel
 from PyQt6.QtWidgets import QPushButton, QFileDialog, QListView, QAbstractItemView, QApplication
 from MaestroCore.utils.utilityFunctions import onlyEnableWhenItemsSelected
+from MaestroCore.utils.listModel import FlexibleListModel
+
 
 def getSelectedFromTable(table, colIndex):
     selected = []
@@ -12,15 +14,37 @@ def getSelectedFromTable(table, colIndex):
         selected.append(model.data(model.index(index.row(), colIndex)))
     return selected
 
+def getSelectedFromList(list:QListView):
+    selected = []
+    indexes = list.selectionModel().selectedRows()
+    model = list.model()
+    for index in indexes:
+        if isinstance(model, FlexibleListModel):
+            selected.append(model.data(index, role=-1))  # -1 gets the whole data, not just display
+        else:
+            selected.append(model.data(index))
+    return selected
 
 class ModelRemoveButton(QPushButton):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.callbacks = []
+        self.clicked.connect(self.on_click)
+        self.source = None
+        
     def connectList(self, list: QListView):
-        try:
-            self.clicked.disconnect()
-        except:
-            pass
-        self.clicked.connect(lambda: list.model().removeSelectedItems(list))
+        self.source = list
         onlyEnableWhenItemsSelected(self, list)
+    
+    def on_click(self):
+        targets = getSelectedFromList(self.source)
+        if self.source is not None:
+            self.source.model().removeSelectedItems(self.source)
+        for callback in self.callbacks:
+            callback(targets)
+
+    def add_callback(self, f):
+        self.callbacks.append(f)
 
 
 class AddSelectedButton(QPushButton):
@@ -32,6 +56,7 @@ class AddSelectedButton(QPushButton):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.source = self.recipient = self.index = self.function = None
+        self.callbacks = []
 
     def connectPair(self, sourceTable: QAbstractItemView, colIndex, recipient: QAbstractListModel, f):
         self.source = sourceTable
@@ -47,6 +72,11 @@ class AddSelectedButton(QPushButton):
         for l in ls:
             if l not in self.recipient.data:
                 self.recipient.addItem(l)
+        for callback in self.callbacks:
+            callback(ls)
+
+    def add_callback(self, f):
+        self.callbacks.append(f)
 
 
 class FileSelectionButton(QPushButton):

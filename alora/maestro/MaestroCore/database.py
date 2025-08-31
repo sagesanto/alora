@@ -11,7 +11,7 @@ def PATH_TO(fname:str): return join(MODULE_PATH,fname)
 
 
 sys.path.append(MODULE_PATH)
-from scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
+from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
 
 def main():
     try:
@@ -22,18 +22,15 @@ def main():
         import concurrent.futures
         # from importlib import import_module
 
-        from scheduleLib import genUtils
-        from scheduleLib.genUtils import write_out as _write_out
-        from scheduleLib.module_loader import ModuleManager
+        from alora.maestro.scheduleLib import genUtils
+        from alora.maestro.scheduleLib.genUtils import write_out
+        from alora.maestro.scheduleLib.module_loader import ModuleManager
 
         logger = genUtils.configure_logger("DbUpdater")
 
-        def write_out(*args):
-            _write_out(*args)
-            # logger.info(" ".join([str(a) for a in args]))
         write_out("Starting to update database.")
 
-        manager = ModuleManager(write_out=_write_out)
+        manager = ModuleManager(write_out=write_out)
         modules = manager.load_active_modules()
 
         def generateNextRunTimestampString(delay):

@@ -12,10 +12,10 @@ import configparser
 # try:
 #     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 #     sys.path.append(grandparentDir)
-#     from scheduleLib.asyncUtils import AsyncHelper
+#     from alora.maestro.scheduleLib.asyncUtils import AsyncHelper
 #     sys.path.remove(grandparentDir)
 # except:
-#     from scheduleLib.asyncUtils import AsyncHelper
+#     from alora.maestro.scheduleLib.asyncUtils import AsyncHelper
 
 def get_ephems(desigs, settings):
     # aConfig = configparser.ConfigParser()

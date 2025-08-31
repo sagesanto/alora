@@ -11,17 +11,17 @@ from alora.config import observatory_location
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(grandparentDir)
-    from scheduleLib import genUtils, candidateDatabase
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
+    from alora.maestro.scheduleLib import genUtils, candidateDatabase
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "config.toml"))
 
 except ImportError:
-    from scheduleLib import genUtils
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 
     genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
 

@@ -5,8 +5,8 @@ import matplotlib.markers
 import numpy as np
 import pandas as pd
 from pandas_profiling import ProfileReport
-from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-from scheduleLib import genUtils
+from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+from alora.maestro.scheduleLib import genUtils
 import os
 import matplotlib.pyplot as plt
 from collections import namedtuple

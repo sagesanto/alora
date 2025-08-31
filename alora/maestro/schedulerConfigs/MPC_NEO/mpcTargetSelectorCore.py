@@ -20,21 +20,21 @@ from numpy import sqrt
 from photometrics.mpc_neo_confirm import MPCNeoConfirm as mpcObj
 
 from alora.config import observatory_location
-from schedulerConfigs.MPC_NEO import mpcUtils
+from alora.maestro.schedulerConfigs.MPC_NEO import mpcUtils
 
 # general fuckery
 try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(
         grandparentDir)
-    from scheduleLib import genUtils, asyncUtils
+    from alora.maestro.scheduleLib import genUtils, asyncUtils
 
     sys.path.remove(grandparentDir)
     genConfig = genUtils.Config(join(grandparentDir, "files", "configs", "config.toml"))
     aConfig = genUtils.Config(os.path.join(grandparentDir, "files", "configs", "async_config.toml"))
 
 except ImportError:
-    from scheduleLib import genUtils, asyncUtils
+    from alora.maestro.scheduleLib import genUtils, asyncUtils
 
     genConfig = genUtils.Config(join("files", "configs", "config.toml"))
     aConfig = genUtils.Config(os.path.join("files", "configs", "async_config.toml"))

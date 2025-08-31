@@ -101,6 +101,9 @@ class ObsConstraint:
         target_dt = target_dt or current_dt_utc()
         t = find_transit_time(ensureAngle(RA), self.locationInfo, current_sidereal_time=current_sidereal_time,
                             target_dt=target_dt)
+        lims = self.get_hour_angle_limits(Dec)
+        if lims is None:
+            return [None, None]
         time_window = (angleToTimedelta(a) for a in self.get_hour_angle_limits(Dec))
         return [t + a for a in time_window]
         # HA = ST - RA -> ST = HA + RA

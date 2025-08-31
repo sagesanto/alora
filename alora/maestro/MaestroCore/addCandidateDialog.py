@@ -7,7 +7,7 @@ import sys
 from MaestroCore.utils.utilityFunctions import *
 from MaestroCore.utils.tableModel import CandidateTableModel
 from PyQt6.QtWidgets import QApplication, QDialog, QMainWindow, QPushButton
-from scheduleLib.genUtils import inputToAngle
+from alora.maestro.scheduleLib.genUtils import inputToAngle
 
 
 class AddCandidateDialog(QDialog, Ui_Dialog):

@@ -3,9 +3,9 @@
 
 import os, sqlite3, logging
 from sqlite3 import DatabaseError
-from scheduleLib.genUtils import query_to_dict
+from alora.maestro.scheduleLib.genUtils import query_to_dict
 import scheduleLib.db.dbConfig as dbConfig
-from scheduleLib.db.db_models import Observation, CandidateModel
+from alora.maestro.scheduleLib.db.db_models import Observation, CandidateModel
 from alora.maestro.scheduleLib.schedule import Schedule, AutoFocus
 
 

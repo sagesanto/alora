@@ -3,7 +3,7 @@ from schedule import *
 from scheduler_3 import prepareToSchedule, findCandidates
 import pytz
 utc = pytz.UTC
-from scheduleLib.genUtils import stringToTime, timeToString
+from alora.maestro.scheduleLib.genUtils import stringToTime, timeToString
 from scheduler import visualizeSchedule
 
 print(os.getcwd())

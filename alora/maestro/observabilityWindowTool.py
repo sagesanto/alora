@@ -5,9 +5,9 @@ import pytz
 from astral import LocationInfo
 from astropy.time import Time
 import astropy.units as u
-from scheduleLib.candidateDatabase import Candidate
+from alora.maestro.scheduleLib.candidateDatabase import Candidate
 from astropy.coordinates import Angle
-from scheduleLib import genUtils
+from alora.maestro.scheduleLib import genUtils
 
 PST = timezone=pytz.timezone('US/Pacific')
 

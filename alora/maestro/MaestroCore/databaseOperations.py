@@ -6,19 +6,34 @@
 #      retries: number of times to retry job if it fails. if 0, job runs once
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from scheduleLib.crash_reports import run_with_crash_writing
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
 from alora.config.utils import Config
 from os.path import join, pardir, dirname, abspath
 MODULE_PATH = abspath(join(dirname(__file__), pardir))
+from enum import Enum
+
+class JobType(Enum):
+    REMOVE = 'remove'
+    REJECT = 'reject'
+    UNREJECT = 'unreject'
+    UNREMOVE = 'unremove'
+    CSV_ADD = 'csvAdd'
+    JSON_ADD = 'jsonAdd'
+    WHITELIST = 'whitelist'
+    DE_WHITELIST = 'de_whitelist'
+    BLACKLIST = 'blacklist'
+    DE_BLACKLIST = 'de_blacklist'
+
+
 def main():
     import concurrent.futures
     import re, json, time
     import sqlite3
 
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
-    from scheduleLib import genUtils
-    from scheduleLib.genUtils import write_out
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.genUtils import write_out
 
 
     def _addCandidates(candidates):
@@ -48,6 +63,31 @@ def main():
             candidates.append(Candidate.fromDictionary(d))
         _addCandidates(candidates)
 
+
+    def whitelist_candidates(candidateIDs):
+        print("whitelisting the following:", candidateIDs)
+        for ID in candidateIDs:
+            candidateDb.add_to_whitelist(ID)
+        return 0
+
+
+    def de_whitelist_candidates(candidateIDs):
+        for ID in candidateIDs:
+            candidateDb.remove_from_whitelist(ID)
+        return 0
+
+
+    def blacklist_candidates(candidateIDs):
+        for ID in candidateIDs:
+            candidateDb.add_to_blacklist(ID)
+        return 0
+
+
+    def de_blacklist_candidates(candidateIDs):
+        for ID in candidateIDs:
+            candidateDb.remove_from_blacklist(ID)
+        return 0
+    
 
     def markCandidatesRemoved(candidateIDs):
         for ID in candidateIDs:
@@ -79,17 +119,24 @@ def main():
     maestro_settings = Config(join(MODULE_PATH,"files","configs","in_maestro_settings.toml"))
 
     # this is where all the jobs are hooked up - job type (str) : function to perform
-    typeJobDict = {"No Jobs": lambda: None, "remove": markCandidatesRemoved,
-                "reject": markCandidatesRejected, "unreject": unrejectCandidates,
-                "unremove": unremoveCandidates, "csvAdd": addCandidatesFromCsv, 
-                "jsonAdd": addCandidatesFromJson}
+    typeJobDict = {"No Jobs": lambda: None, 
+                    JobType.REMOVE.value: markCandidatesRemoved,
+                    JobType.REJECT.value: markCandidatesRejected,
+                    JobType.UNREJECT.value: unrejectCandidates,
+                    JobType.UNREMOVE.value: unremoveCandidates,
+                    JobType.CSV_ADD.value: addCandidatesFromCsv, 
+                    JobType.JSON_ADD.value: addCandidatesFromJson,
+                    JobType.WHITELIST.value: whitelist_candidates,
+                    JobType.DE_WHITELIST.value: de_whitelist_candidates,
+                    JobType.BLACKLIST.value: blacklist_candidates,
+                    JobType.DE_BLACKLIST.value: de_blacklist_candidates
+                }
 
     currentJobType = "No Jobs"
     jobIDs = dict(zip(list(typeJobDict.keys()), [0] * len(typeJobDict)))
     waitingJobs = []
     completedJobs = []
     failedJobs = []
-
     candidateDb = CandidateDatabase(maestro_settings["candidateDbPath"], "MaestroUser")
     with concurrent.futures.ThreadPoolExecutor() as pool:
         # watch for input
@@ -105,9 +152,11 @@ def main():
                 if x == "DbOps: Ping!\n":
                     write_out("DbOps: Pong!")
                 if x == "DbOps: Jobs\n":
-                    statStr = json.dumps(
-                        {"Current": currentJobType + "_" + str(jobIDs[currentJobType]), "Completed": completedJobs,
-                        "Failed": failedJobs})
+                    statStr = json.dumps({
+                        "Current": currentJobType + "_" + str(jobIDs[currentJobType]),
+                        "Completed": completedJobs,
+                        "Failed": failedJobs
+                    })
                     write_out("Jobs:" + statStr)
                 elif x.startswith("DbOps: NewJob"):
                     try:
@@ -118,7 +167,6 @@ def main():
                         write_out("Badly formatted job: {}".format(str(job)))
                         write_out(repr(e))
                         failedJobs.append(job)
-                        continue
                     else:
                         jobIDs[tType] += 1
                         waitingJobs.append(jobDict)
@@ -131,25 +179,33 @@ def main():
             job = waitingJobs[0]
             currentJobType = job["jobType"]
             try:
-                res = typeJobDict[currentJobType](*job["arguments"])
+                args = job["arguments"]
+                # try: 
+                #     [arg for arg in args]
+                # except TypeError:
+                #     args = [args]
+                write_out("args:",args)
+                write_out(type(args))
+                res = typeJobDict[currentJobType](*args)
                 if not res:  # 0 is good exit, otherwise can exit with failure message
                     completedJobs.append(job)
                     waitingJobs.remove(job)
-                    write_out("DbOps: Status:Completed job \'{}_{}\'".format(currentJobType, str(jobIDs[currentJobType])))
+                    write_out("DbOps: Result:Completed job \'{}_{}\'".format(currentJobType, str(jobIDs[currentJobType])))
                     continue
             except sqlite3.DatabaseError:  # db may be locked, no need to abort
                 write_out("DbOps: Status:Retrying job after exception:", res)
                 res = repr(e)
             except Exception as e:  # some other error. abort
                 res = repr(e)
-                write_out("DbOps: Status:Fatal error encountered during job \'{}_{}\': {}".format(currentJobType, str(
+                write_crash_report("dbOps",e)
+                write_out("DbOps: Error:Fatal error encountered during job \'{}_{}\': {}".format(currentJobType, str(
                     jobIDs[currentJobType]), str(res)))
                 job["retries"] = 0  # cheap
 
             if not job["retries"]:  # we failed and are out of retries
                 failedJobs.append(job)
                 waitingJobs.remove(job)
-                write_out("DbOps: Status:Failed job \'{}_{}\': {}".format(currentJobType, str(jobIDs[currentJobType]),
+                write_out("DbOps: Failed:Failed job \'{}_{}\': {}".format(currentJobType, str(jobIDs[currentJobType]),
                                                                     str(res)))
                 continue
             job["retries"] -= 1  # decrement allowed retries and try again

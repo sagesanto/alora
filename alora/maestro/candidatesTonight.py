@@ -6,10 +6,10 @@ from astral import LocationInfo, sun, SunDirection
 from astropy.table import Table
 from matplotlib import pyplot as plt
 
-from scheduleLib import genUtils
-from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
-from scheduleLib.genUtils import ScheduleError
-from schedulerConfigs.MPC_NEO.mpcUtils import mpcCandidatesForTimeRange
+from alora.maestro.scheduleLib import genUtils
+from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+from alora.maestro.scheduleLib.genUtils import ScheduleError
+from alora.maestro.schedulerConfigs.MPC_NEO.mpcUtils import mpcCandidatesForTimeRange
 
 # most of this is proof-of-concept stuff for the newScheduler, just packaged to be semi-useful as a tool before i implement it
 

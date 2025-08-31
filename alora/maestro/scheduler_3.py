@@ -42,7 +42,7 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
 import alora.maestro.scheduleLib.schedule
-from scheduleLib.candidateDatabase import Candidate
+from alora.maestro.scheduleLib.candidateDatabase import Candidate
 from scheduler import TMOScheduler
 
 # for packaging reasons, i promise
@@ -50,17 +50,17 @@ try:
     sys.path.append(
         os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
     from alora.maestro.scheduleLib import schedule
-    from scheduleLib.genUtils import stringToTime, roundToTenMinutes
+    from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
     genConfig = genUtils.Config(os.path.join(os.path.dirname(__file__), "files", "configs", "config.toml"))
 
     sys.path.remove(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 except ImportError:
-    from scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils
     from alora.maestro.scheduleLib import schedule
-    from scheduleLib.genUtils import stringToTime, roundToTenMinutes
+    from alora.maestro.scheduleLib.genUtils import stringToTime, roundToTenMinutes
 
     genConfig = genUtils.Config(os.path.join("files", "configs", "config.toml"))
 

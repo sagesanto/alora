@@ -12,13 +12,13 @@ import numpy as np, pandas as pd
 from abc import ABC, abstractmethod, ABCMeta, abstractproperty
 import unittest
 from astropy import units as u
-from scheduleLib.genUtils import stringToTime, timeToString, get_sunrise_sunset
+from alora.maestro.scheduleLib.genUtils import stringToTime, timeToString, get_sunrise_sunset
 import re
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from datetime import datetime
-from scheduleLib.sunrise import SunLookup
+from alora.maestro.scheduleLib.sunrise import SunLookup
 
 def visualizeSchedule(scheduleDf: pd.DataFrame, plotSavepath, csvSavepath, startDt=None, endDt=None, addTitleText=None,
                       save=True, show=False):

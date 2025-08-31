@@ -15,7 +15,7 @@ import os, sys
 grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path.append(grandparentDir)
 
-from scheduleLib.db.dbConfig import Base
+from alora.maestro.scheduleLib.db.dbConfig import Base
 sys.path.remove(grandparentDir)
 
 # codes to be used for processing. if you change these, you need to recreate the db

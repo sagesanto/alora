@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime
 import pandas as pd
 from datetime import datetime
 
-from scheduleLib import genUtils
+from alora.maestro.scheduleLib import genUtils
 
 
 def getSelectedFromList(view: QListView):

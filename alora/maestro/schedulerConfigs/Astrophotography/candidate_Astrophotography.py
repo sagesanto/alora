@@ -6,8 +6,8 @@ MAESTRO_PATH = abspath(join(dirname(__file__),pardir,pardir))
 module_path = abspath(dirname(__file__))
 
 sys.path.append(MAESTRO_PATH)
-from scheduleLib.genUtils import generate_candidate_class
-from scheduleLib.candidateDatabase import BaseCandidate, construct_quantity, serialize_quantity
+from alora.maestro.scheduleLib.genUtils import generate_candidate_class
+from alora.maestro.scheduleLib.candidateDatabase import BaseCandidate, construct_quantity, serialize_quantity
 
 aphot_field_constructors = {"quantity":construct_quantity}
 aphot_field_serializers = {"quantity":serialize_quantity}

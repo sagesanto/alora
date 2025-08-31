@@ -1,7 +1,7 @@
 import pandas as pd, sys, os
-from scheduleLib.candidateDatabase import Candidate, CandidateDatabase
+from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase
 from datetime import datetime
-from scheduleLib.genUtils import query_to_dict
+from alora.maestro.scheduleLib.genUtils import query_to_dict
 from sqlite3 import DatabaseError, connect, Row, OperationalError
 
 if len(sys.argv) != 2:

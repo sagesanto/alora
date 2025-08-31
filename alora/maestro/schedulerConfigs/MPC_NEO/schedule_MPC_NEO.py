@@ -15,16 +15,16 @@ try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(
         grandparentDir)
-    from schedulerConfigs.MPC_NEO import mpcUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
+    from alora.maestro.schedulerConfigs.MPC_NEO import mpcUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
     sys.path.remove(grandparentDir)
 
 
 except ImportError:
-    from schedulerConfigs.MPC_NEO import mpcUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase
-    from scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
+    from alora.maestro.schedulerConfigs.MPC_NEO import mpcUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase
+    from alora.maestro.scheduleLib.genUtils import stringToTime, TypeConfiguration, Config
 
 mConfig = Config(join(dirname(__file__),"config.toml"))
 

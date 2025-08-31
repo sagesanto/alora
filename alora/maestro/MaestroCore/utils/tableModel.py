@@ -1,7 +1,7 @@
 import pandas as pd
-from scheduleLib.candidateDatabase import Candidate
+from alora.maestro.scheduleLib.candidateDatabase import Candidate, Flag, has_flag
 from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex
-from PyQt6.QtGui import QTextOption
+from PyQt6.QtGui import QTextOption, QColor
 
 def splitListIntoContinuousRuns(list, ascending=True):
     listOfLists = []
@@ -32,6 +32,12 @@ class CandidateTableModel(QAbstractTableModel):
             if self._data is not None:
                 value = self._data.iloc[index.row(), index.column()]
                 return str(value)
+        if role == Qt.ItemDataRole.BackgroundRole:
+            flags = self._data.iloc[index.row()]["flags"]
+            if has_flag(flags, Flag.WHITELIST):
+                return QColor(65, 198, 92, 64)
+            elif has_flag(flags, Flag.BLACKLIST):
+                return QColor(255, 75, 81, 64)
 
     def rowCount(self, index):
         return self._data.shape[0]

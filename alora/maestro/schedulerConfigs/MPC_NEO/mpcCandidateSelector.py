@@ -8,16 +8,16 @@ try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(
         grandparentDir)
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase
-    from schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase
+    from alora.maestro.schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
     from mpcCandidateLogger import getVelocities
     sys.path.remove(grandparentDir)
 
 except:
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase
-    from schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase
+    from alora.maestro.schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
     from .mpcCandidateLogger import getVelocities
 
 

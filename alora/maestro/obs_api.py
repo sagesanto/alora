@@ -8,7 +8,7 @@ from sqlalchemy import text, not_
 from sqlalchemy.exc import PendingRollbackError, IntegrityError, OperationalError
 from datetime import datetime, UTC
 import scheduleLib.db.dbConfig as dbConfig
-from scheduleLib.db.db_models import Observation, CandidateModel, ProcessingCode
+from alora.maestro.scheduleLib.db.db_models import Observation, CandidateModel, ProcessingCode
 from flask_cors import CORS, cross_origin
 
 with open("logging.json", 'r') as log_cfg:

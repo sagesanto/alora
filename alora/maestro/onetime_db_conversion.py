@@ -2,7 +2,7 @@
 # does not need to be run ever again.
 import sys, os
 # sys.path.append("C:\\Users\\chell\\PycharmProjects\\stneo\\tmocass")
-from scheduleLib.candidateDatabase import CandidateDatabase
+from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase
 from astropy.coordinates import Angle
 from configparser import ConfigParser
 print(os.getcwd())

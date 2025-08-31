@@ -5,8 +5,11 @@ import shutil
 import traceback
 from os.path import join, abspath, dirname
 
+LISTCHANGE_REFRESH_DELAY = 1000
+
 sys.path.append(abspath(dirname(__file__)))
-from scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
+from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
+from MaestroCore.databaseOperations import JobType
 
 MAESTRO_DIR = abspath(dirname(__file__))
 def PATH_TO(fname:str): return join(MAESTRO_DIR,fname)
@@ -44,8 +47,8 @@ def _main():
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields, has_flag, Flag, set_flag
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
     from MaestroCore.utils.listModel import FlexibleListModel, DateTimeRangeListModel, ModuleListEntry
@@ -56,8 +59,8 @@ def _main():
     from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
     import astropy.units as u
 
-    from scheduleLib.genUtils import inputToAngle, Config
-    from scheduleLib.module_loader import ModuleManager
+    from alora.maestro.scheduleLib.genUtils import inputToAngle, Config
+    from alora.maestro.scheduleLib.module_loader import ModuleManager
 
     # VAL_DISPLAY_TYPES = {
     #     "float":QLineEdit,
@@ -301,6 +304,7 @@ def _main():
             self.sunriseUTC, self.sunsetUTC = None, None
             self.set_sunrise_sunset()
             self.candidates = None
+            self.all_candidates = None
             self.candidateDf = None
             self.candidatesByID = None
             self.ephemProcess = None
@@ -395,6 +399,9 @@ def _main():
             p = Process(name, triggers, description=description, *args, **kwargs)
             self.processModel.add(p)
             p.errorSignal.connect(lambda msg: self.reportError(name, msg))
+            if debug:
+                p.msg.connect(lambda message, name=name: print(f"[{name}]: {message}"))
+            p.ponged.connect(lambda message, name=name: self.statusbar.showMessage(f"[{name}]: {message}", 3000))
             return p
 
         def setConnections(self):
@@ -430,8 +437,10 @@ def _main():
                 lambda: addLineContentsToList(self.blacklistLineEdit, self.blacklistModel))
 
             self.removeWhitelistedButton.connectList(self.whitelistView)
+            self.removeWhitelistedButton.add_callback(lambda ls: self.de_whitelist_candidates(ls))
             self.removeExcludeRangeButton.connectList(self.excludeListView)
             self.removeBlacklistedButton.connectList(self.blacklistView)
+            self.removeBlacklistedButton.add_callback(lambda ls: self.de_blacklist_candidates(ls))
             self.ephemRemoveSelected.connectList(self.ephemListView)
 
             self.addToExcludeButton.clicked.connect(lambda: self.addToExcludeRange("MM/dd/yyyy hh:mm"))
@@ -965,8 +974,8 @@ def _main():
                     self.startDbUpdater()
                     return
             self.databaseProcess = self.initProcess("DbUpdater", ["DbUpdater: Status:", "DbUpdater: Result:", "DbUpdater: Error:", "DbUpdater: Finished:"], description="The DbUpdater process is responsible for periodically updating the target database, adding new targets, and removing old ones.")
-            if debug:
-                self.databaseProcess.msg.connect(lambda message: print(message))
+            # if debug:
+            #     self.databaseProcess.msg.connect(lambda message: print(message))
             self.databaseProcess.triggered.connect(self.dbStatusChecker)
             self.databaseProcess.succeeded.connect(self.getCandidates)
             self.databaseProcess.succeeded.connect(lambda: self.set_candidates_icon(STATUS_DONE))
@@ -985,15 +994,9 @@ def _main():
             rejectIDs = [c.ID for c in candidates if not c.hasField("RejectedReason")]
             unrejectIDs = [c.ID for c in candidates if c.hasField("RejectedReason")]
             if rejectIDs:
-                jobDict = {"jobType": "reject", "arguments": [rejectIDs], "retries": 3}
-                jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
-                logger.debug(f"JobStr: {jobStr}")
-                self.dbOperatorProcess.write(jobStr)
+                self.send_job_to_db(JobType.REJECT, rejectIDs, retries=3)
             if unrejectIDs:
-                jobDict = {"jobType": "unreject", "arguments": [unrejectIDs], "retries": 3}
-                jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
-                logger.debug(f"JobStr: {jobStr}")
-                self.dbOperatorProcess.write(jobStr)
+                self.send_job_to_db(JobType.UNREJECT, unrejectIDs, retries=3)
             else:
                 logger.info("No IDs to reject.")
 
@@ -1006,17 +1009,9 @@ def _main():
             removeIDs = [c.ID for c in candidates if not c.hasField("RemovedReason")]
             unremoveIDs = [c.ID for c in candidates if c.hasField("RemovedReason")]
             if removeIDs:
-                jobDict = {"jobType": "remove", "arguments": [removeIDs], "retries": 3}
-                jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
-                logger.debug(f"JobStr: {jobStr}")
-                self.dbOperatorProcess.write(jobStr)
+                self.send_job_to_db(JobType.REMOVE, removeIDs, retries=3)
             if unremoveIDs:
-                jobDict = {"jobType": "unremove", "arguments": [unremoveIDs], "retries": 3}
-                jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
-                logger.debug(f"JobStr: {jobStr}")
-                self.dbOperatorProcess.write(jobStr)
-            else:
-                logger.debug(f"JobStr: {jobStr}")
+                self.send_job_to_db(JobType.UNREMOVE, unremoveIDs, retries=3)
 
         def setSchedError(self,val):
             self.sched_error_occurred = val
@@ -1040,8 +1035,8 @@ def _main():
                 [(str(dat[0].toSecsSinceEpoch()) + "/" + str(dat[1].toSecsSinceEpoch())) for dat in
                 self.excludeListModel._data])
 
-            if debug:
-                self.scheduleProcess.msg.connect(lambda msg: print("Scheduler: ", msg))
+            # if debug:
+            #     self.scheduleProcess.msg.connect(lambda msg: print("Scheduler: ", msg))
             self.scheduleProcess.start(PYTHON_PATH, [PATH_TO("scheduler.py"),
                                                 str(blacklistedCandidateDesigs), str(whitelistedCandidateDesigs),
                                                 excludedTimeRanges])
@@ -1057,6 +1052,13 @@ def _main():
             self.scheduleProcess.triggered.connect(self.displaySchedule)
             self.scheduleProcess.triggered.connect(lambda: self.genScheduleButton.setText("Writing text file"))
             # self.scheduleProcess.ended.connect(self.displaySchedule)
+
+        def send_job_to_db(self, jobtype:JobType, *args, retries=0):
+            jobDict = {"jobType": jobtype.value, "arguments": args, "retries": retries}
+            jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
+            logger.info(f"Job sent to DB: {jobStr}")
+            self.dbOperatorProcess.write(jobStr)
+
 
         def addToExcludeRange(self, timeDisplayFormat):
             if self.excludeStartEdit.dateTime() < self.excludeEndEdit.dateTime():
@@ -1123,6 +1125,9 @@ def _main():
                 if candidate not in self.blacklistModel._data:
                     self.whitelistModel.removeItem(candidate)
                     self.blacklistModel.addItem(candidate)
+            self.send_job_to_db(JobType.BLACKLIST, [c.ID for c in candidates], retries=3)
+            QTimer.singleShot(LISTCHANGE_REFRESH_DELAY, lambda: (self.getCandidates(), self.displayCandidates()))
+
 
         def whitelistSelectedCandidates(self):
             candidates = [self.candidateDict[d] for d in getSelectedFromTable(self.candidateView, self.indexOfNameColumn)]
@@ -1130,9 +1135,24 @@ def _main():
             for candidate in candidates:
                 if candidate not in self.whitelistModel._data:
                     self.blacklistModel.removeItem(candidate)
-                    print(type(candidate))
                     self.whitelistModel.addItem(candidate)
-                    print("whitelisted candidate: ", candidate)
+            self.send_job_to_db(JobType.WHITELIST, [c.ID for c in candidates], retries=3)
+            QTimer.singleShot(LISTCHANGE_REFRESH_DELAY, lambda: (self.getCandidates(), self.displayCandidates()))
+
+
+        def de_whitelist_candidates(self,candidates):
+            for candidate in candidates:
+                if candidate in self.whitelistModel._data:
+                    self.whitelistModel.removeItem(candidate)
+            self.send_job_to_db(JobType.DE_WHITELIST, [c.ID for c in candidates], retries=3)
+            QTimer.singleShot(LISTCHANGE_REFRESH_DELAY, lambda: (self.getCandidates(), self.displayCandidates()))
+        
+        def de_blacklist_candidates(self,candidates):
+            for candidate in candidates:
+                if candidate in self.blacklistModel._data:
+                    self.blacklistModel.removeItem(candidate)
+            self.send_job_to_db(JobType.DE_BLACKLIST, [c.ID for c in candidates], retries=3)
+            QTimer.singleShot(LISTCHANGE_REFRESH_DELAY, lambda: (self.getCandidates(), self.displayCandidates()))
 
         def resetCandidateTable(self):
             oldModel = self.candidateTable
@@ -1162,6 +1182,27 @@ def _main():
                 if debug:
                     logger.info(f"Db finished: {msg}")
                 self.databaseProcess.ended.emit(msg.replace("DbUpdater: Finished:", ""))
+                
+        def dbOpsStatus(self, phrase, msg):
+            if phrase == "DbOps: Finished:":
+                clean = msg.replace("DbOps: Finished:", "")
+                self.statusBar().showMessage(clean, 15000)
+                self.dbOperatorProcess.log.append(clean)
+            if phrase == "DbOps: Status:":
+                clean = msg.replace("DbOps: Status:", "")
+                self.statusBar().showMessage(clean, 15000)
+                self.dbOperatorProcess.log.append(clean)
+            if phrase == "DbOps: Error:":
+                self.statusBar().showMessage(msg, 10000)
+            if phrase == "DbOps: Failed:":
+                self.statusBar().showMessage(msg,10000)
+                clean = msg.replace("DbOps: Failed:", "")
+                self.dbOperatorProcess.errorSignal.emit(clean)
+            # db updater stays alive after finishing so we need to manually check if it's done and emit finished if so
+            if phrase == "DbUpdater: Finished:": 
+                if debug:
+                    logger.info(f"Db finished: {msg}")
+                self.databaseProcess.ended.emit(msg.replace("DbUpdater: Finished:", ""))
 
         def toggleProcessButtons(self):
             self.processesTreeView.selectionModel().blockSignals(True)
@@ -1185,14 +1226,11 @@ def _main():
             if dlg.exec():
                 logger.info("Adding user candidates!")
                 if os.path.exists(AddCandidateDialog.tempSaveFile()):
-                    jobDict = {"jobType": "csvAdd", "arguments": [AddCandidateDialog.tempSaveFile()], "retries": 0}
-                    jobStr = f"DbOps: NewJob: {json.dumps(jobDict)} \n"
-                    logger.debug(f"Add candidate JobStr: {jobStr}")
-                    self.dbOperatorProcess.write(jobStr)
+                    self.send_job_to_db(JobType.CSV_ADD, AddCandidateDialog.tempSaveFile())
                 else:
                     logger.error("Couldn't find or couldn't open candidate csv!")
             else:
-                logger.warn("No candidates to add.")
+                logger.warning("No candidates to add.")
 
         def pauseProcess(self):
             if "win" not in sys.platform:
@@ -1214,7 +1252,9 @@ def _main():
 
         def pingProcess(self):
             for index in self.processesTreeView.selectedIndexes():
-                index.internalPointer().tags["Process"].ping()
+                p = index.internalPointer().tags["Process"]
+                p.ping()
+                self.statusBar().showMessage(f"Pinging process: {p.name}", 1000)
 
         def useCandidateTableEphemeris(self):
             """!
@@ -1225,10 +1265,29 @@ def _main():
                 self.ephemListModel.addItem(candidate)
             self.tabWidget.setCurrentWidget(self.ephemsTab)
 
+        def update_whitelist_blacklist(self):
+            whitelisted = [c for c in self.all_candidates if has_flag(c.flags, Flag.WHITELIST)]
+            self.whitelistModel.clear()
+            # self.whitelistModel.deleteLater()
+            # self.whitelistModel = FlexibleListModel()
+            for c in whitelisted:
+                self.whitelistModel.addItem(c)
+
+            blacklisted = [c for c in self.all_candidates if has_flag(c.flags, Flag.BLACKLIST)]
+            self.blacklistModel.clear()
+            # self.blacklistModel.deleteLater()
+            # self.blacklistModel = FlexibleListModel()
+            for c in blacklisted:
+                self.blacklistModel.addItem(c)
+
+            # self.whitelistView.setModel(self.whitelistModel)
+            # self.blacklistView.setModel(self.blacklistModel)
+
         def getCandidates(self):
             try:
+                self.all_candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
                 if self.settings.query("showAllCandidates"):
-                    self.candidates = self.dbConnection.table_query("Candidates", "*", "1=1", [], returnAsCandidates=True,skip_errors=True)
+                    self.candidates = self.all_candidates
                 else:
                     logger.info("Showing select")
                     self.candidates = self.dbConnection.candidatesForTimeRange(self.sunsetUTC, self.sunriseUTC, 0.01,skip_errors=True)
@@ -1250,30 +1309,34 @@ def _main():
                 if debug:
                     logger.warning("No candidates")
                 return self
-            priorityCandidates = [c for c in self.candidates if c.CandidateType == "MPC NEO" and c.isValid() and (
-                    c.CandidateName.startswith("ST") or c.CandidateName.startswith("LS"))]
-            for candidate in priorityCandidates:
-                if candidate.CandidateName not in [c.CandidateName for c in
-                                                self.whitelistModel._data] and candidate.CandidateName not in [
-                    c.CandidateName for c in self.blacklistModel._data]:
-                    self.blacklistModel.removeItem(candidate)
-                    self.whitelistModel.addItem(candidate)
+            
+            self.set_candidate_derivatives()
+            # priorityCandidates = [c for c in self.candidates if c.CandidateType == "MPC NEO" and c.isValid() and (
+            #         c.CandidateName.startswith("ST") or c.CandidateName.startswith("LS"))]
+            # for candidate in priorityCandidates:
+            #     if candidate.CandidateName not in [c.CandidateName for c in
+            #                                     self.whitelistModel._data] and candidate.CandidateName not in [
+            #         c.CandidateName for c in self.blacklistModel._data]:
+            #         self.blacklistModel.removeItem(candidate)
+            #         self.whitelistModel.addItem(candidate)
+            return self
+    
+        def set_candidate_derivatives(self):
             self.candidateDf = Candidate.candidatesToDf(self.candidates)
-
+            self.update_whitelist_blacklist()
             # order the df columns by the order of the validFields list
             numbered_fields = dict(zip(validFields,np.arange(len(validFields))))
             c = list(self.candidateDf.columns)
             c.sort(key = lambda x: numbered_fields[x])
             self.candidateDf = self.candidateDf.reindex(columns=c)
             
-            self.candidatesByID = {c.ID: c for c in self.candidates}
-            self.candidateDict = {c.CandidateName: c for c in self.candidates}
+            self.candidatesByID = {c.ID: c for c in self.all_candidates}
+            self.candidateDict = {c.CandidateName: c for c in self.all_candidates}
             print(self.candidateDf.columns)
             self.indexOfIDColumn = self.candidateDf.columns.get_loc("ID")
             self.indexOfNameColumn = self.candidateDf.columns.get_loc("CandidateName")
-
             return self
-
+    
         def getEntriesAsCandidates(self, entries, handleErrorFunc=None):
             # strings is a list of strings that can be resolved in this way
             candidates = []
@@ -1442,10 +1505,13 @@ def _main():
                 self.dbOperatorProcess = None
                 self.startDbOperator()
                 return
-            self.dbOperatorProcess = self.initProcess("DbOps", ["DbOps: Status:", "DbOps: Result:"], "The DbOps process is responsible for handling user-initiated database operations (such as adding, removing, and rejecting targets).")
+            self.dbOperatorProcess = self.initProcess("DbOps", ["DbOps: Status:", "DbOps: Result:", "DbOps: Failed:", "DbOps: Error:"], "The DbOps process is responsible for handling user-initiated database operations (such as adding, removing, and rejecting targets).")
+            
+            # this is now done in initProcess:
             # if debug:
             #     self.dbOperatorProcess.msg.connect(lambda message: print(message))
-            # self.dbOperatorProcess.triggered.connect(self.dbStatusChecker)
+            self.dbOperatorProcess.errorSignal.connect(lambda m: self.warning_popup("DbOps Failed",m))
+            self.dbOperatorProcess.triggered.connect(self.dbOpsStatus)
             self.dbOperatorProcess.ended.connect(self.getCandidates)
             self.dbOperatorProcess.start(PYTHON_PATH,
                                         [PATH_TO(join('MaestroCore','databaseOperations.py'))])

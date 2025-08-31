@@ -41,7 +41,7 @@ for d in config_dirs:
                     f.write(tomlkit.dumps(active_cfg).replace("\r\n","\n"))
                 from .utils import configure_logger
                 logger = configure_logger("config",join(logging_dir,'config.log'))
-                logger.warn(f"[ALORA] The default config '{join(d,f)}' has new keys that were not present in the active config '{active}'. Default values were copied over for the following new keys: {key_paths}")
+                logger.warn(f"[ALORA] The default config '{join(d,active)}' has new keys that were not present in the active config '{active}'. Default values were copied over for the following new keys: {key_paths}")
                 # raise ValueError(f"[ALORA] The config template '{join(d,f)}' has new keys that are not present in the active config '{active}'. Please provide values for the following new keys: {key_paths}")
 
 with open(config_path,"rb") as f:

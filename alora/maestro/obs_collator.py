@@ -2,8 +2,8 @@
 # combine observations gleaned from system files with observation records
 
 import pandas as pd, sys, os
-from scheduleLib.db.dbConfig import dbSession
-from scheduleLib.db.db_models import Observation
+from alora.maestro.scheduleLib.db.dbConfig import dbSession
+from alora.maestro.scheduleLib.db.db_models import Observation
 from datetime import datetime
 df = pd.read_csv("files/misc_and_records/all_processed.csv")
 

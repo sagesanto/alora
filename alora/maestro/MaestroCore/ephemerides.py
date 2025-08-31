@@ -4,7 +4,7 @@
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from scheduleLib.crash_reports import run_with_crash_writing
+from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing
 
 from alora.config.utils import Config
 from os.path import join, pardir, dirname, abspath
@@ -15,8 +15,8 @@ def main():
     import subprocess
     # from importlib import import_module
 
-    from scheduleLib.genUtils import write_out
-    from scheduleLib.module_loader import ModuleManager
+    from alora.maestro.scheduleLib.genUtils import write_out
+    from alora.maestro.scheduleLib.module_loader import ModuleManager
     manager = ModuleManager(write_out=write_out)
     modules = manager.load_active_modules()
 

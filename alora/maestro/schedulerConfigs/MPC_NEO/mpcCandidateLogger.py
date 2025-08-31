@@ -9,17 +9,17 @@ try:
     grandparentDir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
     sys.path.append(
         grandparentDir)
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
-    from schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
-    from schedulerConfigs.MPC_NEO import mpcUtils
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+    from alora.maestro.schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
+    from alora.maestro.schedulerConfigs.MPC_NEO import mpcUtils
 
     sys.path.remove(grandparentDir)
 except:
-    from scheduleLib import genUtils
-    from scheduleLib.candidateDatabase import CandidateDatabase, Candidate
-    from schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
-    from schedulerConfigs.MPC_NEO import mpcUtils
+    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib.candidateDatabase import CandidateDatabase, Candidate
+    from alora.maestro.schedulerConfigs.MPC_NEO.mpcTargetSelectorCore import TargetSelector
+    from alora.maestro.schedulerConfigs.MPC_NEO import mpcUtils
 
 
 async def getVelocities(desig, mpc, logger, targetSelector):  # get dRA and dDec

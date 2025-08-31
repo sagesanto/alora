@@ -3,9 +3,7 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QCheckBox
 from PyQt6.QtGui import QPixmap
 import PyQt6.QtWidgets as QtWidgets
 
-
-from scheduleLib.candidateDatabase import Candidate, BaseCandidate
-
+from alora.maestro.scheduleLib.candidateDatabase import Candidate, BaseCandidate
 
 class FlexibleListModel(QAbstractListModel):
     def __init__(self, data=None):
@@ -22,7 +20,12 @@ class FlexibleListModel(QAbstractListModel):
         if role == Qt.ItemDataRole.DisplayRole:
             dat = self._data[index.row()]
             return dat.CandidateName if isinstance(dat, BaseCandidate) else dat
-
+        
+        if role == -1:  # get the whole piece of data
+            dat = self._data[index.row()]
+            print("getting all data:",dat)
+            return dat
+        
         return None
 
     def addItem(self, newItem):
@@ -50,6 +53,11 @@ class FlexibleListModel(QAbstractListModel):
             self.beginRemoveRows(QModelIndex(), i, i)
             del self._data[i]
             self.endRemoveRows()
+            
+    def clear(self):
+        self.beginResetModel()
+        self._data.clear()
+        self.endResetModel()
 
 
 class DateTimeRangeListModel(FlexibleListModel):
@@ -72,7 +80,6 @@ class DateTimeRangeListModel(FlexibleListModel):
 
     def addItem(self, startTime: QDateTime, endTime: QDateTime, timeDisplayFormat="MM/dd/yyyy hh:mm"):
         super().addItem((startTime, endTime, timeDisplayFormat))
-
 
 class ModuleListEntry(QWidget):
     def __init__(self, name, active, icon_path, parent=None):

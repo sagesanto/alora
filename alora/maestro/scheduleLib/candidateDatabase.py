@@ -4,6 +4,7 @@
 # CandidateDatabase - interface between the user and an existing candidate database, allowing Candidate storage, management, and queries
 
 import os, json
+from os.path import join
 import logging
 import logging.config
 import pandas as pd
@@ -14,14 +15,18 @@ from datetime import datetime, timedelta
 from string import Template
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
+from enum import Enum
+import numpy as np
+
 
 MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
 MAESTRO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir))
 
+
 try:
-    from scheduleLib import genUtils
-    from scheduleLib.module_loader import ModuleManager
-    from scheduleLib.sql_database import SQLDatabase
+    from . import genUtils
+    from .module_loader import ModuleManager
+    from .sql_database import SQLDatabase
 except ImportError as e:
     print(e)
     import genUtils
@@ -34,7 +39,25 @@ validFields = ["CandidateName", "CandidateType", "Author", "DateAdded", "DateLas
                'Magnitude', 'RMSE_RA',
                'RMSE_Dec', "Score", "nObs", 'ApproachColor', 'NumExposures', 'ExposureTime', 'Scheduled', 'Observed',
                'Processed', 'Submitted', 'Notes', 'Priority', 'Filter', 'Guide', "ID",
-               'CVal1', 'CVal2', 'CVal3', 'CVal4', 'CVal5', 'CVal6', 'CVal7', 'CVal8', 'CVal9', 'CVal10']
+               'CVal1', 'CVal2', 'CVal3', 'CVal4', 'CVal5', 'CVal6', 'CVal7', 'CVal8', 'CVal9', 'CVal10', 'flags']
+
+
+class Flag(Enum):
+    WHITELIST = 1
+    BLACKLIST = 2
+
+def has_flag(flags: int, flag: Flag):
+    return np.bitwise_and(flags, flag.value) != 0
+
+def set_flag(flags: int, flag: Flag):
+    print("setting flag:", flags, flag, flag.value)
+    
+    res = int(np.bitwise_or(flags, flag.value))
+    print(f"res: {res}")
+    return res
+
+def remove_flag(flags: int, flag: Flag):
+    return int(np.bitwise_and(flags, ~flag.value))
 
 logger = logging.getLogger(__name__)
 # MPC target's Name	Processed	Submitted	approx. transit time (@TMO)	RA	Dec	RA Vel ("/min)	Dec Vel ("/min)	Vmag	~Error (arcsec)	Error Color
@@ -190,6 +213,14 @@ class BaseCandidate:
                 else:
                     d[key] = val
         return d
+
+    @property
+    def whitelisted(self):
+        return has_flag(self.flags, Flag.WHITELIST)
+    
+    @property
+    def blacklisted(self):
+        return has_flag(self.flags, Flag.BLACKLIST)
 
     @classmethod
     def fromDictionary(cls, entry: dict):
@@ -349,11 +380,10 @@ class CandidateDatabase(SQLDatabase):
         self.db_path = dbPath
         self.__author = author
         self.logger.info("Connecting to candidate database at " + dbPath)
-        if not os.path.exists(self.db_path):
-            raise FileNotFoundError("Database file not found")
         self.open(dbPath)
         if self.isConnected:
             self.logger.info("Connection confirmed")
+            self._setup_schema()
         else:
             raise sqlite3.DatabaseError("Connection to candidate database failed")
         self.__existingIDs = []  # get and store a list of existing IDs. risk of collision low, so I'm not too worried about not calling this before making ids
@@ -364,6 +394,25 @@ class CandidateDatabase(SQLDatabase):
         except:
             pass
         self.close()
+        
+    @property
+    def version(self):
+        self.db_cursor.execute('pragma user_version')
+        return self.db_cursor.fetchone()[0]
+
+    def _setup_schema(self):
+        schema_dir = join(MAESTRO_PATH, "scheduleLib", "schema")
+        sql_files = [f for f in os.listdir(schema_dir) if f.endswith(".sql")]
+        sql_files.sort()
+        sql_files = [f for f in sql_files if int(f.split("_")[0]) > self.version]
+        for sql_file in sql_files:
+            next_version = int(sql_file.split("_")[0]) + 1
+            self.logger.info(f"Upgrading candidate database to version {next_version} using {sql_file}")
+            with open(join(schema_dir, sql_file), "r") as f:
+                sql_script = f.read()
+                self.db_cursor.executescript(sql_script)
+                self.db_cursor.execute(f'pragma user_version={next_version}')
+                self.db_connection.commit()
 
     @staticmethod
     def timestamp():
@@ -400,8 +449,9 @@ class CandidateDatabase(SQLDatabase):
         @param check_same_thread: Check if the database should be read by only one thread
         """
         if not os.path.isfile(db_file):
-            self.logger.error('Database file %s not found.' % db_file)
-            raise ValueError("Database file not found")
+            self.logger.warning(f"Database file {db_file} not found... creating a new one")
+            # self.logger.error('Database file %s not found.' % db_file)
+            # raise ValueError("Database file not found")
         try:
             super().open(db_file, timeout=timeout, check_same_thread=check_same_thread,
                                                  detect_types=sqlite3.PARSE_DECLTYPES |
@@ -492,10 +542,10 @@ class CandidateDatabase(SQLDatabase):
     def candidatesForTimeRange(self, obsStart, obsEnd, duration, candidate_type=None, skip_errors=False):
         if candidate_type is None:
             candidates = self.table_query("Candidates", "*",
-                                      "RemovedReason IS NULL AND RejectedReason IS NULL", [], returnAsCandidates=True,skip_errors=skip_errors)
+                                      "RemovedReason IS NULL AND ((RejectedReason IS NULL) or (flags & 1)) AND NOT (flags & 2)", [], returnAsCandidates=True,skip_errors=skip_errors)
         else:
             candidates = self.table_query("Candidates", "*",
-                                      "RemovedReason IS NULL AND RejectedReason IS NULL AND CandidateType IS ?", [candidate_type], returnAsCandidates=True,skip_errors=skip_errors)
+                                      "RemovedReason IS NULL AND ((RejectedReason IS NULL) or (flags & 1)) AND NOT (flags & 2) AND CandidateType IS ?", [candidate_type], returnAsCandidates=True,skip_errors=skip_errors)
 
         if candidates is None:
             return []
@@ -656,6 +706,32 @@ class CandidateDatabase(SQLDatabase):
             return None
         return ID
 
+    def assert_candidate_exists(self, ID: str):
+        candidate = self.getCandidateByID(ID)
+        if candidate is None:
+            raise ValueError(f"No candidate found with id {ID}!")            
+
+    def add_to_whitelist(self, ID: str):
+        candidate = self.getCandidateByID(ID)
+        new_flags = set_flag(candidate.flags, flag=Flag.WHITELIST)
+        new_flags = remove_flag(new_flags, flag=Flag.BLACKLIST)
+        self.editCandidateByID(ID, {"flags":new_flags})
+        
+    def add_to_blacklist(self, ID: str):
+        candidate = self.getCandidateByID(ID)
+        new_flags = set_flag(candidate.flags, flag=Flag.BLACKLIST)
+        new_flags = remove_flag(new_flags, flag=Flag.WHITELIST)
+        self.editCandidateByID(ID, {"flags":new_flags})
+        
+    def remove_from_whitelist(self, ID: str):
+        candidate = self.getCandidateByID(ID)
+        new_flags = remove_flag(candidate.flags, flag=Flag.WHITELIST)
+        self.editCandidateByID(ID, {"flags":new_flags})
+        
+    def remove_from_blacklist(self, ID: str):
+        candidate = self.getCandidateByID(ID)
+        new_flags = remove_flag(candidate.flags, flag=Flag.BLACKLIST)
+        self.editCandidateByID(ID, {"flags":new_flags})
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', filename='libFiles/candidateDb.log',
