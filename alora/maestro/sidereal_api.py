@@ -7,7 +7,8 @@ from datetime import datetime
 app = flask.Flask(__name__)
 
 def get_current_sidereal_time(location):
-    currentTime = datetime.utcnow().replace(second=0, microsecond=0)
+    currentTime = datetime.utcnow()
+    # currentTime = datetime.utcnow().replace(second=0, microsecond=0)
     return Time(currentTime).sidereal_time('mean', longitude=location.longitude)
 
 @app.route('/lst',methods=["GET","POST"])

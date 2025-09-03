@@ -15,11 +15,12 @@ config_dirs = [dir, maestro_cfg_dir]
 
 # recursively search for dirs containing ".default" files
 config_dirs = set([dirname(abspath(f)) for f in glob.glob(join(dir,pardir,"**","*.default"),recursive=True)])
-print("Found .default files in the following dirs:", ", ".join(config_dirs))
+# print("Found .default files in the following dirs:", ", ".join(config_dirs))
 for d in config_dirs:
     for f in [f for f in os.listdir(d) if ".default" in f]:
         active = join(d,f.replace(".default",""))
         if not exists(active):
+            print(f"Creating {active} from {join(d,f)}")
             shutil.copy(join(d,f),active)
         elif active.endswith("toml"):
             with open(join(d,f),"rb") as default:
@@ -41,7 +42,7 @@ for d in config_dirs:
                     f.write(tomlkit.dumps(active_cfg).replace("\r\n","\n"))
                 from .utils import configure_logger
                 logger = configure_logger("config",join(logging_dir,'config.log'))
-                logger.warn(f"[ALORA] The default config '{join(d,active)}' has new keys that were not present in the active config '{active}'. Default values were copied over for the following new keys: {key_paths}")
+                logger.warning(f"[ALORA] The default config '{join(d,active)}' has new keys that were not present in the active config '{active}'. Default values were copied over for the following new keys: {key_paths}")
                 # raise ValueError(f"[ALORA] The config template '{join(d,f)}' has new keys that are not present in the active config '{active}'. Please provide values for the following new keys: {key_paths}")
 
 with open(config_path,"rb") as f:

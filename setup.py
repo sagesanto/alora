@@ -36,6 +36,7 @@ setup(
             'pointing_model = alora.observatory.bin.pointing_model:main',
             'imstat = alora.astroutils.bin.imstat:main',
             'solve = alora.observatory.bin.solve:main',
+            'mpc_obs = alora.maestro.schedulerConfigs.mpc_observability:main'
         ]
     },
     extras_require = {

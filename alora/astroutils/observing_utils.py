@@ -42,7 +42,8 @@ def file_timestamp():
     return current_dt_utc().strftime("%Y%m%d_%H_%M")
 
 def get_current_sidereal_time(locationInfo,kind="mean"):
-    now = current_dt_utc().replace(second=0, microsecond=0)
+    now = current_dt_utc()
+    # now = current_dt_utc().replace(second=0, microsecond=0)
     return Time(now).sidereal_time(longitude=locationInfo.longitude,kind=kind)
 
 def get_sunrise_sunset(locationInfo, dt=current_dt_utc(), jd=False, verbose=False):
@@ -164,7 +165,8 @@ def angleToTimedelta(angle: Angle):  # low precision
     """
     angleTime = angle.to(u.hourangle)
     angleHours, angleMinutes, angleSeconds = angleTime.hms
-    return timedelta(hours=angleHours, minutes=angleMinutes, seconds=0)
+    return timedelta(hours=angleHours, minutes=angleMinutes, seconds=angleSeconds)
+    # return timedelta(hours=angleHours, minutes=angleMinutes, seconds=0)
 
 
 def find_transit_time(RA: Angle, location, target_dt=None, current_sidereal_time=None):
@@ -179,12 +181,14 @@ def find_transit_time(RA: Angle, location, target_dt=None, current_sidereal_time
     @return: The transit time of the object as a datetime object.
     @rtype: datetime.datetime
     """
-    currentTime = current_dt_utc().replace(second=0, microsecond=0)
+    currentTime = current_dt_utc()
+    # currentTime = current_dt_utc().replace(second=0, microsecond=0)
     if current_sidereal_time is None:
         lst = Time(currentTime).sidereal_time('mean', longitude=location.longitude)
     else:
         lst = current_sidereal_time
-    target_time = target_dt.replace(second=0, microsecond=0) if target_dt else currentTime
+    target_time = target_dt if target_dt else currentTime
+    # target_time = target_dt.replace(second=0, microsecond=0) if target_dt else currentTime
     target_sidereal_time = dateToSidereal(target_time, lst)
     ha = Angle(wrap_around((RA - target_sidereal_time).deg), unit=u.deg)
     transitTime = target_time + angleToTimedelta(ha)

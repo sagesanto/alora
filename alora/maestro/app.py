@@ -5,7 +5,7 @@ import shutil
 import traceback
 from os.path import join, abspath, dirname
 
-LISTCHANGE_REFRESH_DELAY = 1000
+LISTCHANGE_REFRESH_DELAY = 1500
 
 sys.path.append(abspath(dirname(__file__)))
 from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
@@ -1478,7 +1478,7 @@ def _main():
 
         def displayInfo(self):
             infoText = '\n'.join([
-                "Sage Santomenna 2023, 2024",
+                "Sage Santomenna 2023, 2024, 2025",
                 "Some icons by Yusuke Kamiyamane, CC Attribution 3.0 License.",
                 "Version: " + self.version,
                 "Working directory: " + os.path.join(os.path.dirname(__file__)),
