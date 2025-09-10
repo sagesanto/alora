@@ -49,11 +49,6 @@ def determine_observability(ephems:Union[MpcEphem,EphemLine]):
             return (start, end)
         end = ephem.start_dt  # this is the time of the last ephem we could get, so is the 'end' of our window (for now)
     if start is None:  # we've run through all the ephemeris. End the window here, if one was started. otherwise, return None
-        # self.logger.info(f"{desig} is not observable at all during the times we have ephemerides for.")
-        # ha_start, ha_end = genUtils.getHourAngleLimits(ephems[desig][0].Dec)
-        # print(f"RA window: {self.siderealStart + ha_start} to {self.siderealStart + ha_end}")
-        # # print(f"current sidereal time: {self.siderealStart}")
-        # print(f"RA: {ephems[desig][0].RA}")
         return None
     
     return (start, end)
@@ -120,7 +115,6 @@ def main():
         DECs = []
 
         local_tz = datetime.now(timezone.utc).astimezone().tzinfo
-        local_tz_name = local_tz.tzname(None)
 
         for t in window:
             eph = joint_eph.get(t)

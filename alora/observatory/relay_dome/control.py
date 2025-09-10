@@ -1,7 +1,7 @@
 import time
 import requests
 from bs4 import BeautifulSoup
-from alora.config import get_credential
+from alora.config.utils import get_credential
 from alora.observatory.interfaces import Dome
 
 class RelayDome(Dome):
