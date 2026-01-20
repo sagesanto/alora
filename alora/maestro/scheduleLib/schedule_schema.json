@@ -36,6 +36,12 @@
     "ROIStartY": {
         "default": 0
     },
+    "RAOffset": {
+        "default": 0.0
+    },
+    "DecOffset": {
+        "default": 0.0
+    },
     "BinningSize": {
         "default": "1x1"
     },
