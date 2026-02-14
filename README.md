@@ -23,7 +23,7 @@
 ### Dome:
 - Based on DIN Relay III Web-Controlled relay switches 
     - Not a dome-specific controller
-    - Controlled by hand, web interface, or python library (in dev by Sage + Pei)
+    - Controlled by hand, web interface, or python library
 
 ### Focuser:
 - OPTEC TCF-Si

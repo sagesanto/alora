@@ -3,7 +3,7 @@
 
 import os
 import json
-from .observing_utils import get_angle, get_centroid, get_current_sidereal_time, dateToSidereal, find_transit_time, get_sunrise_sunset, get_hour_angle, angleToTimedelta, ensureFloat, ensureAngle, wrap_around, sidereal_rate, current_dt_utc
+from observing_utils import get_angle, get_centroid, get_current_sidereal_time, dateToSidereal, find_transit_time, get_sunrise_sunset, get_hour_angle, angleToTimedelta, ensureFloat, ensureAngle, wrap_around, sidereal_rate, current_dt_utc
 import pytz, time
 from datetime import datetime, timedelta, timezone
 from astral import sun, LocationInfo
@@ -207,7 +207,7 @@ class ObsConstraint:
         kwargs["linestyle"] = kwargs.get("linestyle","dashed")
         return ax.plot(bbox_x,bbox_y,**kwargs)
 
-    def plot_onsky(self, dt=None,candidates=None,current_sidereal_time=None, ax=None, crop_to_bbox=False,observable_only=False):
+    def plot_onsky(self, dt=None,candidates=None,current_sidereal_time=None, ax=None, crop_to_bbox=False,observable_only=False, plot_sunrise_sunset=True):
         """ Take a list of candidates, create a plot of them onsky (plus sunrise, sunset, and bbox) and return the figures, axes and artists (to allow animation)"""
         if dt is None:
             dt = current_dt_utc()
@@ -254,19 +254,24 @@ class ObsConstraint:
         sunr, suns = dateToSidereal(sunrise,current_sidereal_time), dateToSidereal(sunset, current_sidereal_time)
         sunr, suns = sunr-sidereal, suns-sidereal
         sunr, suns = wrap_around(sunr.deg), wrap_around(suns.deg)
-        sunrise_line = ax.axvline(x=sunr, linestyle='--', color='red')
-        sunset_line = ax.axvline(x=suns, linestyle='--', color='blue')
+        
+        artists = []
+        
+        if plot_sunrise_sunset:
+            sunrise_line = ax.axvline(x=sunr, linestyle='--', color='red')
+            sunset_line = ax.axvline(x=suns, linestyle='--', color='blue')
 
-        if suns < sunr:
-            fill = ax.axvspan(suns, sunr, alpha=0.2, color='gray')
-        else:
-            fill1 = ax.axvspan(xlimits[0],sunr,alpha=0.2,color="gray")
-            fill2 = ax.axvspan(suns,xlimits[1],alpha=0.2,color="gray")
+            if suns < sunr:
+                fill = ax.axvspan(suns, sunr, alpha=0.2, color='gray')
+            else:
+                fill1 = ax.axvspan(xlimits[0],sunr,alpha=0.2,color="gray")
+                fill2 = ax.axvspan(suns,xlimits[1],alpha=0.2,color="gray")
+            artists.extend([sunrise_line, sunset_line])
 
         # draw the bbox
         bbox = self.plot_bbox(ax)
 
-        artists = [bbox,sunrise_line,sunset_line]
+        artists.append(bbox)
         
         # to label the vertices of the box for debugging:
         # for i, p in enumerate(zip(x,y)):
@@ -292,7 +297,10 @@ if __name__ == "__main__":
     print("Hour angle:",get_hour_angle(lst,t,lst))
     print("Transit time:", find_transit_time(RA=lst,location=tmo.locationInfo,target_dt=t))
     c = [Candidate(**{"RA":lst,"Dec":0,'CandidateName':"test"})]
+    
+    targets = [Candidate(RA=lst-Angle(1*u.hourangle), Dec=0, CandidateName="test")]
+    
     # t = find_transit_time(c[0].RA,tmo.locationInfo) + timedelta(hours=1.5)
-    tmo.plot_onsky(candidates=c,dt=t)
+    tmo.plot_onsky(candidates=c,dt=t, plot_sunrise_sunset=False)
     print("Observable:",tmo.observation_viable(t,lst,0, ignore_night=True))
     plt.show()

@@ -45,5 +45,11 @@
     "BinningSize": {
         "default": "1x1"
     },
+    "CamBinMode": {
+        "default": "FPGASum"
+    },
+    "CamOpMode": {
+        "default": 17
+    },
     "Description": {}
 }
