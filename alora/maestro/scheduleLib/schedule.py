@@ -56,7 +56,7 @@ class Observation:
 
     @classmethod
     def fromLine(cls, line, header):  # this is bad but whatever
-#       DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|CandidateID|Description
+#       DateTime|Image|Target|Slew|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|CandidateID|Description
         # need to rework this to split based on keywords, not just on the number of pipes - headers change over time, want to be able to process schedules from any time
         split = line.split('|')
         if len(split) > len(header):
@@ -67,9 +67,9 @@ class Observation:
         split.append(description)
         d = {header[i]: split[i] for i in range(len(header))}
         startTime = stringToTime(d["DateTime"],scheduler=True).replace(tzinfo=UTC)
-        occupied = d["Occupied"]  # probably always 1
+        image = d["Image"]  # probably always 1
         targetName = d["Target"]
-        move = d["Move"]  # probably always 1
+        slew = d["Slew"]  # probably always 1
         RA = float(d["RA"])
         Dec = float(d["Dec"])
         exposureTime = d["ExposureTime"]
@@ -125,7 +125,7 @@ class AutoFocus:
         self.endTime = self.startTime + timedelta(minutes=cfg["focus_loop_duration"]/60)
 
     def genLine(self):
-        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, move=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
+        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, slew=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
 
     @classmethod
     def fromLine(cls, line):
@@ -144,7 +144,7 @@ def scheduleHeader():
     Return the (static) header for the scheduler line
     """
     return "|".join(list(schedule_schema.keys()))
-    # return "DateTime|Occupied|Target|Move|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|Offset|CandidateID|ROIHeight|ROIWidth|ROIStartX|ROIStartY|BinningSize|Description"
+    # return "DateTime|Image|Target|Slew|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|Offset|CandidateID|ROIHeight|ROIWidth|ROIStartX|ROIStartY|BinningSize|Description"
 
 def fill_schedule_line(arg_dict:dict):
     """Make a schedule line from a dictionary of field:value pairs, filling in default values for missing ones (where possible)
@@ -184,7 +184,7 @@ def fill_schedule_line(arg_dict:dict):
 
 
 
-def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, move=None, bin2fits=None,
+def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, slew=None, bin2fits=None,
                         guiding=None, offset=None, ROI_height=None,ROI_width=None,ROI_start_x=None, ROI_start_y=None, binning_size=None, CandidateID=None):
     """!
     Generate a generic schedule line. If optional arguments are left as `None`, they will be set to the default value for that field
@@ -198,8 +198,8 @@ def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, 
     @type exposureTime: float|int|str
     @param exposures: Number of exposures
     @type exposures: int|str
-    @param move: should the telescope move from its previous location to this one before observing?
-    @type move: bool
+    @param slew: should the telescope slew from its previous location to this one before observing?
+    @type slew: bool
     @param bin2fits: should the telescope convert binary files to fits files
     @type bin2fits: bool
     @param guiding: should the telescope guide during this observation?
@@ -207,7 +207,7 @@ def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, 
     @return: line to insert into schedule text file
     @rtype: str
     """
-    for arg in [move,bin2fits,guiding,offset]:
+    for arg in [slew,bin2fits,guiding,offset]:
         if isinstance(arg,bool):
             arg = "1" if arg else "0"
 
@@ -218,9 +218,9 @@ def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, 
     
     line_dict = {}
     line_dict["DateTime"] = timeToString(startDt, scheduler=True)
-    line_dict["Occupied"] = "1"
+    line_dict["Image"] = "1"
     line_dict["Target"] = name
-    line_dict["Move"] = "1" if move else "0"
+    line_dict["Slew"] = "1" if slew else "0"
     line_dict["RA"] = str(ensureFloat(RA))
     line_dict["Dec"] = str(ensureFloat(Dec))
     line_dict["ExposureTime"] = str(exposureTime)

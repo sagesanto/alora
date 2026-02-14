@@ -47,7 +47,7 @@ class User_Fixed_Config(TypeConfiguration):
         return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
                                    "{}: {}s by {}, {}".format(targetName, c.ExposureTime,
                                                               c.NumExposures, c.Filter), c.ExposureTime, c.NumExposures,
-                                   move=True,
+                                   slew=True,
                                    guiding=bool(c.Guide), bin2fits=uConfig.getboolean("bin2fits"))
 
     def generateTypeConstraints(self):

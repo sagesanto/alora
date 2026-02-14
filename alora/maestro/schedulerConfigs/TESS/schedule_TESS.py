@@ -55,7 +55,7 @@ class TESS_Config(TypeConfiguration):
         name = f"{targetName}_{c.Filter}"
         return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
                                    f"{targetName}: {c.NumExposures} by {c.ExposureTime}, {c.Filter}", c.ExposureTime, c.NumExposures,
-                                   move=True,
+                                   slew=True,
                                    guiding=bool(c.Guide), bin2fits=tConfig["bin2fits"])
 
     def generateTypeConstraints(self):

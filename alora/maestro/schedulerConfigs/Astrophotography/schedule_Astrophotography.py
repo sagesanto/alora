@@ -70,7 +70,7 @@ class AstrophotographyConfig(TypeConfiguration):
             name = targetName + "_" + filt + "_aphot"
             lines.append(generic_schedule_line(c.RA, c.Dec, filt, time, name.replace(" ", "_"),
                                              "{}: {}s by {}, {}".format(targetName, INDIVIDUAL_DATASET_EXPTIME,
-                                                                        INDIVIDUAL_DATASET_NUMEXP, filt), INDIVIDUAL_DATASET_EXPTIME, INDIVIDUAL_DATASET_NUMEXP, move=bool(move),
+                                                                        INDIVIDUAL_DATASET_NUMEXP, filt), INDIVIDUAL_DATASET_EXPTIME, INDIVIDUAL_DATASET_NUMEXP, slew=bool(move),
                                              guiding=True))
             move = 0
         return lines

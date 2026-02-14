@@ -193,7 +193,6 @@ def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt, cen
     line_dict = {}
     line_dict["DateTime"] = startDt.strftime('%Y-%m-%dT%H:%M:%S.000')
     line_dict["Target"] = name or c.CandidateName
-    line_dict["Move"] = 1
     line_dict["RA"] = lineAtObs[4]
     line_dict["Dec"] = lineAtObs[5]
     line_dict["ExposureTime"], line_dict["#Exposure"] = _findExposure(c.Magnitude).split("|")
