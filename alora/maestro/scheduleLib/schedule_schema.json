@@ -1,10 +1,10 @@
 {
     "DateTime": {},
-    "Occupied": {
+    "Image": {
         "default": 1
     },
     "Target": {},
-    "Move": {
+    "Slew": {
         "default": 1
     },
     "RA": {},
