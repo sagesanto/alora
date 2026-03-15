@@ -44,8 +44,8 @@ async def listEntryToCandidate(entry, mpc, logger, targetSelector):
     constructDict["RA"], constructDict["Dec"] = entry.ra * 15, entry.dec
     constructDict["Magnitude"] = float(entry.vmag)
     expPair = mpcUtils._findExposure(constructDict["Magnitude"], str=False)
-    constructDict["NumExposures"] = float(expPair[0])
-    constructDict["ExposureTime"] = float(expPair[1])  # duration of observation, in seconds
+    constructDict["ExposureTime"] = float(expPair[0])  # duration of observation, in seconds
+    constructDict["NumExposures"] = float(expPair[1])
     constructDict["Updated"] = genUtils.timeToString(mpcUtils.updatedStringToDatetime(entry.updated))
     dRA, dDec = await getVelocities(CandidateName, mpc, logger, targetSelector)
     # currently, can't get nObs and Score from mpc_neo_confirm. not going to implement it myself - we'll go without

@@ -82,6 +82,7 @@ def _findExposure(magnitude, str=True):
         if magnitude <= 21.5:
             return "3.0|600.0"
         return "TOO DARK"
+    # number of exposures (an integer) is displayed as a float here at the request of the observers because it allows them to more easily parse schedule lines by eye 
 
     else:
         if magnitude <= 19.5:
