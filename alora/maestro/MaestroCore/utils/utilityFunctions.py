@@ -29,7 +29,7 @@ def updateTableDisplay(tableView: QTableView):
     if isinstance(tableData, pd.DataFrame):
         for i, col in enumerate(tableData.columns):
             max_char = max(*[len(str(x)) for x in tableData[col].values], len(col))
-            tableView.setColumnWidth(i, max_char * 5 + 30)
+            tableView.setColumnWidth(i, max_char * 10)
             if isinstance(tableData[col].values[0], (str)):
                 tableView.setItemDelegateForColumn(i, CenterAlignDelegate(tableView))
     else:

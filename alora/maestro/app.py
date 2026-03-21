@@ -832,11 +832,6 @@ def _main():
                     files_included += f"{name}: [FAILED TO INCLUDE]\n"
             
             root = logger.parent
-            print(root.__dict__)
-            for h in root.handlers:
-                print(h.__dict__)
-            print(logger.manager.__dict__)
-            
             logfiles = [i.baseFilename for i in root.handlers if hasattr(i, 'baseFilename')]
             for log in logfiles:
                 log_name = os.path.basename(log)
