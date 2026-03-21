@@ -242,8 +242,8 @@ def _formatEphem(ephems, desig,move=1,bin2fits=0,guiding=1, offset=0):
         exposure = str(_findExposure(float(vMag)))
 
         # before 3/20/2026, this was formatted as arcsec/minute. afterwards, this is formatted as arcsec/sec
-        dRa = round(i.dRA.to_value('arcsec/sec'),2) 
-        dDec = round(i.dDec.to_value('arcsec/sec'),2) 
+        dRa = round(i.dRA.to_value('arcsec/second'),2) 
+        dDec = round(i.dDec.to_value('arcsec/second'),2) 
 
         # for the description, we need RA and Dec in sexagesimal
         # sexagesimal = (i[1].ra.to_string(unit=u.hour, sep=':'), i[1].dec.to_string(unit=u.degree, sep=":"))

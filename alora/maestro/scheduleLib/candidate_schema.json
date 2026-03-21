@@ -33,11 +33,11 @@
     },
     "dRA":{
         "valtype": "quantity",
-        "unit": "arcmin/minute"
+        "unit": "arcsec/minute"
     },
     "dDec":{
         "valtype": "quantity",
-        "unit": "arcmin/minute"
+        "unit": "arcsec/minute"
     },
     "ExposureTime":{ 
         "valtype": "quantity",
