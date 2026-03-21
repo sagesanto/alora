@@ -152,7 +152,7 @@ def timeFromEphem(ephem):
     return datetime.strptime(inBetween, "%Y-%m-%d %H:%M").replace(tzinfo=pytz.UTC)
 
 
-def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt, centerDt: datetime, friend, ROI_height, ROI_width, ROI_start_x, ROI_start_y, binning, spath: str, logger, name=None):
+def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt:datetime, centerDt: datetime, friend, ROI_height, ROI_width, ROI_start_x, ROI_start_y, binning, spath: str, logger, name=None):
     """
     Convert a candidate to a scheduler line
     @param candidate: The candidate to convert
@@ -180,7 +180,7 @@ def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt, cen
                     f.write("Couldn't get ephemeris")
         return ""
     try:
-        ephemObj = ephems[c.CandidateName]
+        ephemObj:MpcEphem = ephems[c.CandidateName]
         # there's an annoying edge case where the time we want an ephem for is after the last time in one ephem file and before the first time in another.
         # when we asked for an ephem, we used the truncated time 
         ephem = ephemObj.get(centerDt,scheduler_format=True)
@@ -241,8 +241,9 @@ def _formatEphem(ephems, desig,move=1,bin2fits=0,guiding=1, offset=0):
         # get the correct exposure string based on the vMag
         exposure = str(_findExposure(float(vMag)))
 
-        dRa = round(i.dRA.to_value('arcsec/min'),2) 
-        dDec = round(i.dDec.to_value('arcsec/min'),2) 
+        # before 3/20/2026, this was formatted as arcsec/minute. afterwards, this is formatted as arcsec/sec
+        dRa = round(i.dRA.to_value('arcsec/sec'),2) 
+        dDec = round(i.dDec.to_value('arcsec/sec'),2) 
 
         # for the description, we need RA and Dec in sexagesimal
         # sexagesimal = (i[1].ra.to_string(unit=u.hour, sep=':'), i[1].dec.to_string(unit=u.degree, sep=":"))
