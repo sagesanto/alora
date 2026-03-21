@@ -22,10 +22,30 @@ def splitListIntoContinuousRuns(list, ascending=True):
 
 
 class CandidateTableModel(QAbstractTableModel):
-    def __init__(self, data: pd.DataFrame):
+    def __init__(self, data: pd.DataFrame, candidate_schema:dict):
         """!A crude table for displaying candidates, built on pd DataFrames. It's probably easier just to make a new table model when you want to add values, not try to modify this one. """
         super(CandidateTableModel, self).__init__()
         self._data = data
+        self.candidate_schema = candidate_schema
+        self.columns = self.get_colnames()
+
+    def format_unit(self, unit):
+        unit = unit.replace("arcsec","\"")
+        return unit
+    
+    def get_colnames(self):
+        colnames = []
+        df_cols = list(self._data.columns)
+        for col in df_cols:
+            schema = self.candidate_schema.get(col, {})
+            unit = schema.get("unit", "")
+            if unit:
+                col += f"\n({self.format_unit(unit)})"
+            tz = schema.get("tz", "")
+            if tz:
+                col += f"\n({tz})"
+            colnames.append(col)
+        return colnames
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
@@ -49,14 +69,14 @@ class CandidateTableModel(QAbstractTableModel):
         # section is the index of the column/row.
         if role == Qt.ItemDataRole.DisplayRole:
             if orientation == Qt.Orientation.Horizontal:
-                return str(self._data.columns[section])
+                return str(self.columns[section])
 
             if orientation == Qt.Orientation.Vertical:
                 return str(self._data.index[section])
 
     def sort(self, column: int, order: Qt.SortOrder):
         self.layoutAboutToBeChanged.emit()
-        col = self._data.columns[column]
+        col = self._data.columns[column]  # intentionally pulling the non-unit-wrapped column name 
         self._data.sort_values(by=col, ascending=(order == Qt.SortOrder.AscendingOrder), axis=0, inplace=True)
         self.layoutChanged.emit()
 

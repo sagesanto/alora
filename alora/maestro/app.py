@@ -47,7 +47,7 @@ def _main():
     import MaestroCore
     from MaestroCore.GUI.MainWindow import Ui_MainWindow
     from MaestroCore.addCandidateDialog import AddCandidateDialog
-    from alora.maestro.scheduleLib import genUtils
+    from alora.maestro.scheduleLib import genUtils, CANDIDATE_SCHEMA_PATH
     from alora.maestro.scheduleLib.candidateDatabase import Candidate, CandidateDatabase, validFields, has_flag, Flag, set_flag
     from MaestroCore.utils.processes import ProcessModel, Process
     from MaestroCore.utils.tableModel import CandidateTableModel, FlexibleTableModel
@@ -257,6 +257,14 @@ def _main():
 
             with open(PATH_TO("version.txt"), "r") as f:
                 self.version = f.readline()
+                
+            try:
+                with open(CANDIDATE_SCHEMA_PATH, "r") as f:
+                    self.candidate_schema = json.load(f)
+            except Exception as e:
+                self.candidate_schema = {}
+                logger.error(f"Error loading candidate schema (to display column units): {e}")
+                self.warnings_to_show_after_load.append(("Candidate Schema Load Error", f"Error loading candidate schema (to display column units): {e}")) 
 
             #icons
             self.set_scheduler_icon(STATUS_IDLE)
@@ -284,7 +292,7 @@ def _main():
             self.blacklistModel = FlexibleListModel()
             self.whitelistModel = FlexibleListModel()
             self.excludeListModel = DateTimeRangeListModel()
-            self.candidateTable = CandidateTableModel(pd.DataFrame())
+            self.candidateTable = CandidateTableModel(pd.DataFrame(),self.candidate_schema)
             self.candidateView.setModel(self.candidateTable)
             self.dbRuntimeErrorTable = FlexibleTableModel(["Time", "Process", "Message"])
             self.dbRuntimeErrorView.setModel(self.dbRuntimeErrorTable)
@@ -346,7 +354,7 @@ def _main():
                 "choice":self.add_choice_cfg,
                 "path":self.add_str_cfg
             }
-
+            
             self.write_settings_tab()
 
             # begin usage logging
@@ -1156,7 +1164,7 @@ def _main():
 
         def resetCandidateTable(self):
             oldModel = self.candidateTable
-            self.candidateTable = CandidateTableModel(pd.DataFrame())
+            self.candidateTable = CandidateTableModel(pd.DataFrame(), self.candidate_schema)
             self.candidateView.setModel(self.candidateTable)
             oldModel.beginResetModel()
             oldModel.endResetModel()
@@ -1424,7 +1432,7 @@ def _main():
                 self.getCandidates()
             if self.candidates:
                 oldModel = self.candidateTable
-                self.candidateTable = CandidateTableModel(self.candidateDf)
+                self.candidateTable = CandidateTableModel(self.candidateDf, self.candidate_schema)
                 self.candidateView.setModel(self.candidateTable)
                 oldModel.beginResetModel()
                 oldModel.endResetModel()

@@ -1,11 +1,17 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QTableWidget, \
     QTableWidgetItem as QTableItem, QLineEdit, QListView, QDockWidget, QComboBox, QPushButton, QMessageBox, QTableView
 from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime
+from PyQt6 import QtWidgets
 import pandas as pd
 from datetime import datetime
 
 from alora.maestro.scheduleLib import genUtils
 
+# used to align a table column centered
+class CenterAlignDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super(CenterAlignDelegate, self).initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignmentFlag.AlignCenter
 
 def getSelectedFromList(view: QListView):
     selectedIndexes = view.selectedIndexes()
@@ -22,13 +28,15 @@ def updateTableDisplay(tableView: QTableView):
     tableData = tableView.model()._data
     if isinstance(tableData, pd.DataFrame):
         for i, col in enumerate(tableData.columns):
-            max_char = max(max([len(str(x)) for x in tableData[col].values]), len(col))
-            tableView.setColumnWidth(i, max_char * 10)
+            max_char = max(*[len(str(x)) for x in tableData[col].values], len(col))
+            tableView.setColumnWidth(i, max_char * 5 + 30)
+            if isinstance(tableData[col].values[0], (str)):
+                tableView.setItemDelegateForColumn(i, CenterAlignDelegate(tableView))
     else:
         tableView.resizeColumnsToContents()
     tableView.setSortingEnabled(True)
     # table.resizeRowsToContents()
-
+    
 
 def addLineContentsToList(lineEdit: QLineEdit, lis):
     if lineEdit.text():
