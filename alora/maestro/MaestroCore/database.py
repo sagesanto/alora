@@ -13,6 +13,7 @@ def PATH_TO(fname:str): return join(MODULE_PATH,fname)
 sys.path.append(MODULE_PATH)
 from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing, write_crash_report
 
+
 def main():
     try:
         import json
@@ -28,7 +29,7 @@ def main():
 
         logger = genUtils.configure_logger("DbUpdater")
 
-        write_out("Starting to update database.")
+        write_out("Starting DbUpdater.")
 
         manager = ModuleManager(write_out=write_out)
         modules = manager.load_active_modules()
@@ -41,8 +42,9 @@ def main():
         maestro_settings = Config(join(MODULE_PATH,"files","configs","in_maestro_settings.toml"))
         waitTime = maestro_settings["databaseWaitTimeMinutes"]
         dbPath = maestro_settings["candidateDbPath"]
-
-        while True:
+        do_autocycle = maestro_settings["do_database_autocycle"]
+        
+        def run_cycle():
             total = len(modules.keys())
             run = 0
             errors = 0
@@ -62,21 +64,36 @@ def main():
             if errors == 0:
                 write_out(f"DbUpdater: CLEAR_ERROR (clear any error status because all programs ran successfully)")
             time.sleep(0.1)
-            write_out(f"DbUpdater: Finished:{run - errors}/{total} programs ran successfully. Waiting until {generateNextRunTimestampString(waitTime)}")
+            done_msg = f"DbUpdater: Finished:{run - errors}/{total} programs ran successfully."
+            if do_autocycle:
+                done_msg += f" Waiting until {generateNextRunTimestampString(waitTime)} for next cycle."
+            write_out(done_msg)
             time.sleep(0.1)
 
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                futureStdInRead = pool.submit(genUtils.readStdin)
-                for i in range(math.ceil(waitTime * 60 / 0.01)):
-                    if futureStdInRead.done():  # stdin got data
-                        x = futureStdInRead.result()
-                        if x == "DbUpdater: Cycle\n":
-                            write_out("DbUpdater: Status:Cycling")
-                            break
-                        if x == "DbUpdater: Ping!\n":
-                            write_out("DbUpdater: Pong!")
-                        futureStdInRead = pool.submit(genUtils.readStdin)
-                    time.sleep(0.01)
+        if do_autocycle:
+            write_out("DbUpdater: Status:Cycling")
+            run_cycle()
+            next_run_time = datetime.now() + timedelta(minutes=waitTime)
+        else:
+            write_out("DbUpdater: Status: Autocycle disabled. Waiting for cycle start command from Maestro...")
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            futureStdInRead = pool.submit(genUtils.readStdin)
+            while True:
+                if do_autocycle and datetime.now() >= next_run_time:
+                    write_out(f"DbUpdater: Status:Automatically starting next cycle because {waitTime} minutes have passed since the last cycle.")
+                    run_cycle()
+                    next_run_time = datetime.now() + timedelta(minutes=waitTime)
+                if futureStdInRead.done():  # stdin got data
+                    x = futureStdInRead.result()
+                    print(f"DbUpdater: Got command from Maestro: '{x}'")
+                    if x == "DbUpdater: Cycle\n":
+                        write_out("DbUpdater: Status:Cycling")
+                        run_cycle()
+                        next_run_time = datetime.now() + timedelta(minutes=waitTime)
+                    if x == "DbUpdater: Ping!\n":
+                        write_out("DbUpdater: Pong!")
+                    futureStdInRead = pool.submit(genUtils.readStdin)
+                time.sleep(0.01)
 
     except Exception as e:
         sys.stderr.write("DbUpdater: Error: " + repr(e))

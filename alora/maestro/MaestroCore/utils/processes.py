@@ -438,6 +438,10 @@ class ProcessModel(QtCore.QAbstractItemModel):
                 lambda msg: self.statusBar.showMessage("Process '{}' ended with status '{}'".format(process.name, msg),
                                                        10000))
         self.endInsertRows()
+        
+    @property
+    def processes(self):
+        return [item.tags["Process"] for item in self.rootItem.childItems]
 
     def terminateAllProcesses(self):
         for item in self.rootItem.childItems:

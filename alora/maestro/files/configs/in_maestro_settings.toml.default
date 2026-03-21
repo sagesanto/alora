@@ -7,6 +7,7 @@ ephemFormat = 0
 ephemsObsCode = "654"
 ephemsSavePath = ""
 candidateDbPath = ""
+do_database_autocycle = true
 databaseWaitTimeMinutes = 15
 scheduleStartTimeSecs = 0
 scheduleEndTimeSecs = 0

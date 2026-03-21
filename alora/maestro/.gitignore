@@ -29,6 +29,7 @@ files/temp_addcandidates.csv
 files/testing/**
 files/outputs/**
 files/crash_reports
+files/snapshots
 /files/out/
 .vscode
 satellites/

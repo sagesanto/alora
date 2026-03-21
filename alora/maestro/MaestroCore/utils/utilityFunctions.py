@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt, QItemSelectionModel, QDateTime
 from PyQt6 import QtWidgets
 import pandas as pd
 from datetime import datetime
-
+from os.path import join, abspath, dirname
 from alora.maestro.scheduleLib import genUtils
 
 # used to align a table column centered
@@ -101,3 +101,12 @@ def onlyEnableWhenItemsSelected(button, sourceView):
             bool(len(sourceView.selectedIndexes()))))
     
     # sourceView.selectionModel().selectionChanged.connect(lambda: print(len(sourceView.selectedIndexes())))
+
+
+def get_maestro_git_hash():
+    import subprocess
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse','--short', 'HEAD'],cwd=abspath(dirname(__file__))).decode('ascii').strip()
+    except Exception as e:
+        git_hash = None
+    return git_hash

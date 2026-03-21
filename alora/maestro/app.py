@@ -56,7 +56,7 @@ def _main():
     from MaestroCore.utils.noscroll import NoScrollQComboBox, NoScrollQSpinBox, NoScrollQDoubleSpinBox
     from MaestroCore.utils.windows import ScrollMessageBox
     from datetime import datetime, timedelta
-    from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay
+    from MaestroCore.utils.utilityFunctions import getSelectedFromTable, addLineContentsToList, loadDfInTable, onlyEnableWhenItemsSelected, comboValToIndex, datetimeToQDateTime, updateTableDisplay, get_maestro_git_hash
     import astropy.units as u
 
     from alora.maestro.scheduleLib.genUtils import inputToAngle, Config
@@ -245,7 +245,6 @@ def _main():
         def asDict(self):
             return {k: v for k, [v, _] in self.cfg.items()}
 
-
     class MainWindow(QMainWindow, Ui_MainWindow):
         def __init__(self, parent=None):
             super(MainWindow, self).__init__(parent)
@@ -265,6 +264,9 @@ def _main():
                 self.candidate_schema = {}
                 logger.error(f"Error loading candidate schema (to display column units): {e}")
                 self.warnings_to_show_after_load.append(("Candidate Schema Load Error", f"Error loading candidate schema (to display column units): {e}")) 
+
+            self.snapshot_directory = PATH_TO(join("files","snapshots"))
+            os.makedirs(self.snapshot_directory, exist_ok=True)
 
             #icons
             self.set_scheduler_icon(STATUS_IDLE)
@@ -488,8 +490,7 @@ def _main():
             self.coordConvertDecInput.returnPressed.connect(self.doCoordConversion)
             self.convertInsertButton.clicked.connect(self.swapCoordTexts)
             self.coordConvertResetButton.clicked.connect(self.resetCoordConverter)
-
-
+            
             # attach settings to widgets (and vice versa)
             self.settings.linkWatch(self.intervalComboBox.currentTextChanged, "ephemInterval",
                                     lambda: comboValToIndex(self.intervalComboBox, self.intervalComboBox.currentText),
@@ -511,7 +512,6 @@ def _main():
                                     lambda: self.scheduleEndTimeEdit.dateTime().toSecsSinceEpoch(),
                                     lambda secs: self.scheduleEndTimeEdit.setDateTime(QDateTime.fromSecsSinceEpoch(secs)),
                                     int)
-
             self.settings.linkWatch(self.chooseSchedSavePath.chosen, "scheduleSaveDir", self.chooseSchedSavePath.getPath,
                                     self.chooseSchedSavePath.updateFilePath, str)
             self.settings.linkWatch(self.ephemChooseSaveButton.chosen, "ephemsSavePath", self.ephemChooseSaveButton.getPath,
@@ -519,6 +519,8 @@ def _main():
             self.settings.linkWatch(self.databasePathChooseButton.chosen, "candidateDbPath",
                                     self.databasePathChooseButton.getPath,
                                     self.databasePathChooseButton.updateFilePath, str)
+            self.settings.linkWatch(self.autocycle_checkbox.stateChanged, "do_database_autocycle",
+                        self.autocycle_checkbox.isChecked, self.autocycle_checkbox.setChecked, bool)
             self.settings.linkWatch(self.allCandidatesCheckbox.stateChanged, "showAllCandidates",
                                     self.allCandidatesCheckbox.isChecked, self.allCandidatesCheckbox.setChecked, bool)
             self.settings.linkWatch(self.schedulerSaveEphemsBox.stateChanged, "schedulerSaveEphems",
@@ -533,6 +535,8 @@ def _main():
                                     self.tempSpinbox.value, self.tempSpinbox.setValue,
                                     int)
             self.settings.update()
+            
+            self.autocycle_checkbox.stateChanged.connect(self.startDbUpdater)  # restart the db updater to apply the autocycle setting change
             self.reloadModulesButton.clicked.connect(self.set_up_modules)
 
         def warning_popup(self, title, msg, return_box=False):
@@ -653,7 +657,6 @@ def _main():
             # print("adding content to scroll")
             self.config_scroll.setWidget(content)
             # print("added")
-
 
         def write_default_module_settings(self,mod_dir):
             try:
@@ -783,6 +786,103 @@ def _main():
             spin.setValue(current_val)
             modulecfg.linkWatch(spin.valueChanged, name, spin.value, spin.setValue, int)
             return spin
+        
+        def try_copy(self,src,dst):
+            try:
+                if os.path.isdir(src):
+                    shutil.copytree(src,dst)
+                else:
+                    shutil.copy(src,dst)
+                return True
+            except Exception as e:
+                logger.error(f'failed copy:{e}')
+                return False
+        
+        def make_snapshot(self):
+            # grab settings, db, current date and time, module config.toml and module.toml, whitelist, blacklist, scheduler settings, git hash, and logs and package into a zip file
+            dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+            dt_utc_string = datetime.now(pytz.utc).strftime("%Y%m%d_%H%M%S")
+            
+            snapshot_name = f"maestro_snapshot_{dt_string}"
+            snapshot_path = join(self.snapshot_directory, snapshot_name)
+            os.makedirs(snapshot_path)
+            
+            files_included = ""
+            
+            cfg_path = PATH_TO(join("files","configs","config.toml"))
+            cfg = Config(cfg_path)
+            crash_dir = PATH_TO(cfg['BASE_CRASH_DIR'])                        
+            if self.try_copy(crash_dir, join(snapshot_path, "crash_reports")):
+                files_included += f"Crash Reports: crash_reports/\n"
+            else:
+                files_included += f"Crash Reports: [FAILED TO INCLUDE]\n"
+
+            db_path = self.settings.query("candidateDbPath")
+            if self.try_copy(db_path, join(snapshot_path, "candidate_database.db")):
+                files_included += f"Database: candidate_database.db\n"
+            else:
+                files_included += f"Database: [FAILED TO INCLUDE]\n"
+            
+            app_cfg_directory = PATH_TO(join("files","configs")) # contains async_config.toml, config.toml, and settings toml
+            
+            for cfg_file, name in zip(["async_config.toml","config.toml","in_maestro_settings.toml"], ['Async Config','Main Config','Maestro Settings']):
+                if self.try_copy(join(app_cfg_directory,cfg_file), join(snapshot_path, cfg_file)):
+                    files_included += f"{name}: {cfg_file}\n"
+                else:
+                    files_included += f"{name}: [FAILED TO INCLUDE]\n"
+            
+            root = logger.parent
+            print(root.__dict__)
+            for h in root.handlers:
+                print(h.__dict__)
+            print(logger.manager.__dict__)
+            
+            logfiles = [i.baseFilename for i in root.handlers if hasattr(i, 'baseFilename')]
+            for log in logfiles:
+                log_name = os.path.basename(log)
+                if self.try_copy(log, join(snapshot_path, log_name)):
+                    files_included += f"Log File: {log_name}\n"
+                else:
+                    files_included += f"Log File: [FAILED TO INCLUDE]\n"
+                    
+            with open(join(snapshot_path,"whitelist.txt"),"w") as f:
+                whitelist = self.getEntriesAsStrings(self.whitelistModel._data)
+                f.write("\n".join(whitelist))
+                files_included += f"Whitelist: whitelist.txt\n"
+            
+            with open(join(snapshot_path,"blacklist.txt"),"w") as f:
+                blacklist = self.getEntriesAsStrings(self.blacklistModel._data)
+                f.write("\n".join(blacklist))
+                files_included += f"Blacklist: blacklist.txt\n"
+                
+            with open(join(snapshot_path,"excluded_scheduler_time_windows.txt"),"w") as f:
+                exclude_ranges = [f"{dat[0].toString(dat[2])} - {dat[1].toString(dat[2])}" for dat in self.excludeListModel._data]
+                f.write("\n".join(exclude_ranges))
+                files_included += f"Excluded Scheduler Time Windows (UTC): excluded_scheduler_time_windows.txt\n"
+            
+            files_included += "Module Files:\n"
+            for name, info in self.mod_info.items():
+                files_included += f"\t{name}\n"
+                cfg_path = join(info["dir"],"config.toml")
+                if self.try_copy(cfg_path, join(snapshot_path, f"{name}_config.toml")):
+                    files_included += f"\t\tConfig: {name}_config.toml\n"
+                else:
+                    files_included += f"\t\tConfig: [FAILED TO INCLUDE]\n"
+                
+            with open(join(snapshot_path,"snapshot_info.txt"),"w") as f:
+                f.write(f"Snapshot created on {dt_string} (UTC: {dt_utc_string})\n")
+                f.write(f"Maestro version: {self.version}\n")
+                git_hash = get_maestro_git_hash()
+                if git_hash:
+                    f.write(f"Git hash: {git_hash}\n")
+                else:
+                    f.write("Git hash: Unable to retrieve git hash\n")
+                f.write("\nIncluded files:\n")
+                f.write(files_included)
+            
+            # create a zip file of the snapshot directory
+            shutil.make_archive(snapshot_path, 'zip', snapshot_path)
+            return snapshot_path
         
         def add_str_cfg(self,name,item,modulecfg):
             line_edit = QLineEdit()
@@ -1170,11 +1270,14 @@ def _main():
             oldModel.endResetModel()
 
         def requestDbCycle(self):
+            logger.info("Requesting db cycle")
             if self.databaseProcess is None:
+                logger.info("No database process found, starting one.")
                 self.startDbUpdater()
                 return
-            logger.debug("Requesting")
+            # db_process = [p for p in self.processModel.processes if p.name == "DbUpdater"][0]
             self.databaseProcess.write("DbUpdater: Cycle\n")
+            # db_process.write("DbUpdater: Cycle\n")
 
         def dbStatusChecker(self, phrase, msg):
             if phrase == "DbUpdater: Result:":
@@ -1260,7 +1363,7 @@ def _main():
 
         def pingProcess(self):
             for index in self.processesTreeView.selectedIndexes():
-                p = index.internalPointer().tags["Process"]
+                p:Process = index.internalPointer().tags["Process"]
                 p.ping()
                 self.statusBar().showMessage(f"Pinging process: {p.name}", 1000)
 
@@ -1496,7 +1599,25 @@ def _main():
             infoWindow = QMessageBox(self)
             error_button = infoWindow.addButton("Cause Error", QMessageBox.ButtonRole.ActionRole)
             error_button.clicked.connect(test_error)
+            error_button = infoWindow.addButton("Make Snapshot", QMessageBox.ButtonRole.ActionRole)
+            error_button.clicked.connect(self.do_snapshot)
             infoWindow.setWindowTitle("Debug Info")
+            infoWindow.setText(infoText)
+            infoWindow.exec()
+            
+        def do_snapshot(self):
+            try:
+                snapshot_path = self.make_snapshot()
+            except Exception as e:
+                logger.error(f"Error making snapshot: {repr(e)}")
+                logger.error(traceback.format_exc())
+                self.warning_popup("Snapshot Failed", f"An error occurred while making the snapshot: {repr(e)}. Check the logs for more details.")
+                return
+            
+            logger.info(f"Snapshot saved to {snapshot_path}")
+            infoWindow = QMessageBox(self)
+            infoWindow.setWindowTitle("Snapshot Created")
+            infoText = f"Snapshot saved to {snapshot_path}"
             infoWindow.setText(infoText)
             infoWindow.exec()
 
