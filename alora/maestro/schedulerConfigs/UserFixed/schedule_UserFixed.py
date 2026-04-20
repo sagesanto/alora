@@ -45,10 +45,8 @@ class User_Fixed_Config(TypeConfiguration):
         start = stringToTime(row["Start Time (UTC)"])
         name = targetName + "_" + c.Filter + "_user_fixed"
         return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
-                                   "{}: {}s by {}, {}".format(targetName, c.ExposureTime,
-                                                              c.NumExposures, c.Filter), c.ExposureTime, c.NumExposures,
-                                   slew=True,
-                                   guiding=bool(c.Guide), bin2fits=uConfig.getboolean("bin2fits"))
+                                   f"{targetName}: {c.ExposureTime}s by {c.NumExposures}, {c.Filter}",
+                                   c.ExposureTime, c.NumExposures, config='UserFixed', slew='direct', CandidateID=c.ID)
 
     def generateTypeConstraints(self):
         return None  # do we want stuff here?

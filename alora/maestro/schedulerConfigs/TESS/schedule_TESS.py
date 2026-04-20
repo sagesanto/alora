@@ -54,9 +54,8 @@ class TESS_Config(TypeConfiguration):
         start = stringToTime(row["Start Time (UTC)"])
         name = f"{targetName}_{c.Filter}"
         return generic_schedule_line(c.RA, c.Dec, c.Filter, start, name.replace(" ", "_"),
-                                   f"{targetName}: {c.NumExposures} by {c.ExposureTime}, {c.Filter}", c.ExposureTime, c.NumExposures,
-                                   slew=True,
-                                   guiding=bool(c.Guide), bin2fits=tConfig["bin2fits"])
+                                   f"{targetName}: {c.NumExposures} by {c.ExposureTime}, {c.Filter}",
+                                   c.ExposureTime, c.NumExposures, slew='direct', config='TESS', CandidateID=c.ID)
 
     def generateTypeConstraints(self):
         return None  # do we want stuff here?

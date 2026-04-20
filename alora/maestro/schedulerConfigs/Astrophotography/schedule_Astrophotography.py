@@ -56,7 +56,7 @@ class AstrophotographyConfig(TypeConfiguration):
         return viable
 
     def generateSchedulerLine(self, row, targetName, candidateDict, spath):
-        c = candidateDict[targetName]
+        c:Candidate = candidateDict[targetName]
         c.ExposureTime = INDIVIDUAL_DATASET_EXPTIME*u.second
         c.NumExposures = INDIVIDUAL_DATASET_NUMEXP
         individualDuration = timedelta(seconds=INDIVIDUAL_DATASET_EXPTIME * INDIVIDUAL_DATASET_NUMEXP)
@@ -68,10 +68,10 @@ class AstrophotographyConfig(TypeConfiguration):
         move = 1  # we want the first one to have the telescope move and the other ones to stay still
         for filt, time in zip(["g", "i", "r"], [firstStartDt, secondStartDt, thirdStartDt]):
             name = targetName + "_" + filt + "_aphot"
-            lines.append(generic_schedule_line(c.RA, c.Dec, filt, time, name.replace(" ", "_"),
-                                             "{}: {}s by {}, {}".format(targetName, INDIVIDUAL_DATASET_EXPTIME,
-                                                                        INDIVIDUAL_DATASET_NUMEXP, filt), INDIVIDUAL_DATASET_EXPTIME, INDIVIDUAL_DATASET_NUMEXP, slew=bool(move),
-                                             guiding=True))
+            description = f"{targetName}: {INDIVIDUAL_DATASET_EXPTIME}s by {INDIVIDUAL_DATASET_NUMEXP}, {filt}"
+            lines.append(generic_schedule_line(c.RA, c.Dec, filt, time, name.replace(" ", "_"), description, 
+                                               INDIVIDUAL_DATASET_EXPTIME, INDIVIDUAL_DATASET_NUMEXP, 
+                                               config="APHOT", slew="direct" if bool(move) else 'noslew'))
             move = 0
         return lines
 

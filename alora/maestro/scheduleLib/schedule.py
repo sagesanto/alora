@@ -15,7 +15,7 @@ from astral import LocationInfo
 from datetime import datetime, timezone, timedelta
 from astropy import time, units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
-
+import tomlkit
 from pytz import UTC 
 
 from alora.maestro.scheduleLib import genUtils
@@ -43,8 +43,8 @@ class ScheduleError(Exception):
 class Observation:
     # hell on earth, preferred method is fromLine
     def __init__(self, startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA,
-                 dDec, guiding, description, candidate_id):  # etc
-        self.startTime, self.targetName, self.RA, self.Dec, self.exposureTime, self.numExposures, self.duration, self.filter, self.ephemTime, self.dRA, self.dDec, self.guiding, self.description = startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA, dDec, guiding, description
+                 dDec, description, candidate_id):  # etc
+        self.startTime, self.targetName, self.RA, self.Dec, self.exposureTime, self.numExposures, self.duration, self.filter, self.ephemTime, self.dRA, self.dDec, self.description = startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA, dDec, description
         self.endTime = self.startTime + relativedelta(seconds=float(self.duration))
         self.isMPC_NEO = "MPC NEO" in self.description
         if self.isMPC_NEO:
@@ -56,7 +56,6 @@ class Observation:
 
     @classmethod
     def fromLine(cls, line, header):  # this is bad but whatever
-#       DateTime|Image|Target|Slew|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|CandidateID|Description
         # need to rework this to split based on keywords, not just on the number of pipes - headers change over time, want to be able to process schedules from any time
         split = line.split('|')
         if len(split) > len(header):
@@ -69,20 +68,18 @@ class Observation:
         startTime = stringToTime(d["DateTime"],scheduler=True).replace(tzinfo=UTC)
         image = d["Image"]  # probably always 1
         targetName = d["Target"]
-        slew = d["Slew"]  # probably always 1
+        slew = d["Slew"]
         RA = float(d["RA"])
         Dec = float(d["Dec"])
         exposureTime = d["ExposureTime"]
         numExposures = d["#Exposure"]
         duration = float(exposureTime) * float(numExposures)  # seconds
         filter = d["Filter"]
-        guiding = d["Guiding"]
         candidate_id = d.get("CandidateID")
         if candidate_id == "None":
             candidate_id = None
         if candidate_id is not None:
             candidate_id = int(candidate_id)
-        # candidate_ID = split[12]
         descSplit = description.split(" ")
         if "MPC" in description:
             # ephemTime is the time the observation should be centered around
@@ -91,7 +88,7 @@ class Observation:
         else:
             ephemTime = dRA = dDec = None
         return cls(startTime, targetName, RA, Dec, exposureTime, numExposures, duration, filter, ephemTime, dRA,
-                    dDec,  guiding, description,candidate_id)
+                    dDec, description,candidate_id)
 
     # this currently is not up to date with the new format of the schedule header - 1/18/24
     # generate a Scheduler.txt line
@@ -125,7 +122,8 @@ class AutoFocus:
         self.endTime = self.startTime + timedelta(minutes=cfg["focus_loop_duration"]/60)
 
     def genLine(self):
-        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, slew=False, guiding=False, offset=False,ROI_height=0,ROI_width=0,ROI_start_x=0,ROI_start_y=0)
+        # NOTE: it actually doesn't matter what config is put in here, the robo observer will always use the autofocus config. we just put AUTOFOCUS in here to comfort anyone who is reading the schedule 
+        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, slew='none', config='AUTOFOCUS')
 
     @classmethod
     def fromLine(cls, line):
@@ -144,7 +142,6 @@ def scheduleHeader():
     Return the (static) header for the scheduler line
     """
     return "|".join(list(schedule_schema.keys()))
-    # return "DateTime|Image|Target|Slew|RA|Dec|ExposureTime|#Exposure|Filter|Bin2Fits|Guiding|Offset|CandidateID|ROIHeight|ROIWidth|ROIStartX|ROIStartY|BinningSize|Description"
 
 def fill_schedule_line(arg_dict:dict):
     """Make a schedule line from a dictionary of field:value pairs, filling in default values for missing ones (where possible)
@@ -170,13 +167,22 @@ def fill_schedule_line(arg_dict:dict):
     if bad_keys:
         raise ScheduleError(f"Requested schedule line contained illegal keys {bad_keys}. To allow new keys in the schedule, modify {SCHEDULE_SCHEMA_PATH}")
     
+    config_overrides = line_dict.get('config_overrides')
+    if config_overrides is not None:
+        tab = tomlkit.inline_table()
+        tab.update(config_overrides)
+        config_overrides = tab.as_string()
+        line_dict['config_overrides'] = config_overrides
+    
     missing_keys = []
     # fill in with unfilled slots with defaults
     for k,v in line_dict.items():
         if v is None:
             missing_keys.append(k)
     if missing_keys:
-        raise ScheduleError(f"Tried to make schedule line but no value provided for field(s) {missing_keys} in args {arg_dict}. To allow field(s) to be blank, add a 'default' key to the field in {SCHEDULE_SCHEMA_PATH}.")
+        raise ScheduleError(f"Tried to make schedule line but no value provided for field(s) {missing_keys} in args {arg_dict}. To allow field(s) to be blank, add a 'default' key to the {missing_keys} entry(s) in {SCHEDULE_SCHEMA_PATH}.")
+    
+
     
     line_vals = [str(line_dict[k]) for k in schedule_schema.keys()]  # double check that our keys are in the correct order
 
@@ -184,8 +190,7 @@ def fill_schedule_line(arg_dict:dict):
 
 
 
-def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, slew=None, bin2fits=None,
-                        guiding=None, offset=None, ROI_height=None,ROI_width=None,ROI_start_x=None, ROI_start_y=None, binning_size=None, CandidateID=None):
+def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, description:str, exposureTime, exposures, config:str, slew='direct', config_overrides=None, CandidateID=None):
     """!
     Generate a generic schedule line. If optional arguments are left as `None`, they will be set to the default value for that field
     @param RA: right ascension of the target, as Angle or in degrees
@@ -198,43 +203,40 @@ def generic_schedule_line(RA, Dec, filterName: str, startDt:datetime, name:str, 
     @type exposureTime: float|int|str
     @param exposures: Number of exposures
     @type exposures: int|str
-    @param slew: should the telescope slew from its previous location to this one before observing?
-    @type slew: bool
-    @param bin2fits: should the telescope convert binary files to fits files
-    @type bin2fits: bool
-    @param guiding: should the telescope guide during this observation?
-    @type guiding: bool
+    @param config: name of the robo-observer config to use for this observation
+    @type config: str 
+    @param slew: type of slew to perform. options are 'none', 'direct', 'indirect', 'blind', and 'offset'
+    @type slew: str
+    @param config_overrides: a dictionary of config key-value pairs that the robo-observer will use to supplement or override the key-value pairs in the config specified in the 'config' argument
+    @type: config_overrides: dict|None
     @return: line to insert into schedule text file
     @rtype: str
     """
-    for arg in [slew,bin2fits,guiding,offset]:
-        if isinstance(arg,bool):
-            arg = "1" if arg else "0"
-
     try:
         exposureTime = exposureTime.to_value(u.second)
     except AttributeError:
         pass
     
+    if config_overrides is not None:
+        tab = tomlkit.inline_table()
+        tab.update(config_overrides)
+        config_overrides = tab.as_string()
+    else:
+        config_overrides = '{}'
+            
     line_dict = {}
     line_dict["DateTime"] = timeToString(startDt, scheduler=True)
     line_dict["Image"] = "1"
     line_dict["Target"] = name
-    line_dict["Slew"] = "1" if slew else "0"
+    line_dict["Config"] = config
+    line_dict["Slew"] = slew
     line_dict["RA"] = str(ensureFloat(RA))
     line_dict["Dec"] = str(ensureFloat(Dec))
     line_dict["ExposureTime"] = str(exposureTime)
     line_dict["#Exposure"] = str(exposures)
     line_dict["Filter"] = filterName
-    line_dict["Bin2Fits"] = "1" if bin2fits else "0"
-    line_dict["Guiding"] = "1" if guiding else "0"
-    line_dict["Offset"] = "1" if offset else "0"
     line_dict["CandidateID"] = str(CandidateID)
-    line_dict["ROIHeight"] = ROI_height
-    line_dict["ROIWidth"] = ROI_width
-    line_dict["ROIStartX"] = ROI_start_x
-    line_dict["ROIStartY"] = ROI_start_y
-    line_dict["BinningSize"] = binning_size
+    line_dict["CfgOverrides"] = config_overrides
     line_dict["Description"] = "\"" + description + "\""
 
     return fill_schedule_line(line_dict)

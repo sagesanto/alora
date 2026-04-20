@@ -152,7 +152,7 @@ def timeFromEphem(ephem):
     return datetime.strptime(inBetween, "%Y-%m-%d %H:%M").replace(tzinfo=pytz.UTC)
 
 
-def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt:datetime, centerDt: datetime, friend, ROI_height, ROI_width, ROI_start_x, ROI_start_y, binning, spath: str, logger, name=None):
+def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt:datetime, centerDt: datetime, friend, spath: str, logger, name=None):
     """
     Convert a candidate to a scheduler line
     @param candidate: The candidate to convert
@@ -193,17 +193,13 @@ def candidateToScheduleLine(candidate: Candidate, filter_name: str, startDt:date
     
     line_dict = {}
     line_dict["DateTime"] = startDt.strftime('%Y-%m-%dT%H:%M:%S.000')
+    line_dict["Config"] = "NEO"
     line_dict["Target"] = name or c.CandidateName
     line_dict["RA"] = lineAtObs[4]
     line_dict["Dec"] = lineAtObs[5]
     line_dict["ExposureTime"], line_dict["#Exposure"] = _findExposure(c.Magnitude).split("|")
     line_dict["Filter"] = filter_name
     line_dict["CandidateID"] = c.ID
-    line_dict["ROIHeight"] = ROI_height
-    line_dict["ROIWidth"] = ROI_width
-    line_dict["ROIStartX"] = ROI_start_x
-    line_dict["ROIStartY"] = ROI_start_y
-    line_dict["BinningSize"] = binning
     line_dict["Description"] = "\""+ lineAtObs[-1] + "\""
 
     line = schedule.fill_schedule_line(line_dict)
@@ -303,7 +299,8 @@ async def asyncMultiEphem(designations, when, minAltitudeLimit, mpcInst: mpc, as
         # logger.info(ephem)
         ephem = ephem.find_all('pre')
         if len(ephem) == 0:
-            logger.warning("No pre tags for ephem " + designation)
+            logger.warning(f"No pre tags for ephem {designation}")
+            logger.info(f"Offending ephem: {ephem}")
             ephemDict[designation] = None
             continue
 

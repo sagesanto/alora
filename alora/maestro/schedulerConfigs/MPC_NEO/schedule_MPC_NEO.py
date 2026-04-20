@@ -81,7 +81,7 @@ class MpcConfig(TypeConfiguration):
         duration = timedelta(minutes=row["Duration (Minutes)"])
         center = startDt + duration / 2
         center += timedelta(seconds=60-center.second, microseconds=-center.microsecond) # round up
-        return mpcUtils.candidateToScheduleLine(c, FILTER, startDt, center, self.friend, ROI_height, ROI_width, ROI_start_x, ROI_start_y, binning, spath, logger, name=targetName)
+        return mpcUtils.candidateToScheduleLine(c, FILTER, startDt, center, self.friend, spath, logger, name=targetName)
 
 
 def linearDecrease(lenArr, x1, xIntercept):

@@ -4,7 +4,6 @@
 import math, time
 from astral import sun
 from astral import LocationInfo
-
 import pandas as pd
 import numpy as np
 from astropy.coordinates import Angle

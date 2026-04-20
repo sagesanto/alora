@@ -3,38 +3,21 @@
     "Image": {
         "default": 1
     },
+    "Config": {},
     "Target": {},
     "Slew": {
-        "default": 1
+        "default": "direct"
     },
     "RA": {},
     "Dec": {},
     "ExposureTime": {},
     "#Exposure": {},
-    "Filter": {},
-    "Bin2Fits": {
-        "default": 0
-    },
-    "Guiding": {
+    "Seq":{
         "default": 1
     },
-    "Offset": {
-        "default": 0
-    },
+    "Filter": {},
     "CandidateID": {
         "default": -1
-    },
-    "ROIHeight": {
-        "default": 6144
-    },
-    "ROIWidth": {
-        "default": 6144
-    },
-    "ROIStartX": {
-        "default": 0
-    },
-    "ROIStartY": {
-        "default": 0
     },
     "RAOffset": {
         "default": 0.0
@@ -42,14 +25,8 @@
     "DecOffset": {
         "default": 0.0
     },
-    "BinningSize": {
-        "default": "1x1"
-    },
-    "CamBinMode": {
-        "default": "FPGASum"
-    },
-    "CamOpMode": {
-        "default": 17
+    "CfgOverrides": {
+        "default": "{}"
     },
     "Description": {}
 }
