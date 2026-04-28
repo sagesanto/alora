@@ -123,7 +123,7 @@ class AutoFocus:
 
     def genLine(self):
         # NOTE: it actually doesn't matter what config is put in here, the robo observer will always use the autofocus config. we just put AUTOFOCUS in here to comfort anyone who is reading the schedule 
-        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, slew='none', config='AUTOFOCUS')
+        return "\n"+generic_schedule_line(0,0,"CLEAR",self.startTime,"Focus", "Refocusing", 0, 0, slew='NoSlew', config='AUTOFOCUS')
 
     @classmethod
     def fromLine(cls, line):
