@@ -1,14 +1,15 @@
 from flask import Flask, request, jsonify
 import flask
+from os.path import join
 import logging
 import logging.handlers
 import rpyc, os
-from .utils import init_logger, read_json
+from alora.config.utils import configure_logger
 from datetime import datetime
 import time, hashlib, hmac, base64
 from alora.observatory.telemetry.config import telem_log_dir
 
-logger = init_logger(os.path.join(telem_log_dir,"api.log"))[0]
+logger = configure_logger('telemetry_api',join(telem_log_dir,"api.log"))
 
 from alora.config import config as cfg
 

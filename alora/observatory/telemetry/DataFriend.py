@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     friend = DataFriend()
 
-    SQL_QUERY = "SELECT * FROM SensorUpTime"
+    SQL_QUERY = "SELECT * FROM SensorUptime"
     
     df = friend.sql_query(SQL_QUERY)
     print("received dataframe, start plotting...")

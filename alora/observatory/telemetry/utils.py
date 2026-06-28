@@ -2,7 +2,7 @@ import logging, os, json, sys
 from datetime import datetime
 import queue
 import logging.handlers
-from alora.config import configure_logger
+from alora.config.utils import configure_logger
 
 
 def get_timestamp():

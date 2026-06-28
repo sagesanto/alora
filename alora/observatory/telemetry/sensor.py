@@ -99,6 +99,8 @@ class SensorService(rpyc.Service, metaclass=ABCMeta):
         self.logger.error("Falling back to local writing")
         # we'll use a local identical db (but with only our table) to write to
         db = TelemetryDB(self.local_db_name, self.logger)
+        db.make_blueprint_table()
+        db.make_uptime_table()
         db.make_sensor_table(self.sensor_name, self.table_name, self.blueprint)
         self.local = True
         self.write = self.write_local

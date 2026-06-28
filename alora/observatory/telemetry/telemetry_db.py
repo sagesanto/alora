@@ -17,11 +17,13 @@ class TelemetryDB:
     def make_uptime_table(self):
         create_statement = """CREATE TABLE IF NOT EXISTS "SensorUptime" ("Timestamp"	FLOAT NOT NULL)"""
         self.execute(create_statement)
+        self.commit()
     
     def make_blueprint_table(self):
         create_statement = """CREATE TABLE IF NOT EXISTS "Blueprints" ("SensorName"\tTEXT NOT NULL,\n"Blueprint"\tTEXT NOT NULL,\n"TableName"\tTEXT NOT NULL,\nPRIMARY KEY (SensorName,Blueprint,TableName))"""
         print(create_statement)
-        self.execute(create_statement)        
+        self.execute(create_statement)
+        self.commit()
 
     def close(self):
         self.conn.close()
@@ -58,6 +60,7 @@ class TelemetryDB:
         try:
             self.execute(create_statement)
             self.logger.info(f"Creating table '{table_name}' for sensor {sensor_name} with blueprint {sensor_blueprint}")
+            self.commit()
         except sqlite3.OperationalError as e:
             if (f"table \"{table_name}\" already exists") in str(e):
                 self.logger.info(f"Did not need to create table for sensor {sensor_name} (already exists).")
