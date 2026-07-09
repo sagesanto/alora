@@ -1646,10 +1646,44 @@ def _main():
     window.displayCandidates()
     window.show()
 
+    if window.settings.query("traceMemory"):
+        from alora.maestro.scheduleLib.memory_trace import set_diagnostic_counters_fn
+
+        def diagnostic_counters():
+            import matplotlib.pyplot as plt
+            processes = window.processModel.processes
+            return {
+                "process_tree_size": len(window.processModel.rootItem.childItems),
+                "total_process_log_lines": sum(len(p.log) + len(p.errorLog) for p in processes),
+                "open_matplotlib_figures": len(plt.get_fignums()),
+            }
+
+        set_diagnostic_counters_fn(diagnostic_counters)
+
     # start event loop
     app.exec()
 
 def main():
+    from alora.maestro.scheduleLib.memory_limit import enforce_memory_limit
+    from alora.config.utils import Config
+
+    settings_path = PATH_TO(join("files", "configs", "in_maestro_settings.toml"))
+    default_settings_path = PATH_TO(join("files", "configs", "in_maestro_settings.toml.default"))
+    try:
+        settings = Config(settings_path, default_path=default_settings_path)
+        memory_limit_gb = settings.get("memoryLimitGB", 20)
+        trace_memory = settings.get("traceMemory", False)
+    except Exception:
+        memory_limit_gb = 20
+        trace_memory = False
+    print(f'Enforcing memory limit of {memory_limit_gb}GB')
+    enforce_memory_limit(int(memory_limit_gb * 1024 ** 3))
+
+    if trace_memory:
+        print('Tracing memory')
+        from alora.maestro.scheduleLib.memory_trace import start_memory_trace
+        start_memory_trace(MAESTRO_DIR)
+
     run_with_crash_writing("MaestroApp", _main)
 
 if __name__ == "__main__":
