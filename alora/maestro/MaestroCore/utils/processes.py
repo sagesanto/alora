@@ -9,6 +9,7 @@
 import logging
 import os
 import signal
+from collections import deque
 from datetime import datetime, timedelta
 
 import pytz
@@ -130,8 +131,8 @@ class Process(QProcess):
         self.startLocal = datetime.now()
         self.startUTC = datetime.now(pytz.UTC)
         self.startString = generateTimestampString()
-        self.log = []
-        self.errorLog = []
+        self.log = deque(maxlen=2000)
+        self.errorLog = deque(maxlen=2000)
         self.isPaused = False
         self.triggerPhrases = triggerPhrases  # trigger phrases are phrases that, if recieved through stdout from our subprocess, will cause our "triggered" signal to be emitted.
         self.description = description
@@ -396,6 +397,15 @@ class ProcessModel(QtCore.QAbstractItemModel):
 
 
     def add(self, process: Process):
+        # remove old finished processes
+        # for item in list(self.rootItem.childItems):
+        #     proc = item.tags.get("Process")
+        #     if proc is not None and proc.name == process.name and not proc.isActive:
+        #         row = self.rootItem.childItems.index(item)
+        #         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+        #         self.rootItem.childItems.remove(item)
+        #         self.endRemoveRows()
+
         self.beginInsertRows(QtCore.QModelIndex(), 0, 4)
         topItem = TreeItem([process.name, process.status], parent=self.rootItem, tags={"Process": process})
         startItem = TreeItem(["Start", process.startString], topItem)

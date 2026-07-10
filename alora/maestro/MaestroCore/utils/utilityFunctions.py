@@ -89,18 +89,29 @@ def qDateTimeEditToString(timeEdit, fmt="MM/dd/yyyy hh:mm"):
 
 
 def onlyEnableWhenItemsSelected(button, sourceView):
-
-    # if the view sourceView has its model replaced with a new one and *then* the old model emits modelAboutToBeReset,
-    # these two lines should allow the buttons to become attached to the new TableModel
-    sourceView.model().modelAboutToBeReset.connect(lambda: onlyEnableWhenItemsSelected(button, sourceView))
-    sourceView.model().modelAboutToBeReset.connect(lambda: button.setEnabled(False))
-    # sourceView.model().modelAboutToBeReset.connect(lambda: print("modelAboutToBeReset"))
-
-    sourceView.selectionModel().selectionChanged.connect(
-        lambda: button.setEnabled(
-            bool(len(sourceView.selectedIndexes()))))
+    # set a button to only be enabled when items in a given table or list are selected
     
-    # sourceView.selectionModel().selectionChanged.connect(lambda: print(len(sourceView.selectedIndexes())))
+    prior = getattr(button, "enableWhenSelectedWatch", None)
+    if prior is not None:
+        prior_model, prior_selection_model, on_reset, on_selection_changed = prior
+        prior_model.modelAboutToBeReset.disconnect(on_reset)
+        prior_selection_model.selectionChanged.disconnect(on_selection_changed)
+
+    model = sourceView.model()
+    selectionModel = sourceView.selectionModel()
+
+    # reattach button to new table on modelAboutToBeReset, ex when we load new candidates
+    def on_reset():
+        button.setEnabled(False)
+        onlyEnableWhenItemsSelected(button, sourceView)
+
+    def on_selection_changed():
+        button.setEnabled(bool(len(sourceView.selectedIndexes())))
+
+    model.modelAboutToBeReset.connect(on_reset)
+    selectionModel.selectionChanged.connect(on_selection_changed)
+    button.enableWhenSelectedWatch = (model, selectionModel, on_reset, on_selection_changed)
+    
 
 
 def get_maestro_git_hash():

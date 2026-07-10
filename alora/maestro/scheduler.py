@@ -4,9 +4,6 @@ from alora.maestro.scheduleLib.crash_reports import run_with_crash_writing
 def main():
 
     import os, sys, time, re
-    # import timeit
-    # from line_profiler_pycharm import profile
-    # from pathlib import Path
 
     # dirname = dirname(PyQt6.__file__)
     # plugin_path = join(Path(__file__).parent, 'PyQt6', 'Qt6', 'plugins')
@@ -214,6 +211,7 @@ def main():
 
         plt.tight_layout()
         plt.savefig(os.sep.join([savepath, "scorePlot.png"]))
+        plt.close()
 
 
     BLACK = [0, 0, 0]
@@ -312,6 +310,7 @@ def main():
 
         # Show the plot
         plt.savefig(join(savepath, title + ".png"))
+        plt.close(fig)
 
 
     class TMOScheduler(astroplan.scheduling.Scheduler):

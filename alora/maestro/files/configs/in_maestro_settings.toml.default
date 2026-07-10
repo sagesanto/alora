@@ -17,3 +17,5 @@ schedulerSaveEphems = false
 autoSetScheduleTimes = true
 schedulerRuns = 1
 temperature = 0
+memoryLimitGB = 20
+traceMemory = false
